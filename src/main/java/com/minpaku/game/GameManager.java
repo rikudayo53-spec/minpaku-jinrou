@@ -394,6 +394,10 @@ public final class GameManager {
                 bot.setUUID(ps.id);
                 bot.moveTo(x, center.y, z, random.nextFloat() * 360f, 0);
                 bot.setCustomName(Component.literal(ps.name));
+                if (ps.role.canKill()) {
+                    // 人狼のボットは鉤爪を持つ（人狼の画面にだけ見える）
+                    bot.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(ModItems.CLAW));
+                }
                 level.addFreshEntity(bot);
                 bots.put(ps.id, bot);
                 brains.put(ps.id, new BotBrain(this, ps));
@@ -428,6 +432,33 @@ public final class GameManager {
         }
     }
 
+    /** 鉤爪は生きている人狼だけが持つ（捨てた・拾った・死んだときに直す） */
+    private void keepClaws() {
+        for (net.minecraft.world.entity.item.ItemEntity e : level.getEntities(
+                net.minecraft.world.level.entity.EntityTypeTest.forClass(net.minecraft.world.entity.item.ItemEntity.class),
+                e -> e.getItem().is(ModItems.CLAW))) {
+            e.discard();
+        }
+        for (PlayerState ps : players.values()) {
+            if (ps.bot) {
+                continue;
+            }
+            ServerPlayer p = player(ps.id);
+            if (p == null) {
+                continue;
+            }
+            boolean should = ps.alive && ps.role.canKill();
+            boolean has = p.getInventory().contains(new ItemStack(ModItems.CLAW));
+            if (should && !has) {
+                if (!p.getInventory().add(new ItemStack(ModItems.CLAW))) {
+                    p.getInventory().setItem(8, new ItemStack(ModItems.CLAW));
+                }
+            } else if (!should && has) {
+                p.getInventory().clearOrCountMatchingItems(s -> s.is(ModItems.CLAW), -1, p.inventoryMenu.getCraftSlots());
+            }
+        }
+    }
+
     private void preparePlayer(ServerPlayer p, PlayerState ps) {
         p.setGameMode(GameType.ADVENTURE);
         p.getInventory().clearContent();
@@ -435,12 +466,15 @@ public final class GameManager {
         p.setHealth(p.getMaxHealth());
         p.getFoodData().setFoodLevel(20);
         p.addEffect(new MobEffectInstance(MobEffects.SATURATION, -1, 0, false, false));
+        if (ps.role.canKill()) {
+            p.getInventory().setItem(0, new ItemStack(ModItems.CLAW));
+        }
         if (ps.role == Role.SEER) {
             p.getInventory().setItem(0, new ItemStack(ModItems.CRYSTAL));
         } else if (ps.role == Role.KNIGHT) {
             p.getInventory().setItem(0, new ItemStack(ModItems.CHARM));
         } else if (ps.role.canSabotage()) {
-            p.getInventory().setItem(0, new ItemStack(ModItems.TALISMAN));
+            p.getInventory().setItem(ps.role.canKill() ? 1 : 0, new ItemStack(ModItems.TALISMAN));
         }
     }
 
@@ -554,6 +588,9 @@ public final class GameManager {
     private void tickPlaying() {
         if (sabotageCooldown > 0) {
             sabotageCooldown--;
+        }
+        if (ticks % 10 == 0) {
+            keepClaws();
         }
         for (PlayerState ps : new ArrayList<>(players.values())) {
             if (phase != Phase.PLAYING) {
@@ -727,7 +764,7 @@ public final class GameManager {
         send(p, new Packets.State(phaseNum, ps.role.id, ps.alive, mates(ps), tasks, !ps.tasksCount(), progress,
                 ps.killCooldown, ps.seerLeft, ps.knightLeft, ps.emergencyLeft, blackout, gasTicks, gasMax,
                 valveFixed, boilerFixed, sabotageCooldown, ps.vent != null, at, ap,
-                map().roomAt(ps.vent != null ? ps.vent : p.blockPosition())));
+                map().roomAt(ps.vent != null ? ps.vent : p.blockPosition()), settings().get("kill_behind") != 0));
     }
 
     // ================================================================= 勝敗
@@ -778,7 +815,11 @@ public final class GameManager {
             actionBar(killer, "キルまであと " + (k.killCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
             return;
         }
-        if (k.alive && k.role.canKill() && t.alive && !isBehind(killer, target)
+        if (k.alive && k.role.canKill() && !killer.getMainHandItem().is(ModItems.CLAW)) {
+            actionBar(killer, "鉤爪を手に持って殴るとキルできる", ChatFormatting.GOLD);
+            return;
+        }
+        if (k.alive && k.role.canKill() && t.alive && behindOnly() && !isBehind(killer, target)
                 && killer.distanceTo(target) <= settings().get("kill_range") + 0.6) {
             actionBar(killer, "背後から近づかないとキルできない", ChatFormatting.GOLD);
             return;
@@ -798,7 +839,7 @@ public final class GameManager {
             return false;
         }
         double range = settings().get("kill_range") + 0.6;
-        if (killer.distanceTo(target) > range || !isBehind(killer, target)) {
+        if (killer.distanceTo(target) > range || (behindOnly() && !isBehind(killer, target))) {
             return false;
         }
         k.killCooldown = settings().get("kill_cooldown") * 20;
@@ -807,15 +848,15 @@ public final class GameManager {
         if (t.protectedByKnight) {
             t.protectedByKnight = false;
             if (kp != null) {
-                send(kp, new Packets.KillFx(2, t.name));
+                send(kp, new Packets.KillFx(2, t.name, t.id));
             }
             level.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1f, 1f);
             return true;
         }
-        kill(target, t, k.name);
+        kill(target, t, k);
         k.kills++;
         if (kp != null) {
-            send(kp, new Packets.KillFx(1, t.name));
+            send(kp, new Packets.KillFx(1, t.name, t.id));
         }
         // 見ていたボットは覚える
         for (PlayerState o : players.values()) {
@@ -832,6 +873,11 @@ public final class GameManager {
         return true;
     }
 
+    /** 設定「背後からのみキル」 */
+    boolean behindOnly() {
+        return settings().get("kill_behind") != 0;
+    }
+
     /** killer が target の背後にいるか（target の向いている方向と反対側） */
     public static boolean isBehind(Entity killer, Entity target) {
         float yaw = target instanceof LivingEntity le ? le.getYHeadRot() : target.getYRot();
@@ -843,7 +889,7 @@ public final class GameManager {
         return look.dot(toKiller.normalize()) < -0.25;
     }
 
-    private void kill(LivingEntity target, PlayerState t, String killerName) {
+    private void kill(LivingEntity target, PlayerState t, PlayerState killer) {
         BodyEntity body = ModEntities.BODY.create(level);
         if (body != null) {
             body.moveTo(target.getX(), target.getY(), target.getZ(), target.getYRot(), 0);
@@ -860,7 +906,7 @@ public final class GameManager {
             target.discard();
         } else if (target instanceof ServerPlayer sp) {
             becomeGhost(sp, t);
-            send(sp, new Packets.KillFx(0, killerName));
+            send(sp, new Packets.KillFx(0, killer.name, killer.id));
         }
     }
 

@@ -73,11 +73,24 @@ public class MinpakuClient implements ClientModInitializer {
         itemModel(com.minpaku.registry.ModItems.CRYSTAL, "seer_crystal");
         itemModel(com.minpaku.registry.ModItems.CHARM, "knight_charm");
         itemModel(com.minpaku.registry.ModItems.TALISMAN, "sabotage_talisman");
+        itemModel(com.minpaku.registry.ModItems.CLAW, "wolf_claw");
+    }
+
+    /** 鉤爪はゲーム中、人狼の画面にだけ描く（ほかの人には手ぶらに見える） */
+    private static boolean hidden(net.minecraft.world.item.ItemStack stack) {
+        if (!stack.is(com.minpaku.registry.ModItems.CLAW) || !ClientGame.inGame()) {
+            return false;
+        }
+        com.minpaku.game.Role r = ClientGame.role();
+        return r == null || !r.canKill();
     }
 
     private static void itemModel(net.minecraft.world.item.Item item, String mesh) {
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item,
                 (stack, mode, ps, buffers, light, overlay) -> {
+                    if (hidden(stack)) {
+                        return;
+                    }
                     com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(mesh);
                     if (m == null) {
                         return;
@@ -127,7 +140,9 @@ public class MinpakuClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(Packets.KillFx.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             ClientGame.killFxKind = p.kind();
             ClientGame.killFxOther = p.other();
-            ClientGame.killFxTicks = ClientGame.KILL_FX_LEN;
+            ClientGame.killFxOtherId = p.otherId();
+            ClientGame.killFxLen = p.kind() == 0 ? ClientGame.VICTIM_FX_LEN : ClientGame.KILL_FX_LEN;
+            ClientGame.killFxTicks = ClientGame.killFxLen;
             Minecraft mc = Minecraft.getInstance();
             if (mc.screen != null && !(mc.screen instanceof MeetingScreen)) {
                 mc.setScreen(null);

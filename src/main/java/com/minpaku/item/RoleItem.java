@@ -22,9 +22,10 @@ import java.util.List;
  *   CHARM    … 守りのお守り（騎士）: 人に使うと次の会議まで守る
  *   TALISMAN … 妨害のお札（人狼）: 右クリックで妨害メニュー
  *   KEY      … 管理人の鍵: 右クリックで設定画面
+ *   CLAW     … 人狼の鉤爪（人狼）: 持って殴るとキル。人狼以外には見えない
  */
 public class RoleItem extends Item {
-    public enum Kind { CRYSTAL, CHARM, TALISMAN, KEY }
+    public enum Kind { CRYSTAL, CHARM, TALISMAN, KEY, CLAW }
 
     private final Kind kind;
 
@@ -76,6 +77,7 @@ public class RoleItem extends Item {
             case CHARM -> "人に右クリック: 次の会議までキルから守る";
             case TALISMAN -> "右クリック: 停電・ガス漏れを起こす";
             case KEY -> "右クリック: ゲームの設定・開始";
+            case CLAW -> "手に持って人を殴る: キル（人狼にしか見えない）";
         };
         tooltip.add(Component.literal(text).withStyle(ChatFormatting.GRAY));
     }

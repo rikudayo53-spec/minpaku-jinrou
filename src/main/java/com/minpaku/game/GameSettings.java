@@ -53,6 +53,7 @@ public final class GameSettings {
         DEFS.add(new Def("medium_result", "霊媒師が追放結果を知れる", "能力", Kind.TOGGLE, 0, 1, 1, 1));
         DEFS.add(new Def("madman_vent", "狂人もベントを使える", "能力", Kind.TOGGLE, 0, 1, 1, 1));
         DEFS.add(new Def("kill_cooldown", "キルのクールダウン", "人狼", Kind.SECONDS, 10, 60, 5, 25));
+        DEFS.add(new Def("kill_behind", "背後からのみキルできる", "人狼", Kind.TOGGLE, 0, 1, 1, 1));
         DEFS.add(new Def("kill_range", "キルできる距離（ブロック）", "人狼", Kind.NUMBER, 1, 4, 1, 2));
         DEFS.add(new Def("sabotage_cooldown", "妨害のクールダウン", "人狼", Kind.SECONDS, 10, 90, 5, 30));
         DEFS.add(new Def("gas_time", "ガス漏れの制限時間", "人狼", Kind.SECONDS, 20, 90, 5, 45));

@@ -101,13 +101,13 @@ public final class Packets {
                         boolean fakeTasks, float taskProgress, int killCooldown, int seerLeft, int knightLeft,
                         int emergencyLeft, boolean blackout, int gasTicks, int gasMax, boolean valveFixed,
                         boolean boilerFixed, int sabotageCooldown, boolean inVent, int activeType,
-                        float activeProgress, String room) implements CustomPacketPayload {
+                        float activeProgress, String room, boolean killBehind) implements CustomPacketPayload {
         public static final Type<State> TYPE = key("state");
         public static final StreamCodec<FriendlyByteBuf, State> CODEC = CustomPacketPayload.codec(State::write, State::read);
 
         public static State lobby() {
             return new State(0, "", true, List.of(), List.of(), false, 0, 0, 0, 0, 0,
-                    false, -1, 1, false, false, 0, false, -1, 0, "");
+                    false, -1, 1, false, false, 0, false, -1, 0, "", true);
         }
 
         private void write(FriendlyByteBuf b) {
@@ -132,13 +132,14 @@ public final class Packets {
             b.writeInt(activeType);
             b.writeFloat(activeProgress);
             b.writeUtf(room);
+            b.writeBoolean(killBehind);
         }
 
         private static State read(FriendlyByteBuf b) {
             return new State(b.readVarInt(), b.readUtf(), b.readBoolean(), readList(b, Mate::read),
                     readList(b, TaskInfo::read), b.readBoolean(), b.readFloat(), b.readVarInt(), b.readVarInt(),
                     b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readVarInt(), b.readBoolean(),
-                    b.readBoolean(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readFloat(), b.readUtf());
+                    b.readBoolean(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readFloat(), b.readUtf(), b.readBoolean());
         }
 
         @Override
@@ -274,18 +275,19 @@ public final class Packets {
         }
     }
 
-    /** キルの演出。kind: 0 = 襲われた / 1 = 襲った / 2 = 守られて失敗 */
-    public record KillFx(int kind, String other) implements CustomPacketPayload {
+    /** キルの演出。kind: 0 = 襲われた / 1 = 襲った / 2 = 守られて失敗。otherId は相手（顔を出すため） */
+    public record KillFx(int kind, String other, UUID otherId) implements CustomPacketPayload {
         public static final Type<KillFx> TYPE = key("kill_fx");
         public static final StreamCodec<FriendlyByteBuf, KillFx> CODEC = CustomPacketPayload.codec(KillFx::write, KillFx::read);
 
         private void write(FriendlyByteBuf b) {
             b.writeVarInt(kind);
             b.writeUtf(other);
+            b.writeUUID(otherId);
         }
 
         private static KillFx read(FriendlyByteBuf b) {
-            return new KillFx(b.readVarInt(), b.readUtf());
+            return new KillFx(b.readVarInt(), b.readUtf(), b.readUUID());
         }
 
         @Override

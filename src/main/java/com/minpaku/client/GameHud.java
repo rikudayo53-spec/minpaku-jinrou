@@ -1,5 +1,6 @@
 package com.minpaku.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.minpaku.client.screen.MeetingScreen;
 import com.minpaku.entity.BotEntity;
 import com.minpaku.game.GameManager;
@@ -180,10 +181,14 @@ public final class GameHud {
                 && mc.crosshairPickEntity instanceof LivingEntity target
                 && (target instanceof Player || target instanceof BotEntity) && mc.player != null
                 && !ClientGame.isMate(target.getUUID()) && !target.isSpectator()) {
-            boolean behind = GameManager.isBehind(mc.player, target);
+            boolean behind = !s.killBehind() || GameManager.isBehind(mc.player, target);
+            boolean claw = mc.player.getMainHandItem().is(com.minpaku.registry.ModItems.CLAW);
             if (s.killCooldown() > 0) {
                 float f = 1f - s.killCooldown() / (float) ClientGame.killCdMax;
                 Ui.ring(g, cx, cy, 13, 11, f, 0x99FF5A4A, 0x44000000);
+            } else if (!claw) {
+                Ui.ring(g, cx, cy, 13, 11.5f, 1f, 0x88FFAA33, 0);
+                Ui.sansShadow(g, "鉤爪を持とう", cx, cy + 18, 0xFFFFC266, 0.8f, 0);
             } else if (behind) {
                 Ui.ring(g, cx, cy, 14, 11, 1f, 0xEEFF5A4A, 0);
                 Ui.sansShadow(g, "左クリックでキル", cx, cy + 18, 0xFFFF8A7A, 0.9f, 0);
@@ -255,14 +260,14 @@ public final class GameHud {
         if (ClientGame.killFxTicks <= 0) {
             return;
         }
-        float t = (ClientGame.KILL_FX_LEN - ClientGame.killFxTicks + pt) / ClientGame.KILL_FX_LEN;
+        if (ClientGame.killFxKind == 0) {
+            victimFx(g, w, h, pt);
+            return;
+        }
+        float t = (ClientGame.killFxLen - ClientGame.killFxTicks + pt) / ClientGame.killFxLen;
         float a = t < 0.15f ? t / 0.15f : (t > 0.75f ? (1 - t) / 0.25f : 1f);
         a = Mth.clamp(a, 0f, 1f);
-        if (ClientGame.killFxKind == 0) {
-            g.fill(0, 0, w, h, Ui.alpha(0xFF3A0000, a * 0.8f));
-            Ui.text(g, Ui.serif("襲われた…"), w / 2f, h / 2f - 30, Ui.alpha(0xFFFF4A3A, a), 4f, 0, false);
-            Ui.text(g, Ui.sans("あなたは幽霊になった"), w / 2f, h / 2f + 18, Ui.alpha(0xFFFFFFFF, a), 1.2f, 0, false);
-        } else if (ClientGame.killFxKind == 1) {
+        if (ClientGame.killFxKind == 1) {
             g.fill(0, 0, w, h, Ui.alpha(0xFF300000, a * 0.35f));
             Ui.text(g, Ui.serif("キル"), w / 2f, h / 2f - 50, Ui.alpha(0xFFFF4A3A, a), 3.5f, 0, false);
             Ui.text(g, Ui.sans(ClientGame.killFxOther + " を襲った"), w / 2f, h / 2f - 12, Ui.alpha(0xFFFFFFFF, a), 1.1f, 0, false);
@@ -270,6 +275,51 @@ public final class GameHud {
             Ui.text(g, Ui.serif("守られていた"), w / 2f, h / 2f - 50, Ui.alpha(0xFFF2C94C, a), 3f, 0, false);
             Ui.text(g, Ui.sans("騎士の守りでキルが防がれた"), w / 2f, h / 2f - 16, Ui.alpha(0xFFFFFFFF, a), 1.1f, 0, false);
         }
+    }
+
+    /** 襲われた人の画面：暗転 → 爪あと3本 → 襲った人の顔 → 幽霊になった */
+    private static void victimFx(GuiGraphics g, int w, int h, float pt) {
+        float t = ClientGame.killFxLen - ClientGame.killFxTicks + pt;
+        float end = ClientGame.killFxLen;
+        // 最後の 25 tick で明ける
+        float all = t > end - 25 ? Mth.clamp((end - t) / 25f, 0f, 1f) : 1f;
+        float cx = w / 2f;
+        float cy = h / 2f;
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 400);
+        // 真っ暗（最初の一瞬だけ赤く光る）
+        g.fill(0, 0, w, h, Ui.alpha(0xFF000000, all));
+        if (t < 5) {
+            g.fill(0, 0, w, h, Ui.alpha(0xFFB01818, (1f - t / 5f) * 0.8f));
+        }
+        // 爪あと（右上から左下へ、3本）
+        for (int i = 0; i < 3; i++) {
+            float grow = Mth.clamp((t - 5 - i * 6) / 4f, 0f, 1f);
+            float ox = (i - 1) * 34f;
+            float fade = all * (t > 60 ? Mth.clamp(1f - (t - 60) / 25f, 0.25f, 1f) : 1f);
+            Ui.slash(g, cx + ox + 70, cy - 95, cx + ox - 70, cy + 95, 16, grow, Ui.alpha(0xFF8E1010, fade));
+            Ui.slash(g, cx + ox + 70, cy - 95, cx + ox - 70, cy + 95, 7, grow, Ui.alpha(0xFFE0392B, fade));
+        }
+        // 襲った人の顔と名前
+        if (t > 28) {
+            float a = Mth.clamp((t - 28) / 8f, 0f, 1f) * all;
+            if (a > 0.05f) {
+                RenderSystem.enableBlend();
+                RenderSystem.setShaderColor(1f, 1f, 1f, a);
+                g.fill((int) cx - 19, (int) cy - 61, (int) cx + 19, (int) cy - 23, Ui.alpha(0xFFE0392B, a));
+                Ui.face(g, ClientGame.killFxOtherId, (int) cx - 17, (int) cy - 59, 34);
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            }
+            Ui.text(g, Ui.serif(ClientGame.killFxOther), cx, cy - 12, Ui.alpha(0xFFFFFFFF, a), 1.8f, 0, false);
+            Ui.text(g, Ui.serif("に襲われた"), cx, cy + 10, Ui.alpha(0xFFE0392B, a), 1.5f, 0, false);
+        }
+        if (t > 50) {
+            float a = Mth.clamp((t - 50) / 10f, 0f, 1f) * all;
+            Ui.text(g, Ui.sans("あなたは幽霊になった"), cx, cy + 42, Ui.alpha(0xFFE1D5F5, a), 1.2f, 0, false);
+            Ui.text(g, Ui.sans("生きている人には見えません。タスクは続けられます"), cx, cy + 58,
+                    Ui.alpha(0xFFB8A9CF, a), 0.85f, 0, false);
+        }
+        g.pose().popPose();
     }
 
     private static void announce(GuiGraphics g, int w, int h) {

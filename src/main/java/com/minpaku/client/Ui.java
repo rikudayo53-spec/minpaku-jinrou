@@ -154,6 +154,36 @@ public final class Ui {
         }
     }
 
+    /** 四角形（4点を順に）。向きに関係なく描けるよう表と裏の両方を出す */
+    public static void quad(GuiGraphics g, float x0, float y0, float x1, float y1, float x2, float y2,
+                            float x3, float y3, int color) {
+        Matrix4f m = g.pose().last().pose();
+        VertexConsumer vc = g.bufferSource().getBuffer(RenderType.gui());
+        vc.addVertex(m, x0, y0, 0).setColor(color);
+        vc.addVertex(m, x1, y1, 0).setColor(color);
+        vc.addVertex(m, x2, y2, 0).setColor(color);
+        vc.addVertex(m, x3, y3, 0).setColor(color);
+        vc.addVertex(m, x3, y3, 0).setColor(color);
+        vc.addVertex(m, x2, y2, 0).setColor(color);
+        vc.addVertex(m, x1, y1, 0).setColor(color);
+        vc.addVertex(m, x0, y0, 0).setColor(color);
+    }
+
+    /** 爪あと（a→b に向かって太くなり、また細くなる筋）。grow = 0〜1 で伸びる */
+    public static void slash(GuiGraphics g, float ax, float ay, float bx, float by, float width, float grow, int color) {
+        if (grow <= 0) {
+            return;
+        }
+        float ex = ax + (bx - ax) * grow;
+        float ey = ay + (by - ay) * grow;
+        float mx = ax + (bx - ax) * 0.45f * Math.min(1f, grow / 0.45f);
+        float my = ay + (by - ay) * 0.45f * Math.min(1f, grow / 0.45f);
+        float len = (float) Math.hypot(bx - ax, by - ay);
+        float nx = -(by - ay) / len * width / 2f;
+        float ny = (bx - ax) / len * width / 2f;
+        quad(g, ax, ay, mx + nx, my + ny, ex, ey, mx - nx, my - ny, color);
+    }
+
     /** 塗りつぶした円 */
     public static void disc(GuiGraphics g, float cx, float cy, float r, int color) {
         ring(g, cx, cy, r, 0.01f, 1f, color, 0);

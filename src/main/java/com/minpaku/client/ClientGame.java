@@ -31,7 +31,11 @@ public final class ClientGame {
     public static int killFxTicks;
     public static int killFxKind;
     public static String killFxOther = "";
+    public static UUID killFxOtherId = new UUID(0, 0);
     public static final int KILL_FX_LEN = 60;
+    /** 襲われた側の暗転演出の長さ */
+    public static final int VICTIM_FX_LEN = 110;
+    public static int killFxLen = KILL_FX_LEN;
 
     // 会議中の発言
     public static final java.util.List<Packets.Talk> talk = new java.util.ArrayList<>();
@@ -87,6 +91,16 @@ public final class ClientGame {
         }
         if (killFxTicks > 0) {
             killFxTicks--;
+            if (killFxKind == 0) {
+                // 暗転中の音：爪で3回ひっかく → 心臓の音
+                int t = killFxLen - killFxTicks;
+                if (t == 6 || t == 12 || t == 18) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 0.7f + t * 0.02f);
+                }
+                if (t == 34 || t == 52) {
+                    play(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, 0.8f);
+                }
+            }
         }
     }
 

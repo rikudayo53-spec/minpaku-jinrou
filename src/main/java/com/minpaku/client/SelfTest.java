@@ -124,9 +124,17 @@ public final class SelfTest {
                 sp.setGameMode(GameType.ADVENTURE);
                 GameManager.get(sp.server).sendSettings(sp);
             });
-            case 370 -> mc.setScreen(new SettingsScreen());
-            case 400 -> shot(mc, "05_settings");
-            case 410 -> {
+            case 362 -> server(mc, sp -> {
+                sp.getInventory().selected = 0;
+                sp.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(com.minpaku.registry.ModItems.CLAW));
+            });
+            case 366 -> mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
+            case 380 -> shot(mc, "05a_claw_3rd");
+            case 384 -> mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+            case 392 -> shot(mc, "05b_claw_hand");
+            case 395 -> mc.setScreen(new SettingsScreen());
+            case 405 -> shot(mc, "05_settings");
+            case 412 -> {
                 mc.setScreen(null);
                 server(mc, sp -> GameManager.get(sp.server).start(sp));
             }
@@ -155,6 +163,15 @@ public final class SelfTest {
                 ClientGame.announce("停電！", "配電盤を直そう", 0xFFD54F);
             }
             case 745 -> shot(mc, "13_announce");
+            case 800 -> {
+                ClientGame.killFxKind = 0;
+                ClientGame.killFxOther = "はなこ";
+                ClientGame.killFxOtherId = mc.player.getUUID();
+                ClientGame.killFxLen = ClientGame.VICTIM_FX_LEN;
+                ClientGame.killFxTicks = ClientGame.killFxLen;
+            }
+            case 812 -> shot(mc, "15a_victim_slash");
+            case 865 -> shot(mc, "15b_victim_face");
             case 1100 -> shot(mc, "14_bots_moving");
             case 1110 -> server(mc, sp -> {
                 List<BlockPos> bells = MapData.get(sp.serverLevel()).get(MarkerType.BELL);
