@@ -56,8 +56,23 @@ public final class SelfTest {
         });
     }
 
+    private static int menuTicks;
+    private static boolean opened;
+
     public static void tick(Minecraft mc) {
-        if (!ENABLED || mc.player == null || mc.level == null) {
+        if (!ENABLED) {
+            return;
+        }
+        if (mc.level == null) {
+            // タイトル画面（または最初の案内画面）が出たら、テスト用の世界を開く
+            if (!opened && mc.screen != null && ++menuTicks > 60) {
+                opened = true;
+                MinpakuJinrou.LOGGER.info("SELFTEST opening world from {}", mc.screen.getClass().getSimpleName());
+                mc.createWorldOpenFlows().openWorld("selftest", () -> MinpakuJinrou.LOGGER.error("SELFTEST open failed"));
+            }
+            return;
+        }
+        if (mc.player == null) {
             return;
         }
         t++;
