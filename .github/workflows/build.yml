@@ -67,10 +67,13 @@ jobs:
           printf "online-mode=false\nlevel-type=minecraft\\\\:flat\nspawn-protection=0\n" > run/server.properties
           (sleep 150; echo stop) | timeout 300 ./gradlew runServer --console=plain > server.log 2>&1
           mkdir -p run/saves && cp -r run/world run/saves/selftest
+          (sleep 240; for pid in $(pgrep -f KnotClient); do jstack $pid > jstack_$pid.txt 2>&1; done; cp jstack_*.txt /tmp/ 2>/dev/null) &
           MINPAKU_SELFTEST=1 timeout 1200 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient --console=plain --args="--quickPlaySingleplayer selftest" > client.log 2>&1
           echo "client exit $?" >> client.log
           mkdir -p /tmp/out
           cp server.log client.log /tmp/out/
+          cp /tmp/jstack_*.txt /tmp/out/ 2>/dev/null
+          glxinfo -B > /tmp/out/glx.txt 2>&1 || true
           cp run/screenshots/*.png /tmp/out/ 2>/dev/null
           cd /tmp/out
           git init -q
