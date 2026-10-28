@@ -890,8 +890,7 @@ public final class GameManager {
         exitVent(p, ps, false);
         p.removeEffect(MobEffects.BLINDNESS);
         p.setGameMode(GameType.SPECTATOR);
-        p.sendSystemMessage(Component.literal("幽霊になりました。タスクは続けられます（ブロックを右クリック）。生きている人には見えません。")
-                .withStyle(ChatFormatting.GRAY));
+        // 幽霊になったことは演出と画面下のヒントで伝える（チャットは演出にかぶるので出さない）
     }
 
     // ================================================================= 役職の能力
