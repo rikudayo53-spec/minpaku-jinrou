@@ -589,139 +589,6 @@ def sabotage_talisman(m, P):
     m.torus(0.05, 0.008, (0, -0.06, 0.20), P["dark"], rot=(78, 0, 0), seg=16, ring=6)
 
 
-# ============================================================ 人狼（襲われる演出用。部位ごとに動かす）
-# 正面は +Y（演出ではカメラの方を向く）。各部位は回転の中心（関節）が原点になるよう書き出す。
-WOLF_PIVOTS = {
-    "werewolf_body": (0.0, 0.0, 1.0),
-    "werewolf_head": (0.0, 0.26, 2.0),
-    "werewolf_jaw": (0.0, 0.42, 1.97),
-    "werewolf_arm_a": (0.46, 0.06, 1.86),
-    "werewolf_arm_b": (-0.46, 0.06, 1.86),
-}
-
-
-def _to_pivot(m, name):
-    piv = Vector(WOLF_PIVOTS[name])
-    for ob in m.coll.objects:
-        if ob is not m.root:
-            ob.location = ob.location - piv
-            if ob.type == 'CURVE':
-                for sp in ob.data.splines:
-                    for bp in sp.bezier_points:
-                        bp.co -= piv
-                        bp.handle_left -= piv
-                        bp.handle_right -= piv
-                ob.location = ob.location + piv
-
-
-def werewolf_body(m, P):
-    # 腰・胴（前かがみ）
-    m.sphere(0.30, (0, 0, 1.05), P["fur"], scale=(1.05, 0.85, 0.85))
-    m.sphere(0.42, (0, 0.10, 1.52), P["fur"], scale=(1.0, 0.78, 1.15), rot=(-22, 0, 0))
-    m.sphere(0.30, (0, 0.30, 1.56), P["fur_light"], scale=(0.95, 0.42, 1.0), rot=(-22, 0, 0))
-    # 盛り上がった肩
-    for x in (0.38, -0.38):
-        m.sphere(0.21, (x, 0.04, 1.84), P["fur"], scale=(1.1, 1.0, 0.85))
-    # 首
-    m.seg((0, 0.10, 1.78), (0, 0.26, 2.04), 0.19, 0.16, P["fur"])
-    # 背中・肩・首まわりの逆立った毛
-    for i in range(9):
-        t = i / 8
-        z = 1.25 + t * 0.8
-        y = -0.25 - 0.08 * math.sin(t * math.pi) + t * 0.18
-        for x in (-0.12, 0.0, 0.12):
-            m.spike((x * (1.2 - t * 0.5), y + 0.05, z), (x * 1.6, y - 0.22, z + 0.12 + R.uniform(-0.03, 0.05)),
-                    0.06, P["fur_dark"])
-    for k in range(10):
-        a = math.radians(-100 + k * 22)
-        bx, by = math.cos(a) * 0.24, math.sin(a) * 0.20 + 0.12
-        m.spike((bx, by, 1.92), (bx * 1.8, by * 1.2 - 0.06, 1.98 + R.uniform(-0.04, 0.06)), 0.07, P["fur_dark"])
-    # 足（後ろに曲がる獣の足）
-    for x in (0.22, -0.22):
-        m.seg((x, 0.02, 1.05), (x * 1.1, 0.24, 0.62), 0.15, 0.11, P["fur"])
-        m.seg((x * 1.1, 0.24, 0.62), (x * 1.1, -0.08, 0.20), 0.10, 0.07, P["fur"])
-        m.seg((x * 1.1, -0.08, 0.20), (x * 1.1, 0.10, 0.03), 0.07, 0.06, P["fur_dark"])
-        for dx in (-0.05, 0.0, 0.05):
-            m.spike((x * 1.1 + dx, 0.10, 0.04), (x * 1.1 + dx, 0.24, 0.0), 0.022, P["claw"])
-    # しっぽ
-    m.tube([(0, -0.25, 1.05), (0, -0.55, 0.95), (0, -0.85, 1.05)], 0.08, P["fur_dark"])
-    _to_pivot(m, "werewolf_body")
-
-
-def werewolf_head(m, P):
-    # 頭・鼻先
-    m.sphere(0.24, (0, 0.28, 2.12), P["fur"], scale=(1.0, 1.05, 0.88))
-    m.cyl(0.13, 0.36, (0, 0.40, 2.07), P["fur"], rot=(-94, 0, 0), r2=0.075, bevel=0)
-    m.sphere(0.12, (0, 0.40, 2.03), P["fur_light"], scale=(1.0, 1.4, 0.55))
-    m.sphere(0.05, (0, 0.77, 2.09), P["dark"], scale=(1.15, 0.9, 0.8))
-    # 口の中（赤）
-    m.box((0.16, 0.30, 0.05), (0, 0.58, 1.99), P["gum"], bevel=0.01)
-    # 上の歯・牙
-    for k in range(5):
-        y = 0.50 + k * 0.055
-        for x in (0.075 - k * 0.006, -0.075 + k * 0.006):
-            big = k == 4
-            m.spike((x, y, 2.01), (x, y + 0.01, 1.92 if big else 1.96), 0.022 if big else 0.014, P["tooth"])
-    # 赤く光る目と、つり上がった眉
-    for x in (0.105, -0.105):
-        m.sphere(0.04, (x, 0.47, 2.17), P["glow"], scale=(1.3, 0.6, 0.7), rot=(0, 0, 25 if x > 0 else -25))
-        m.box((0.13, 0.05, 0.035), (x, 0.47, 2.215), P["fur_dark"], rot=(0, 25 if x > 0 else -25, 0), bevel=0.01)
-    # 耳
-    for x in (0.15, -0.15):
-        m.seg((x, 0.22, 2.26), (x * 1.5, 0.12, 2.56), 0.08, 0.008, P["fur"], verts=10)
-        m.seg((x, 0.25, 2.27), (x * 1.45, 0.16, 2.50), 0.045, 0.006, P["gum"], verts=8)
-    # 頭の毛
-    for k in range(7):
-        x = (k - 3) * 0.06
-        m.spike((x, 0.18, 2.26), (x * 1.4, -0.06, 2.34 + R.uniform(-0.03, 0.04)), 0.05, P["fur_dark"])
-    _to_pivot(m, "werewolf_head")
-
-
-def werewolf_jaw(m, P):
-    m.cyl(0.095, 0.30, (0, 0.40, 1.95), P["fur"], rot=(-98, 0, 0), r2=0.055, bevel=0)
-    m.box((0.13, 0.26, 0.03), (0, 0.56, 1.975), P["gum"], bevel=0.01)
-    for k in range(4):
-        y = 0.52 + k * 0.05
-        for x in (0.06 - k * 0.006, -0.06 + k * 0.006):
-            m.spike((x, y, 1.97), (x, y, 2.04 if k == 3 else 2.01), 0.018 if k == 3 else 0.012, P["tooth"])
-    for k in range(4):
-        x = (k - 1.5) * 0.06
-        m.spike((x, 0.42, 1.90), (x * 1.3, 0.40, 1.78), 0.04, P["fur_dark"])
-    _to_pivot(m, "werewolf_jaw")
-
-
-def _arm(m, P, sx, name):
-    sh = (0.46 * sx, 0.06, 1.86)
-    el = (0.56 * sx, 0.14, 1.40)
-    wr = (0.58 * sx, 0.24, 0.98)
-    m.seg(sh, el, 0.13, 0.10, P["fur"])
-    m.sphere(0.11, el, P["fur"])
-    m.seg(el, wr, 0.10, 0.075, P["fur"])
-    for k in range(4):
-        t = (k + 0.5) / 4
-        b = (el[0] + (wr[0] - el[0]) * t, el[1] - 0.06, el[2] + (wr[2] - el[2]) * t)
-        m.spike(b, (b[0] + 0.06 * sx, b[1] - 0.16, b[2] + 0.05), 0.045, P["fur_dark"])
-    # 手と爪
-    m.sphere(0.10, (wr[0], wr[1] + 0.02, wr[2] - 0.06), P["fur_dark"], scale=(1.0, 0.75, 1.0))
-    for k in range(4):
-        x = wr[0] + (k - 1.5) * 0.05
-        y0, z0 = wr[1] + 0.07, wr[2] - 0.11
-        pts = [(y0, z0), (y0 + 0.04, z0 - 0.10), (y0 + 0.10, z0 - 0.20), (y0 + 0.20, z0 - 0.27)]
-        m.blade(x, pts, 0.045, 0.024, P["claw"])
-    _to_pivot(m, name)
-
-
-def werewolf_arm_a(m, P):
-    _arm(m, P, 1, "werewolf_arm_a")
-
-
-def werewolf_arm_b(m, P):
-    _arm(m, P, -1, "werewolf_arm_b")
-
-
-WEREWOLF = [werewolf_body, werewolf_head, werewolf_jaw, werewolf_arm_a, werewolf_arm_b]
-
-
 BLOCKS = [call_bell, floor_hatch, breaker, gas_valve, boiler, wiring_panel, ledger, futon, kamado, bath_stove,
           chopping_block, vegetable_patch, dust_pile, entrance_mat, laundry_pole, flower_vase, kitchen_sink,
           shoe_rack, shoji_screen]
@@ -784,7 +651,7 @@ def export_all(out_dir):
 
 def build():
     P = palette()
-    for i, fn in enumerate(BLOCKS + ITEMS + WEREWOLF):
+    for i, fn in enumerate(BLOCKS + ITEMS):
         if ONLY and fn.__name__ not in ONLY:
             continue
         fn(Model(fn.__name__, i), P)

@@ -158,19 +158,20 @@ public final class SelfTest {
             case 800 -> {
                 ClientGame.killFxKind = 0;
                 ClientGame.killFxOther = "はなこ";
-                ClientGame.killFxOtherId = mc.player.getUUID();
+                ClientGame.killFxOtherId = UUID.fromString("00000000-0000-0000-0000-000000000005");
                 ClientGame.killFxLen = ClientGame.VICTIM_FX_LEN;
                 ClientGame.killFxTicks = ClientGame.killFxLen;
             }
-            case 806 -> shot(mc, "15a_wolf_eyes");
-            case 814 -> shot(mc, "15b_wolf_approach");
-            case 818 -> shot(mc, "15c_wolf_roar");
-            case 821 -> shot(mc, "15d_wolf_windup");
-            case 823 -> shot(mc, "15e_wolf_swipe1");
-            case 827 -> shot(mc, "15f_wolf_swipe2");
-            case 831 -> shot(mc, "15g_wolf_bite");
-            case 834 -> shot(mc, "15h_wolf_close");
-            case 880 -> shot(mc, "15i_victim_face");
+            case 805 -> shot(mc, "15a_run");
+            case 812 -> shot(mc, "15b_leap");
+            case 817 -> shot(mc, "15c_tackle");
+            case 821 -> shot(mc, "15d_fall");
+            case 824 -> shot(mc, "15e_raise");
+            case 827 -> shot(mc, "15f_strike1");
+            case 832 -> shot(mc, "15g_strike2");
+            case 838 -> shot(mc, "15h_look");
+            case 846 -> shot(mc, "15i_fade");
+            case 885 -> shot(mc, "15j_victim_face");
             case 1100 -> shot(mc, "14_bots_moving");
             case 1110 -> server(mc, sp -> {
                 List<BlockPos> bells = MapData.get(sp.serverLevel()).get(MarkerType.BELL);
