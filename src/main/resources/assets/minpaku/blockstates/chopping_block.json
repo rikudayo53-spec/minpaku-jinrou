@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/chopping_block"
+  },
+  "facing=east": {
+   "model": "minpaku:block/chopping_block",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/chopping_block",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/chopping_block",
+   "y": 270
+  }
+ }
+}

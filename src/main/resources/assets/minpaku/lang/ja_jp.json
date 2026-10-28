@@ -1,0 +1,21 @@
+{
+ "block.minpaku.entrance_mat": "玄関マット（スタート地点）",
+ "block.minpaku.call_bell": "呼び鈴（緊急ボタン）",
+ "block.minpaku.floor_hatch": "床下点検口（ベント）",
+ "block.minpaku.breaker": "配電盤",
+ "block.minpaku.gas_valve": "ガスの元栓",
+ "block.minpaku.boiler": "ボイラー",
+ "block.minpaku.wiring_panel": "配線盤（タスク）",
+ "block.minpaku.ledger": "予約台帳（タスク）",
+ "block.minpaku.futon": "布団（タスク）",
+ "block.minpaku.kamado": "かまど（タスク）",
+ "block.minpaku.bath_stove": "風呂釜（タスク）",
+ "block.minpaku.chopping_block": "薪割り台（タスク）",
+ "block.minpaku.vegetable_patch": "畑（タスク）",
+ "block.minpaku.dust_pile": "ほこり（タスク）",
+ "item.minpaku.manager_key": "管理人の鍵",
+ "item.minpaku.seer_crystal": "占いの水晶",
+ "item.minpaku.knight_charm": "守りのお守り",
+ "item.minpaku.sabotage_talisman": "妨害のお札",
+ "entity.minpaku.body": "死体"
+}

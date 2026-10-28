@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/ledger"
+  },
+  "facing=east": {
+   "model": "minpaku:block/ledger",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/ledger",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/ledger",
+   "y": 270
+  }
+ }
+}

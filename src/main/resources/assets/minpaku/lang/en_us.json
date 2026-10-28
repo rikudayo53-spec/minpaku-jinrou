@@ -1,0 +1,21 @@
+{
+ "block.minpaku.entrance_mat": "Entrance Mat (Start Point)",
+ "block.minpaku.call_bell": "Call Bell (Emergency Button)",
+ "block.minpaku.floor_hatch": "Floor Hatch (Vent)",
+ "block.minpaku.breaker": "Breaker Panel",
+ "block.minpaku.gas_valve": "Gas Valve",
+ "block.minpaku.boiler": "Boiler",
+ "block.minpaku.wiring_panel": "Wiring Panel (Task)",
+ "block.minpaku.ledger": "Reservation Ledger (Task)",
+ "block.minpaku.futon": "Futon (Task)",
+ "block.minpaku.kamado": "Kamado Stove (Task)",
+ "block.minpaku.bath_stove": "Bath Stove (Task)",
+ "block.minpaku.chopping_block": "Chopping Block (Task)",
+ "block.minpaku.vegetable_patch": "Vegetable Patch (Task)",
+ "block.minpaku.dust_pile": "Dust Pile (Task)",
+ "item.minpaku.manager_key": "Manager's Key",
+ "item.minpaku.seer_crystal": "Seer's Crystal",
+ "item.minpaku.knight_charm": "Knight's Charm",
+ "item.minpaku.sabotage_talisman": "Sabotage Talisman",
+ "entity.minpaku.body": "Body"
+}

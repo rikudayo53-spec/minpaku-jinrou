@@ -1,0 +1,64 @@
+package com.minpaku.game;
+
+/**
+ * マップに置く専用ブロックの種類。置くだけでマップに登録される。
+ *
+ * ★ タスクを増やすときは、ここに1行足して ModBlocks で登録、モデルを作る。
+ */
+public enum MarkerType {
+    // 設備
+    SPAWN("entrance_mat", "玄関マット（スタート地点）", Use.NONE, null, 0),
+    BELL("call_bell", "呼び鈴（緊急ボタン）", Use.NONE, null, 0),
+    VENT("floor_hatch", "床下点検口（ベント）", Use.NONE, null, 0),
+    BREAKER("breaker", "配電盤（停電を直す）", Use.NONE, null, 0),
+    GAS_VALVE("gas_valve", "ガスの元栓（ガス漏れを直す）", Use.HOLD, "ガスの元栓を閉める", 40),
+    BOILER("boiler", "ボイラー（ガス漏れを直す）", Use.HOLD, "ボイラーを止める", 40),
+
+    // タスク（ミニゲーム）
+    WIRING("wiring_panel", "配線盤", Use.WIRES, "配線をつなぐ", 0),
+    LEDGER("ledger", "予約台帳", Use.NUMBERS, "予約台帳を整理する", 0),
+
+    // タスク（マイクラらしい作業）
+    FUTON("futon", "布団", Use.HOLD, "布団を敷く", 80),
+    KAMADO("kamado", "かまど", Use.HOLD, "ご飯を炊く", 100),
+    BATH("bath_stove", "風呂釜", Use.HOLD, "お風呂を沸かす", 80),
+    CHOPPING("chopping_block", "薪割り台", Use.CLICK, "薪を割る", 6),
+    FIELD("vegetable_patch", "畑", Use.CLICK, "野菜を収穫する", 4),
+    DUST("dust_pile", "ほこり", Use.CLICK, "部屋を掃除する", 5);
+
+    public enum Use {
+        /** 何もしない（設備） */
+        NONE,
+        /** 近くで見続けると進む（amount = かかるtick） */
+        HOLD,
+        /** 何回か右クリックする（amount = 回数） */
+        CLICK,
+        /** 配線ミニゲーム */
+        WIRES,
+        /** 数字を順番に押すミニゲーム */
+        NUMBERS
+    }
+
+    public final String blockId;
+    public final String label;
+    public final Use use;
+    public final String taskName;
+    public final int amount;
+
+    MarkerType(String blockId, String label, Use use, String taskName, int amount) {
+        this.blockId = blockId;
+        this.label = label;
+        this.use = use;
+        this.taskName = taskName;
+        this.amount = amount;
+    }
+
+    public boolean isTask() {
+        return ordinal() >= WIRING.ordinal();
+    }
+
+    public static MarkerType byOrdinal(int i) {
+        MarkerType[] v = values();
+        return i >= 0 && i < v.length ? v[i] : SPAWN;
+    }
+}

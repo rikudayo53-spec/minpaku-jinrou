@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/kamado"
+  },
+  "facing=east": {
+   "model": "minpaku:block/kamado",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/kamado",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/kamado",
+   "y": 270
+  }
+ }
+}

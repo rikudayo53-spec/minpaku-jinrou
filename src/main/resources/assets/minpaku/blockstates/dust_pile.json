@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/dust_pile"
+  },
+  "facing=east": {
+   "model": "minpaku:block/dust_pile",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/dust_pile",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/dust_pile",
+   "y": 270
+  }
+ }
+}
