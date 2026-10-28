@@ -64,6 +64,14 @@ public final class StaticMesh {
 
     /** 原点（底の中心）に描く。light は明るさ（光るパーツは常に最大） */
     public void render(PoseStack ps, MultiBufferSource buffers, int light, int overlay) {
+        render(ps, buffers, light, overlay, 1f, 1f, 1f);
+    }
+
+    /** 色をかけて描く（光るパーツはそのまま）。暗がりから現れる演出などに使う */
+    public void render(PoseStack ps, MultiBufferSource buffers, int light, int overlay, float tr, float tg, float tb) {
+        tint[0] = tr;
+        tint[1] = tg;
+        tint[2] = tb;
         PoseStack.Pose pose = ps.last();
         if (!solid.isEmpty()) {
             VertexConsumer vc = buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE));
@@ -91,10 +99,13 @@ public final class StaticMesh {
         }
     }
 
+    private static final float[] tint = {1f, 1f, 1f};
+
     private static void vertex(VertexConsumer vc, PoseStack.Pose pose, Part p, float[] pos, float[] n, int k,
                                int light, int overlay) {
         vc.addVertex(pose, pos[k], pos[k + 1], pos[k + 2])
-                .setColor(p.r, p.g, p.b, p.a)
+                .setColor(p.emissive ? p.r : (int) (p.r * tint[0]), p.emissive ? p.g : (int) (p.g * tint[1]),
+                        p.emissive ? p.b : (int) (p.b * tint[2]), p.a)
                 .setUv(0.5f, 0.5f)
                 .setOverlay(overlay)
                 .setLight(light)

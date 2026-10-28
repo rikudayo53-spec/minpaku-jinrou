@@ -145,8 +145,7 @@ public class MinpakuClient implements ClientModInitializer {
                 mc.setScreen(null);
             }
             if (p.kind() == 0) {
-                ClientGame.play(SoundEvents.PLAYER_HURT, 0.5f);
-                ClientGame.play(SoundEvents.WITHER_HURT, 0.6f);
+                // 音はアニメーションに合わせて ClientGame.tick で鳴らす
             } else if (p.kind() == 1) {
                 ClientGame.play(SoundEvents.PLAYER_ATTACK_STRONG, 0.6f);
             } else {

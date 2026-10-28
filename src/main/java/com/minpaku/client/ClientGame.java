@@ -34,7 +34,7 @@ public final class ClientGame {
     public static UUID killFxOtherId = new UUID(0, 0);
     public static final int KILL_FX_LEN = 60;
     /** 襲われた側の暗転演出の長さ */
-    public static final int VICTIM_FX_LEN = 110;
+    public static final int VICTIM_FX_LEN = 125;
     public static int killFxLen = KILL_FX_LEN;
 
     // 会議中の発言
@@ -92,12 +92,22 @@ public final class ClientGame {
         if (killFxTicks > 0) {
             killFxTicks--;
             if (killFxKind == 0) {
-                // 暗転中の音：爪で3回ひっかく → 心臓の音
+                // 人狼のうなり → 遠吠え → 3回ひっかく → 噛みつく → 心臓の音
                 int t = killFxLen - killFxTicks;
-                if (t == 6 || t == 12 || t == 18) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 0.7f + t * 0.02f);
+                if (t == 2) {
+                    play(net.minecraft.sounds.SoundEvents.WOLF_GROWL, 0.6f);
                 }
-                if (t == 34 || t == 52) {
+                if (t == 14) {
+                    play(net.minecraft.sounds.SoundEvents.RAVAGER_ROAR, 1.25f);
+                }
+                if (t == 22 || t == 27) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, t == 22 ? 0.75f : 0.9f);
+                }
+                if (t == 32) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT, 0.6f);
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_HURT, 0.6f);
+                }
+                if (t == 50 || t == 70) {
                     play(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, 0.8f);
                 }
             }
