@@ -140,3 +140,21 @@ d.line([7, 5, 7, 10], fill=(40, 40, 40, 255))
 d.line([8, 5, 8, 10], fill=(40, 40, 40, 255))
 save(img, "assets/minpaku/textures/item/charm_cloth.png")
 print("textures ok")
+
+# 障子（白い紙と木の桟）
+img = Image.new("RGBA", (16, 16), (246, 242, 230, 255))
+d = ImageDraw.Draw(img)
+for x in (0, 5, 10, 15):
+    d.line([x, 0, x, 15], fill=(150, 110, 70, 255))
+for y in (0, 4, 8, 12, 15):
+    d.line([0, y, 15, y], fill=(150, 110, 70, 255))
+d.ellipse([6, 5, 8, 7], fill=(70, 50, 35, 255))
+save(img, "assets/minpaku/textures/block/shoji.png")
+
+# 手ぬぐい（藍染め）
+img = Image.new("RGBA", (16, 16), (40, 70, 140, 255))
+d = ImageDraw.Draw(img)
+for y in range(1, 16, 3):
+    d.line([0, y, 15, y], fill=(230, 235, 245, 255))
+save(noise(img, 6), "assets/minpaku/textures/block/towel.png")
+print("textures2 ok")

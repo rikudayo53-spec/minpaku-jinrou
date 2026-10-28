@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * /minpaku start | stop | key | status
+ * /minpaku start | stop | build | key | status
  */
 public final class GameCommands {
     private GameCommands() {
@@ -27,6 +27,11 @@ public final class GameCommands {
                         .then(Commands.literal("stop").executes(ctx -> {
                             ServerPlayer p = ctx.getSource().getPlayer();
                             GameManager.get(ctx.getSource().getServer()).stop(p);
+                            return 1;
+                        }))
+                        .then(Commands.literal("build").executes(ctx -> {
+                            ServerPlayer p = ctx.getSource().getPlayerOrException();
+                            GameManager.get(p.server).buildMap(p);
                             return 1;
                         }))
                         .then(Commands.literal("key").executes(ctx -> {

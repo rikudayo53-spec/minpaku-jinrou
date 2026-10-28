@@ -17,5 +17,10 @@
  "item.minpaku.seer_crystal": "Seer's Crystal",
  "item.minpaku.knight_charm": "Knight's Charm",
  "item.minpaku.sabotage_talisman": "Sabotage Talisman",
- "entity.minpaku.body": "Body"
+ "entity.minpaku.body": "Body",
+ "block.minpaku.laundry_pole": "Laundry Pole (Task)",
+ "block.minpaku.flower_vase": "Flower Vase (Task)",
+ "block.minpaku.kitchen_sink": "Kitchen Sink (Task)",
+ "block.minpaku.shoe_rack": "Shoe Rack (Task)",
+ "block.minpaku.shoji_screen": "Shoji Screen (Task)"
 }

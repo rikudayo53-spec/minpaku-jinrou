@@ -60,6 +60,8 @@ public class MarkerBlock extends Block {
             case LEDGER -> Block.box(1, 0, 1, 15, 12, 15);
             case CHOPPING -> Block.box(2, 0, 2, 14, 10, 14);
             case GAS_VALVE -> Block.box(4, 0, 4, 12, 12, 12);
+            case VASE -> Block.box(4, 0, 4, 12, 14, 12);
+            case SHOJI -> Block.box(0, 0, 13, 16, 16, 16);
             default -> Block.box(1, 0, 1, 15, 16, 15);
         };
     }

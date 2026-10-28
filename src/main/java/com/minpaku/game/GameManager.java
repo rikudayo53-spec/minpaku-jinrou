@@ -206,9 +206,25 @@ public final class GameManager {
         }
         if (action == 0) {
             start(p);
+        } else if (action == 2) {
+            buildMap(p);
         } else {
             stop(p);
         }
+    }
+
+    /** 基本マップ「古民家民泊」を目の前に建てる */
+    public void buildMap(ServerPlayer p) {
+        if (running()) {
+            p.sendSystemMessage(Component.literal("ゲーム中はマップを建てられません").withStyle(ChatFormatting.RED));
+            return;
+        }
+        p.sendSystemMessage(Component.literal("古民家民泊を建てています…").withStyle(ChatFormatting.GOLD));
+        BlockPos spawn = MapBuilder.build(p);
+        p.teleportTo(p.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, p.getYRot(), 0f);
+        p.sendSystemMessage(Component.literal("完成！ 玄関がスタート地点です。管理人の鍵でゲームを始めよう。")
+                .withStyle(ChatFormatting.GREEN));
+        sendSettings(p);
     }
 
     // ================================================================= 開始・終了
@@ -846,7 +862,7 @@ public final class GameManager {
                     completeTask(p, ps, entry);
                 }
             }
-            case WIRES, NUMBERS -> send(p, new Packets.OpenTask(pos, type.ordinal()));
+            case WIRES, NUMBERS, HOLES -> send(p, new Packets.OpenTask(pos, type.ordinal()));
             default -> {
             }
         }
@@ -882,7 +898,7 @@ public final class GameManager {
             return;
         }
         for (PlayerState.TaskEntry t : ps.tasks) {
-            if (t.pos.equals(pos) && !t.done && (t.type.use == MarkerType.Use.WIRES || t.type.use == MarkerType.Use.NUMBERS)) {
+            if (t.pos.equals(pos) && !t.done && (t.type.use == MarkerType.Use.WIRES || t.type.use == MarkerType.Use.NUMBERS || t.type.use == MarkerType.Use.HOLES)) {
                 completeTask(p, ps, t);
                 return;
             }
@@ -935,6 +951,24 @@ public final class GameManager {
                 particle = ParticleTypes.POOF;
                 sound = SoundEvents.BRUSH_GENERIC;
                 y = pos.getY() + 0.2;
+            }
+            case LAUNDRY -> {
+                particle = ParticleTypes.POOF;
+                sound = SoundEvents.WOOL_PLACE;
+                y += 0.5;
+            }
+            case VASE -> {
+                particle = ParticleTypes.SPLASH;
+                sound = SoundEvents.BOTTLE_EMPTY;
+            }
+            case SINK -> {
+                particle = ParticleTypes.SPLASH;
+                sound = SoundEvents.BUCKET_EMPTY;
+                y += 0.4;
+            }
+            case SHOE_RACK -> {
+                particle = ParticleTypes.CRIT;
+                sound = SoundEvents.WOOD_PLACE;
             }
             case GAS_VALVE, BOILER -> {
                 particle = ParticleTypes.SMOKE;

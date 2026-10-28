@@ -17,5 +17,10 @@
  "item.minpaku.seer_crystal": "占いの水晶",
  "item.minpaku.knight_charm": "守りのお守り",
  "item.minpaku.sabotage_talisman": "妨害のお札",
- "entity.minpaku.body": "死体"
+ "entity.minpaku.body": "死体",
+ "block.minpaku.laundry_pole": "物干し（タスク）",
+ "block.minpaku.flower_vase": "花瓶（タスク）",
+ "block.minpaku.kitchen_sink": "流し台（タスク）",
+ "block.minpaku.shoe_rack": "下駄箱（タスク）",
+ "block.minpaku.shoji_screen": "障子（タスク）"
 }

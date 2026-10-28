@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/laundry_pole"
+  },
+  "facing=east": {
+   "model": "minpaku:block/laundry_pole",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/laundry_pole",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/laundry_pole",
+   "y": 270
+  }
+ }
+}

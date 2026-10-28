@@ -16,6 +16,7 @@ import java.util.List;
 public class SettingsScreen extends Screen {
     private static final int ROW = 22;
     private int scroll;
+    private boolean confirmBuild;
 
     public SettingsScreen() {
         super(Component.literal("民泊人狼の設定"));
@@ -77,6 +78,20 @@ public class SettingsScreen extends Screen {
         addRenderableWidget(stop);
         addRenderableWidget(Button.builder(Component.literal("閉じる"), b -> onClose())
                 .bounds(cx + 55, height - 30, 100, 20).build());
+        Button build = Button.builder(Component.literal("古民家マップを建てる"), b -> {
+            if (confirmBuild) {
+                ClientPlayNetworking.send(new Packets.Control(2));
+                onClose();
+            } else {
+                confirmBuild = true;
+                rebuildWidgets();
+            }
+        }).bounds(width - 130, 4, 124, 18).build();
+        if (confirmBuild) {
+            build.setMessage(Component.literal("本当に建てる？（周りを上書き）"));
+        }
+        build.active = edit && !running;
+        addRenderableWidget(build);
     }
 
     private int value(GameSettings.Def d) {

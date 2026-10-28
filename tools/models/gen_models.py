@@ -429,6 +429,107 @@ def sabotage_talisman():
     item("sabotage_talisman", tex, els)
 
 
+# =============================================================== 物干し（洗濯物を干す）
+def laundry_pole():
+    tex = {"particle": "minecraft:block/bamboo_block", "pole": "minecraft:block/bamboo_block",
+           "base": "minecraft:block/stone", "towel": f"{NS}:block/towel",
+           "white": "minecraft:block/white_wool", "pink": "minecraft:block/pink_wool", "basket": "minecraft:block/spruce_planks"}
+    els = [
+        box((1, 0, 6), (4, 2, 10), "#base"), box((12, 0, 6), (15, 2, 10), "#base"),
+        box((2, 2, 7.5), (3, 15, 8.5), "#pole"), box((13, 2, 7.5), (14, 15, 8.5), "#pole"),
+        box((1, 14, 7.6), (15, 15, 8.4), "#pole"),
+        # 干してある布
+        box((3.5, 8, 7.7), (7.5, 14, 8.3), "#towel"),
+        box((8, 9, 7.7), (11, 14, 8.3), "#white"),
+        box((11.2, 10, 7.7), (12.7, 14, 8.3), "#pink"),
+        # かご
+        box((5, 0, 11), (11, 3, 15), "#basket"),
+        box((5.5, 3, 11.5), (10.5, 3.5, 14.5), "#white"),
+    ]
+    block("laundry_pole", tex, els)
+
+
+# =============================================================== 花瓶（花に水をやる）
+def flower_vase():
+    tex = {"particle": "minecraft:block/white_glazed_terracotta", "vase": "minecraft:block/light_blue_terracotta",
+           "rim": "minecraft:block/white_terracotta", "stem": "minecraft:block/moss_block",
+           "red": "minecraft:block/red_concrete", "yellow": "minecraft:block/yellow_concrete",
+           "white": "minecraft:block/white_concrete", "stand": "minecraft:block/dark_oak_planks"}
+    els = [
+        box((3, 0, 3), (13, 1, 13), "#stand"),
+        box((5.5, 1, 5.5), (10.5, 2, 10.5), "#vase"),
+        box((5, 2, 5), (11, 6, 11), "#vase"),
+        box((6, 6, 6), (10, 7, 10), "#vase"),
+        box((6.5, 7, 6.5), (9.5, 8.5, 9.5), "#rim"),
+        box((7.5, 8.5, 7.8), (8.2, 12.5, 8.4), "#stem", rot=rotz(-22.5, (8, 8.5, 8))),
+        box((7.8, 8.5, 7.5), (8.4, 13.5, 8.2), "#stem"),
+        box((8, 8.5, 7.8), (8.6, 12, 8.4), "#stem", rot=rotz(22.5, (8, 8.5, 8))),
+        box((5.5, 12, 7), (7.5, 14, 9), "#red"),
+        box((7, 13.5, 7), (9, 15, 9), "#yellow"),
+        box((8.6, 11.5, 7), (10.6, 13.3, 9), "#white"),
+    ]
+    block("flower_vase", tex, els)
+
+
+# =============================================================== 流し台（お皿を洗う）
+def kitchen_sink():
+    tex = {"particle": "minecraft:block/stripped_spruce_log", "body": "minecraft:block/stripped_spruce_log",
+           "top": "minecraft:block/smooth_stone", "water": "minecraft:block/light_blue_concrete",
+           "metal": "minecraft:block/iron_block", "dish": "minecraft:block/white_concrete",
+           "dark": "minecraft:block/gray_concrete"}
+    els = [
+        box((0, 0, 2), (16, 13, 16), "#body"),
+        box((0, 13, 1.5), (16, 14, 16), "#top"),
+        box((3, 12, 4), (12, 13.2, 13), "#dark"),          # 流しのくぼみ
+        box((3.5, 12.2, 4.5), (11.5, 13.3, 12.5), "#water"),
+        box((7, 14, 14), (8.5, 18, 15.5), "#metal"),          # 蛇口
+        box((7, 17, 11), (8.5, 18, 14), "#metal"),
+        # お皿
+        box((12.5, 14, 4), (15.5, 14.6, 7), "#dish"),
+        box((12.7, 14.6, 4.2), (15.3, 15.2, 6.8), "#dish"),
+        box((12.5, 14, 8.5), (15.5, 16.5, 9.2), "#dish"),
+        box((0, 2, 1.5), (16, 3, 2), "#dark"),
+    ]
+    block("kitchen_sink", tex, els)
+
+
+# =============================================================== 下駄箱（靴をそろえる）
+def shoe_rack():
+    tex = {"particle": "minecraft:block/spruce_planks", "wood": "minecraft:block/spruce_planks",
+           "dark": "minecraft:block/dark_oak_planks", "geta": "minecraft:block/oak_planks",
+           "red": "minecraft:block/red_wool", "black": "minecraft:block/black_wool", "white": "minecraft:block/white_wool"}
+    els = [
+        box((0, 0, 8), (16, 12, 16), "#wood"),
+        box((1, 1, 7.8), (15, 5, 8), "#dark"),
+        box((1, 6.5, 7.8), (15, 11, 8), "#dark"),
+        box((0, 12, 7.5), (16, 13, 16), "#dark"),
+        # 上に置いた靴（ばらばら）
+        box((2, 13, 10), (4.5, 14, 15), "#geta", rot=roty(22.5, (3, 13, 12))),
+        box((2.4, 14, 11), (4, 14.5, 11.5), "#red"),
+        box((10, 13, 9), (14.5, 15, 11.5), "#black", rot=roty(-22.5, (12, 13, 10))),
+        box((10.5, 15, 9.5), (14, 15.4, 11), "#white", rot=roty(-22.5, (12, 13, 10))),
+        # 床に脱ぎっぱなしの下駄
+        box((3, 0, 1), (5.5, 1, 6), "#geta", rot=roty(-22.5, (4, 0, 3))),
+        box((7, 0, 2), (9.5, 1, 7), "#geta", rot=roty(45, (8, 0, 4))),
+    ]
+    block("shoe_rack", tex, els)
+
+
+# =============================================================== 障子（穴をふさぐ）
+def shoji_screen():
+    tex = {"particle": f"{NS}:block/shoji", "paper": f"{NS}:block/shoji", "frame": "minecraft:block/stripped_spruce_log"}
+    els = [
+        box((0, 0, 14), (16, 16, 15), {"north": "#paper", "south": "#paper", "east": "#frame", "west": "#frame",
+                                        "up": "#frame", "down": "#frame"}),
+        box((0, 0, 13.5), (1, 16, 15.5), "#frame"), box((15, 0, 13.5), (16, 16, 15.5), "#frame"),
+        box((0, 15, 13.5), (16, 16, 15.5), "#frame"), box((0, 0, 13.5), (16, 1.5, 15.5), "#frame"),
+    ]
+    block("shoji_screen", tex, els)
+
+
+for fn in [laundry_pole, flower_vase, kitchen_sink, shoe_rack, shoji_screen]:
+    fn()
+
 for fn in [call_bell, floor_hatch, breaker, gas_valve, boiler, wiring_panel, ledger, futon, kamado,
            bath_stove, chopping_block, vegetable_patch, dust_pile, entrance_mat,
            manager_key, seer_crystal, knight_charm, sabotage_talisman]:

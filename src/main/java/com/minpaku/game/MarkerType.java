@@ -24,7 +24,14 @@ public enum MarkerType {
     BATH("bath_stove", "風呂釜", Use.HOLD, "お風呂を沸かす", 80),
     CHOPPING("chopping_block", "薪割り台", Use.CLICK, "薪を割る", 6),
     FIELD("vegetable_patch", "畑", Use.CLICK, "野菜を収穫する", 4),
-    DUST("dust_pile", "ほこり", Use.CLICK, "部屋を掃除する", 5);
+    DUST("dust_pile", "ほこり", Use.CLICK, "部屋を掃除する", 5),
+
+    // 第2弾で追加したタスク
+    LAUNDRY("laundry_pole", "物干し", Use.HOLD, "洗濯物を干す", 80),
+    VASE("flower_vase", "花瓶", Use.CLICK, "花に水をやる", 3),
+    SINK("kitchen_sink", "流し台", Use.HOLD, "お皿を洗う", 80),
+    SHOE_RACK("shoe_rack", "下駄箱", Use.CLICK, "靴をそろえる", 4),
+    SHOJI("shoji_screen", "障子", Use.HOLES, "障子の穴をふさぐ", 0);
 
     public enum Use {
         /** 何もしない（設備） */
@@ -36,7 +43,9 @@ public enum MarkerType {
         /** 配線ミニゲーム */
         WIRES,
         /** 数字を順番に押すミニゲーム */
-        NUMBERS
+        NUMBERS,
+        /** 障子の穴をふさぐミニゲーム */
+        HOLES
     }
 
     public final String blockId;
