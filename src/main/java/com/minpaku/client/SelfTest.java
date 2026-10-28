@@ -162,16 +162,16 @@ public final class SelfTest {
                 ClientGame.killFxLen = ClientGame.VICTIM_FX_LEN;
                 ClientGame.killFxTicks = ClientGame.killFxLen;
             }
-            case 805 -> shot(mc, "15a_run");
-            case 812 -> shot(mc, "15b_leap");
-            case 817 -> shot(mc, "15c_tackle");
-            case 821 -> shot(mc, "15d_fall");
-            case 824 -> shot(mc, "15e_raise");
-            case 827 -> shot(mc, "15f_strike1");
-            case 832 -> shot(mc, "15g_strike2");
-            case 838 -> shot(mc, "15h_look");
-            case 846 -> shot(mc, "15i_fade");
-            case 885 -> shot(mc, "15j_victim_face");
+            case 806 -> shot(mc, "15a_approach");
+            case 813 -> shot(mc, "15b_grab");
+            case 820 -> shot(mc, "15c_windup");
+            case 825 -> shot(mc, "15d_strike");
+            case 828 -> shot(mc, "15e_after");
+            case 832 -> shot(mc, "15f_kick");
+            case 837 -> shot(mc, "15g_fall");
+            case 844 -> shot(mc, "15h_banner");
+            case 851 -> shot(mc, "15i_look");
+            case 895 -> shot(mc, "15j_victim_face");
             case 1100 -> shot(mc, "14_bots_moving");
             case 1110 -> server(mc, sp -> {
                 List<BlockPos> bells = MapData.get(sp.serverLevel()).get(MarkerType.BELL);

@@ -287,7 +287,7 @@ public final class GameHud {
         g.pose().translate(0, 0, 2000);
         // 真っ暗（最初の一瞬だけ赤く光る）
         g.fill(0, 0, w, h, Ui.alpha(0xFF000000, all));
-        // キルの場面（横から見た3D。犯人＝襲った人のスキン、倒されるのは自分）
+        // キルの場面（Apex のフィニッシャー風の3D。犯人＝襲った人のスキン、倒されるのは自分）
         float[] hits = KillScene.HITS;
         if (t < KillScene.END + 2) {
             g.pose().popPose();
@@ -300,8 +300,14 @@ public final class GameHud {
             g.fillGradient(0, h - h / 3, w, h, 0x00000000, edge);
             g.fill(0, 0, w, h / 10, Ui.alpha(0xFF000000, all));
             g.fill(0, h - h / 10, w, h, Ui.alpha(0xFF000000, all));
+            // 当たった瞬間に白く光る
+            for (float hit : hits) {
+                if (t > hit && t < hit + 3) {
+                    g.fill(0, 0, w, h, Ui.alpha(0xFFFFFFFF, (1f - (t - hit) / 3f) * 0.55f * all));
+                }
+            }
             // 血しぶき（当たった瞬間に飛び散る）
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < hits.length; i++) {
                 float dt = t - hits[i];
                 if (dt > 0 && dt < 12) {
                     java.util.Random rnd = new java.util.Random(31L * i + 7);
@@ -319,24 +325,39 @@ public final class GameHud {
         if (t < 4) {
             g.fill(0, 0, w, h, Ui.alpha(0xFFB01818, (1f - t / 4f) * 0.5f));
         }
+        // 「仕留められた」の帯（左下から斜めにすべりこむ）
+        if (t > 40 && t < KillScene.END) {
+            float in = Mth.clamp((t - 40) / 3f, 0f, 1f);
+            in = 1f - (1f - in) * (1f - in);
+            float out = Mth.clamp((KillScene.END - t) / 4f, 0f, 1f);
+            float a = out * all;
+            float bx = Mth.lerp(in, -240f, 24f);
+            float by = h * 0.68f;
+            float bw = 190f;
+            float bh = 34f;
+            Ui.quad(g, bx - 10, by, bx + bw, by, bx + bw - 10, by + bh, bx - 20, by + bh, Ui.alpha(0xFFB3121A, a));
+            Ui.quad(g, bx + bw + 4, by, bx + bw + 10, by, bx + bw, by + bh, bx + bw - 6, by + bh, Ui.alpha(0xFFFFFFFF, a));
+            Ui.text(g, Ui.sans(ClientGame.killFxOther + " のとどめ"), bx, by - 11, Ui.alpha(0xFFFFFFFF, a), 0.85f, -1, true);
+            Ui.text(g, Ui.serif("仕留められた"), bx + 2, by + 6, Ui.alpha(0xFFFFFFFF, a), 2.2f, -1, false);
+        }
         // 爪あと（当たった場所に1本ずつ。暗転後は画面の真ん中に残る）
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < hits.length; i++) {
             float grow = Mth.clamp((t - hits[i]) / 2.5f, 0f, 1f);
             float move = Mth.clamp((t - KillScene.END + 6) / 8f, 0f, 1f);
             move = move * move * (3 - 2 * move);
-            float ox = Mth.lerp(move, KillScene.hitX[i], cx + (i - 1) * 34f);
+            float ox = Mth.lerp(move, KillScene.hitX[i], cx + (i - 0.5f) * 40f);
             float oy = Mth.lerp(move, KillScene.hitY[i], cy);
             float size = Mth.lerp(move, 0.45f, 1f);
             float dir = i == 1 ? -1f : 1f;
-            float fade = all * (t > 80 ? Mth.clamp(1f - (t - 80) / 25f, 0.25f, 1f) : 1f);
+            float fade = all * (t > 90 ? Mth.clamp(1f - (t - 90) / 25f, 0.25f, 1f) : 1f);
             Ui.slash(g, ox + 70 * dir * size, oy - 95 * size, ox - 70 * dir * size, oy + 95 * size, 16 * size, grow,
                     Ui.alpha(0xFF8E1010, fade));
             Ui.slash(g, ox + 70 * dir * size, oy - 95 * size, ox - 70 * dir * size, oy + 95 * size, 7 * size, grow,
                     Ui.alpha(0xFFE0392B, fade));
         }
         // 襲った人の顔と名前
-        if (t > 50) {
-            float a = Mth.clamp((t - 50) / 8f, 0f, 1f) * all;
+        if (t > 60) {
+            float a = Mth.clamp((t - 60) / 8f, 0f, 1f) * all;
             if (a > 0.05f) {
                 RenderSystem.enableBlend();
                 RenderSystem.setShaderColor(1f, 1f, 1f, a);
@@ -347,8 +368,8 @@ public final class GameHud {
             Ui.text(g, Ui.serif(ClientGame.killFxOther), cx, cy - 12, Ui.alpha(0xFFFFFFFF, a), 1.8f, 0, false);
             Ui.text(g, Ui.serif("に襲われた"), cx, cy + 10, Ui.alpha(0xFFE0392B, a), 1.5f, 0, false);
         }
-        if (t > 68) {
-            float a = Mth.clamp((t - 68) / 10f, 0f, 1f) * all;
+        if (t > 78) {
+            float a = Mth.clamp((t - 78) / 10f, 0f, 1f) * all;
             Ui.text(g, Ui.sans("あなたは幽霊になった"), cx, cy + 42, Ui.alpha(0xFFE1D5F5, a), 1.2f, 0, false);
             Ui.text(g, Ui.sans("生きている人には見えません。タスクは続けられます"), cx, cy + 58,
                     Ui.alpha(0xFFB8A9CF, a), 0.85f, 0, false);

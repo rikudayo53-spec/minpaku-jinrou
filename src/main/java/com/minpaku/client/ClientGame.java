@@ -34,7 +34,7 @@ public final class ClientGame {
     public static UUID killFxOtherId = new UUID(0, 0);
     public static final int KILL_FX_LEN = 60;
     /** 襲われた側の暗転演出の長さ */
-    public static final int VICTIM_FX_LEN = 130;
+    public static final int VICTIM_FX_LEN = 140;
     public static int killFxLen = KILL_FX_LEN;
 
     // 会議中の発言
@@ -92,26 +92,33 @@ public final class ClientGame {
         if (killFxTicks > 0) {
             killFxTicks--;
             if (killFxKind == 0) {
-                // 足音 → 飛びかかる → 体当たり → 倒れる → 2回切りつける → 心臓の音
+                // 足音 → つかむ → ためる → 一撃 → 蹴り → 倒れる → 帯 → 心臓の音
                 int t = killFxLen - killFxTicks;
-                if (t == 2 || t == 5 || t == 8) {
-                    play(net.minecraft.sounds.SoundEvents.WOOD_STEP, 0.9f);
+                if (t == 1 || t == 4 || t == 7) {
+                    play(net.minecraft.sounds.SoundEvents.WOOD_STEP, 0.85f);
                 }
-                if (t == 11) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 0.6f);
+                if (t == 12) {
+                    play(net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_LEATHER, 0.7f);
                 }
                 if (t == 16) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 0.5f);
+                }
+                if (t == 24) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT, 0.7f);
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_HURT, 0.8f);
+                    play(net.minecraft.sounds.SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, 1.4f);
+                }
+                if (t == 31) {
                     play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_KNOCKBACK, 0.8f);
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_HURT, 1.0f);
-                }
-                if (t == 22) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_BIG_FALL, 0.8f);
-                }
-                if (t == 25 || t == 30) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT, t == 25 ? 0.8f : 0.65f);
                     play(net.minecraft.sounds.SoundEvents.PLAYER_HURT, 0.7f);
                 }
-                if (t == 56 || t == 76) {
+                if (t == 35) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_BIG_FALL, 0.8f);
+                }
+                if (t == 41) {
+                    play(net.minecraft.sounds.SoundEvents.ANVIL_LAND, 0.6f);
+                }
+                if (t == 64 || t == 84) {
                     play(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, 0.8f);
                 }
             }

@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.util.Mth;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
@@ -27,23 +28,32 @@ import org.lwjgl.opengl.GL11;
 import java.util.UUID;
 
 /**
- * 襲われた人に見せるキルの場面（アモアス風に横から見る）。
- * 襲った人（そのスキン）が走ってきて、自分（自分のスキン）に飛びかかって倒し、2回切りつける。
+ * 襲われた人に見せるキルの場面（Apex のフィニッシャー風）。
+ * ダウンしてひざをついた自分（自分のスキン）に、犯人（襲った人のスキン）が後ろから近づき、
+ * つかんで → ためて一撃 → 蹴り倒す → こちらを見て決めポーズ。カメラは場面ごとに切り替わって回り込む。
  *
  * 流れ（tick）:
- *   0〜10  自分が立っている。左から犯人が走ってくる
- *   10〜16 犯人が飛びかかる（自分は気づいて振り向く）
- *   16〜24 体当たりで自分が前に倒れる
- *   24〜34 犯人がのしかかって2回切りつける
- *   34〜40 犯人が立ち上がり、こちら（カメラ）を見る
- *   40〜46 暗転
+ *   0〜10  正面の低い位置から：ひざをついた自分の後ろに犯人が歩いてくる
+ *   10〜22 横の寄り：頭をつかんで引き起こし、右腕をゆっくり振り上げる（スロー）
+ *   22〜30 犯人の肩ごし：振り下ろして一撃（白く光る）
+ *   30〜40 正面の引き：背中を蹴り、自分がこちらへ倒れる
+ *   40〜56 犯人の顔へ寄る：見下ろしてから、こちらを見る。「仕留められた」の帯
  */
 public final class KillScene {
-    public static final int END = 46;
-    /** 当たった瞬間（体当たり・1回目・2回目）。爪あとと血の位置に使う */
-    public static final float[] HITS = {16.5f, 26f, 31f};
-    public static final float[] hitX = new float[3];
-    public static final float[] hitY = new float[3];
+    public static final int END = 56;
+    /** 当たった瞬間（一撃・蹴り）。爪あと・血しぶき・光の位置に使う */
+    public static final float[] HITS = {24f, 31f};
+    public static final float[] hitX = new float[2];
+    public static final float[] hitY = new float[2];
+
+    // カメラの場面: {開始, 終了, 目x,y,z(始), 目x,y,z(終), 見る先x,y,z(始), 見る先x,y,z(終)}
+    private static final float[][] SHOTS = {
+            {0, 10, 1.5f, 0.55f, 2.7f, 0.95f, 0.6f, 2.15f, 0f, 0.9f, -0.5f, 0f, 0.85f, -0.3f},
+            {10, 22, 2.1f, 1.25f, -0.1f, 1.55f, 1.3f, 0.35f, 0f, 1.05f, -0.35f, 0f, 1.2f, -0.35f},
+            {22, 30, -0.95f, 2.25f, -2.15f, -0.75f, 2.0f, -1.85f, 0f, 0.75f, 0.1f, 0f, 0.65f, 0.2f},
+            {30, 40, 0.5f, 0.45f, 3.4f, 0.3f, 0.5f, 3.0f, 0f, 0.7f, 0f, 0f, 0.6f, 0.3f},
+            {40, 58, 1.0f, 1.4f, 1.9f, 0.45f, 1.55f, 0.75f, 0f, 1.45f, -0.45f, 0f, 1.6f, -0.45f},
+    };
 
     private static PlayerModel<?> wide;
     private static PlayerModel<?> slim;
@@ -74,24 +84,35 @@ public final class KillScene {
         }
         PlayerSkin killerSkin = ClientGame.skin(killerId);
         PlayerSkin mySkin = mc.player.getSkin();
-        float bright = track(t, 0, 0.35f, 6, 1f, 38, 1f, 46, 0f) * alpha;
+        float bright = track(t, 0, 0.5f, 5, 1f, 50, 1f, 56, 0f) * alpha;
 
-        // ---- ゆれ
-        float shake = 0f;
-        for (float hit : HITS) {
-            if (t > hit && t < hit + 5) {
-                shake = Math.max(shake, 0.06f * (1f - (t - hit) / 5f));
+        // ---- カメラ
+        float[] s = SHOTS[SHOTS.length - 1];
+        for (float[] shot : SHOTS) {
+            if (t < shot[1]) {
+                s = shot;
+                break;
             }
         }
-        float sx = (float) Math.sin(t * 7.3f) * shake;
-        float sy = (float) Math.cos(t * 9.1f) * shake;
+        float f = Mth.clamp((t - s[0]) / (s[1] - s[0]), 0f, 1f);
+        f = f * f * (3 - 2 * f);
+        Vector3f eye = new Vector3f(Mth.lerp(f, s[2], s[5]), Mth.lerp(f, s[3], s[6]), Mth.lerp(f, s[4], s[7]));
+        Vector3f target = new Vector3f(Mth.lerp(f, s[8], s[11]), Mth.lerp(f, s[9], s[12]), Mth.lerp(f, s[10], s[13]));
+        float shake = 0f;
+        for (float hit : HITS) {
+            if (t > hit && t < hit + 6) {
+                shake = Math.max(shake, 0.07f * (1f - (t - hit) / 6f));
+            }
+        }
+        target.add((float) Math.sin(t * 7.3f) * shake, (float) Math.cos(t * 9.1f) * shake, 0);
 
         // ---- 投影を遠近ありに切り替える
         g.flush();
         Matrix4f oldProj = new Matrix4f(RenderSystem.getProjectionMatrix());
         VertexSorting oldSort = RenderSystem.getVertexSorting();
         float aspect = (float) mc.getWindow().getWidth() / Math.max(1, mc.getWindow().getHeight());
-        Matrix4f proj = new Matrix4f().setPerspective((float) Math.toRadians(45), aspect, 0.05f, 100f);
+        float fov = track(t, 0, 50, 22, 50, 24, 42, 30, 50, 40, 48, 56, 36);
+        Matrix4f proj = new Matrix4f().setPerspective((float) Math.toRadians(fov), aspect, 0.05f, 100f);
         RenderSystem.setProjectionMatrix(proj, VertexSorting.DISTANCE_TO_ORIGIN);
         Matrix4fStack mv = RenderSystem.getModelViewStack();
         mv.pushMatrix();
@@ -102,91 +123,63 @@ public final class KillScene {
 
         MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
         PoseStack ps = new PoseStack();
-        // カメラ：横から少し見下ろす
-        ps.translate(sx - 0.95f, sy - 0.95f, -3.9f);
-        ps.mulPose(Axis.XP.rotationDegrees(9));
+        Matrix4f view = new Matrix4f().lookAt(eye, target, new Vector3f(0, 1, 0));
+        ps.last().pose().mul(view);
+        ps.last().normal().mul(view.get3x3(new Matrix3f()));
 
         int light = LightTexture.FULL_BRIGHT;
         int ov = OverlayTexture.NO_OVERLAY;
         floor(ps, buf, bright);
 
-        // ---- 自分（右側。最初は右＝奥の方を向いている）
-        float vx = track(t, 0, 0.75f, 16, 0.75f, 24, 1.15f);
-        float fall = track(t, 0, 0, 16.5f, 0, 18, -20, 23, -90);
-        float vy = track(t, 0, 0, 18, 0.05f, 23, 0.14f);
-        float look = track(t, 0, 0, 9, 0, 13, 1.3f, 17, 0.6f, 22, 0.3f);
+        // ---- 自分（ダウンしてひざをついている。正面＝+Z）
         PlayerModel<?> vm = model(mySkin);
         reset(vm);
-        vm.head.yRot = -look;
-        if (t > 10 && t < 17) {
-            // 驚いて腕を上げる
-            vm.rightArm.zRot = 0.6f;
-            vm.leftArm.zRot = -0.6f;
-            vm.rightArm.xRot = -0.5f;
+        float vLean = track(t, 0, 12, 11, 12, 14, -12, 24, -12, 25, 8, 31, 8, 36, 90);
+        float vy = track(t, 0, -0.58f, 31, -0.58f, 36, 0.12f);
+        float vz = track(t, 0, 0f, 31, 0f, 36, 0.35f);
+        float legs = track(t, 0, 1.5f, 31, 1.5f, 35, 0f);
+        vm.rightLeg.xRot = legs;
+        vm.leftLeg.xRot = legs;
+        vm.head.xRot = track(t, 0, 0.5f, 11, 0.5f, 14, -0.55f, 24, -0.55f, 25.5f, 0.7f, 31, 0.6f, 36, 0.2f);
+        vm.rightArm.xRot = track(t, 0, -0.35f, 11, -0.35f, 14, 0.1f, 31, 0.1f, 35, -2.9f);
+        vm.leftArm.xRot = track(t, 0, -0.6f, 11, -0.6f, 14, 0.15f, 31, 0.15f, 35, -2.8f);
+        vm.rightArm.zRot = 0.12f;
+        vm.leftArm.zRot = -0.12f;
+        // 一撃を受けた瞬間に体がはねる
+        if (t > HITS[0] && t < HITS[0] + 3) {
+            vy -= 0.04f * (1f - (t - HITS[0]) / 3f);
         }
-        if (t >= 17) {
-            vm.rightArm.xRot = track(t, 17, -0.4f, 23, -2.9f);
-            vm.leftArm.xRot = track(t, 17, -0.2f, 23, -2.8f);
-            vm.rightLeg.xRot = track(t, 17, 0.3f, 23, 0.1f);
-            vm.leftLeg.xRot = track(t, 17, -0.3f, 23, -0.1f);
-        }
-        // 倒れたあと切りつけられて体がはねる
-        for (float hit : new float[]{HITS[1], HITS[2]}) {
-            if (t > hit && t < hit + 3) {
-                vy += 0.05f * (1f - (t - hit) / 3f);
-            }
-        }
-        drawPlayer(ps, buf, vm, mySkin, vx, vy, -90f, fall, light, ov, bright);
+        drawPlayer(ps, buf, vm, mySkin, 0f, vy, vz, 0f, vLean, light, ov, bright);
 
-        // ---- 犯人（左から来る）
-        float kx = track(t, 0, -3.2f, 10, -0.9f, 13, -0.15f, 16.5f, 0.4f, 22, 1.3f, 24, 1.8f, 34, 1.8f, 38, 1.35f);
-        float ky = track(t, 0, 0, 10, 0, 12.5f, 0.55f, 16.5f, 0.15f, 20, 0f, 24, 0f);
-        float kTilt = track(t, 0, -8, 10, -10, 13, -30, 16.5f, -20, 22, -5, 24, 0, 34, 0, 38, 0);
+        // ---- 犯人（後ろから歩いてくる）
         PlayerModel<?> km = model(killerSkin);
         reset(km);
-        boolean crouch = t >= 21 && t < 35;
+        float kz = track(t, 0, -3.0f, 10, -0.62f, 28, -0.62f, 31, -0.45f, 38, -0.5f);
+        float kLean = track(t, 0, 0, 14, 0, 22, -8, 24, 16, 28, 4, 30, -4, 31.5f, -12, 36, 0, 40, 0);
         if (t < 10) {
-            // 走る
-            float c = (float) Math.cos(t * 1.1f);
-            km.rightArm.xRot = c * 1.2f;
-            km.leftArm.xRot = -c * 1.2f;
-            km.rightLeg.xRot = -c * 1.3f;
-            km.leftLeg.xRot = c * 1.3f;
-        } else if (t < 21) {
-            // 飛びかかる（両腕を前へ）
-            km.rightArm.xRot = track(t, 10, -1.0f, 13, -2.6f, 17, -1.7f);
-            km.leftArm.xRot = track(t, 10, -1.0f, 13, -2.4f, 17, -1.6f);
-            km.rightLeg.xRot = track(t, 10, 0.4f, 13, 0.9f, 18, 0.2f);
-            km.leftLeg.xRot = track(t, 10, -0.6f, 13, 0.5f, 18, -0.2f);
-        } else if (crouch) {
-            // のしかかって切りつける（右腕を振り上げて振り下ろす×2）
-            km.rightArm.xRot = track(t, 21, -1.4f, 24, -3.0f, 26, -0.5f, 28.5f, -3.1f, 31, -0.4f, 34, -1.0f);
-            km.leftArm.xRot = track(t, 21, -1.2f, 26, -0.9f, 31, -0.7f);
-            km.rightLeg.xRot = -1.2f;
-            km.leftLeg.xRot = 0.5f;
-            km.head.xRot = 0.4f;
+            float c = (float) Math.cos(t * 0.85f);
+            km.rightArm.xRot = c * 0.7f;
+            km.leftArm.xRot = -c * 0.7f;
+            km.rightLeg.xRot = -c * 0.8f;
+            km.leftLeg.xRot = c * 0.8f;
         } else {
-            // 立ち上がってこちらを見る
-            km.head.yRot = track(t, 35, 0, 38, 1.45f);
-            km.rightArm.xRot = track(t, 34, -1.0f, 37, 0f);
+            // 左手で頭をつかむ → 離す
+            km.leftArm.xRot = track(t, 10, 0, 13, -1.05f, 26, -1.05f, 29, 0f);
+            // 右腕：ゆっくり振り上げ（スロー）→ 一気に振り下ろす → 下ろす → 最後は少し前へ
+            km.rightArm.xRot = track(t, 10, 0, 14, -0.4f, 22, -3.05f, 24, -0.55f, 28, -0.3f, 36, 0f, 44, 0f, 48, -0.35f);
+            km.rightArm.zRot = track(t, 14, 0, 22, -0.35f, 24, 0.15f, 28, 0f);
+            // 蹴り（右足を後ろに引いてから前へ）
+            km.rightLeg.xRot = track(t, 27, 0, 30, 0.7f, 31.5f, -1.5f, 34, -0.6f, 37, 0f);
+            km.leftLeg.xRot = track(t, 30, 0, 31.5f, 0.25f, 34, 0f);
+            // 見下ろしてから、こちら（カメラ）を見る
+            km.head.xRot = track(t, 10, 0.55f, 24, 0.35f, 36, 0.6f, 42, 0.6f, 45, -0.08f);
+            km.head.yRot = track(t, 40, 0, 45, 0.25f);
         }
-        float kdy = crouch ? -0.38f : 0f;
-        if (crouch) {
-            km.body.xRot = 0.5f;
-            km.body.y = 3.2f;
-            km.head.y = 4.2f;
-            km.rightArm.y = 5.2f;
-            km.leftArm.y = 5.2f;
-            km.rightLeg.z = 4.0f;
-            km.leftLeg.z = 4.0f;
-            km.rightLeg.y = 12.2f;
-            km.leftLeg.y = 12.2f;
-        }
-        drawPlayer(ps, buf, km, killerSkin, kx, ky + kdy, -90f, kTilt, light, ov, bright);
+        drawPlayer(ps, buf, km, killerSkin, 0f, 0f, kz, 0f, kLean, light, ov, bright);
 
-        // 当たった位置を画面の座標にしておく（爪あと・血しぶき用）
-        Vector3f[] at = {new Vector3f(0.75f, 1.25f, 0f), new Vector3f(2.15f, 0.4f, 0f), new Vector3f(2.4f, 0.4f, 0f)};
-        for (int i = 0; i < 3; i++) {
+        // 当たった位置を画面の座標に（一撃＝頭、蹴り＝背中）
+        Vector3f[] at = {new Vector3f(0f, 0.95f, 0f), new Vector3f(0f, 0.55f, -0.15f)};
+        for (int i = 0; i < at.length; i++) {
             Vector4f v = new Vector4f(at[i], 1f);
             ps.last().pose().transform(v);
             proj.transform(v);
@@ -210,9 +203,12 @@ public final class KillScene {
         m.crouching = false;
     }
 
-    /** x,y = 足もとの位置。yaw = 向き（-90 で右向き）。tilt = 足もとを中心に前後へ倒す角度 */
+    /**
+     * x,y,z = 足もとの位置。yaw = 向き（0 で +Z ＝ 最初のカメラの方を向く）。
+     * lean = 足もとを中心に前（+）／後ろ（-）へ倒す角度
+     */
     private static void drawPlayer(PoseStack ps, MultiBufferSource buf, PlayerModel<?> m, PlayerSkin skin, float x, float y,
-                                   float yaw, float tilt, int light, int ov, float bright) {
+                                   float z, float yaw, float lean, int light, int ov, float bright) {
         m.hat.copyFrom(m.head);
         m.jacket.copyFrom(m.body);
         m.leftSleeve.copyFrom(m.leftArm);
@@ -220,9 +216,9 @@ public final class KillScene {
         m.leftPants.copyFrom(m.leftLeg);
         m.rightPants.copyFrom(m.rightLeg);
         ps.pushPose();
-        ps.translate(x, y, 0);
-        ps.mulPose(Axis.ZP.rotationDegrees(tilt));
+        ps.translate(x, y, z);
         ps.mulPose(Axis.YP.rotationDegrees(180f - yaw));
+        ps.mulPose(Axis.XP.rotationDegrees(-lean));
         ps.scale(-0.9375f, -0.9375f, 0.9375f);
         ps.translate(0, -1.501f, 0);
         int c = (int) (Mth.clamp(bright, 0f, 1f) * 255);
@@ -232,29 +228,31 @@ public final class KillScene {
         ps.popPose();
         // 足もとの影
         ps.pushPose();
-        ps.translate(x + (tilt < -45 ? 0.8f : 0f), 0.01f, 0);
-        quad(ps, buf, tilt < -45 ? 1.0f : 0.35f, 0.3f, 0x99000000);
+        ps.translate(x, 0.01f, z + (lean > 45 ? 0.8f : 0f));
+        quad(ps, buf, 0.35f, lean > 45 ? 1.0f : 0.35f, 0x99000000);
         ps.popPose();
     }
 
     /** 床（暗い板の間）と、まんなかを照らすスポットライト */
     private static void floor(PoseStack ps, MultiBufferSource buf, float bright) {
         int c = (int) (Mth.clamp(bright, 0f, 1f) * 255);
-        for (int i = -8; i < 8; i++) {
+        for (int i = -10; i < 10; i++) {
             float shade = (i & 1) == 0 ? 1f : 0.86f;
             int r = (int) (0x3A * shade * c / 255f);
             int gg = (int) (0x26 * shade * c / 255f);
             int b = (int) (0x18 * shade * c / 255f);
             ps.pushPose();
-            ps.translate(0, 0, i * 0.45f + 0.225f);
-            quad(ps, buf, 7f, 0.225f, 0xFF000000 | (r << 16) | (gg << 8) | b);
+            ps.translate(i * 0.45f + 0.225f, 0, 0);
+            quad(ps, buf, 0.225f, 8f, 0xFF000000 | (r << 16) | (gg << 8) | b);
             ps.popPose();
         }
-        ps.pushPose();
-        ps.translate(0.2f, 0.005f, 0);
-        int spot = (int) (0x40 * Mth.clamp(bright, 0f, 1f));
-        quad(ps, buf, 2.6f, 1.2f, (spot << 24) | 0xFFD9A0);
-        ps.popPose();
+        int spot = (int) (0x48 * Mth.clamp(bright, 0f, 1f));
+        for (int k = 0; k < 3; k++) {
+            ps.pushPose();
+            ps.translate(0f, 0.004f + k * 0.001f, 0f);
+            quad(ps, buf, 1.0f + k * 0.6f, 1.0f + k * 0.6f, (spot / (k + 1) << 24) | 0xFFD9A0);
+            ps.popPose();
+        }
     }
 
     private static void quad(PoseStack ps, MultiBufferSource buf, float hx, float hz, int argb) {
