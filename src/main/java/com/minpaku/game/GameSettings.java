@@ -52,6 +52,7 @@ public final class GameSettings {
         DEFS.add(new Def("confirm_eject", "追放時に人狼だったか全員に表示", "会議", Kind.TOGGLE, 0, 1, 1, 0));
         DEFS.add(new Def("anonymous_votes", "匿名投票", "会議", Kind.TOGGLE, 0, 1, 1, 0));
         DEFS.add(new Def("tasks", "タスクの数（1人あたり）", "タスク", Kind.NUMBER, 1, 12, 1, 5));
+        DEFS.add(new Def("bot_fill", "ボットで何人までうめるか（合計人数）", "ボット", Kind.NUMBER, 0, 12, 1, 8));
     }
 
     public static List<Def> defs() {

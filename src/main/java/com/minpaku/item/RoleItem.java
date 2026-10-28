@@ -35,18 +35,15 @@ public class RoleItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (!(target instanceof Player targetPlayer)) {
-            return InteractionResult.PASS;
-        }
         if (kind != Kind.CRYSTAL && kind != Kind.CHARM) {
             return InteractionResult.PASS;
         }
-        if (player instanceof ServerPlayer sp && targetPlayer instanceof ServerPlayer tp) {
+        if (player instanceof ServerPlayer sp) {
             GameManager gm = GameManager.get(sp.server);
             if (kind == Kind.CRYSTAL) {
-                gm.useSeer(sp, tp);
+                gm.useSeer(sp, target);
             } else {
-                gm.useKnight(sp, tp);
+                gm.useKnight(sp, target);
             }
         }
         return InteractionResult.sidedSuccess(player.level().isClientSide());

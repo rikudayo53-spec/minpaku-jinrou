@@ -134,7 +134,8 @@ public final class GameHud {
         // キルできる相手
         Role role = ClientGame.role();
         if (role != null && role.canKill() && s.alive() && !s.inVent() && s.phase() == 1
-                && mc.crosshairPickEntity instanceof Player target && mc.player != null
+                && mc.crosshairPickEntity instanceof net.minecraft.world.entity.LivingEntity target
+                && (target instanceof Player || target instanceof com.minpaku.entity.BotEntity) && mc.player != null
                 && !ClientGame.isMate(target.getUUID()) && !target.isSpectator()) {
             boolean behind = GameManager.isBehind(mc.player, target);
             String text;

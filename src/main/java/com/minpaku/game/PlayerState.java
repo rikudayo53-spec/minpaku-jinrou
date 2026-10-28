@@ -28,6 +28,8 @@ public class PlayerState {
     public Role role = Role.VILLAGER;
     public boolean alive = true;
     public boolean left;
+    /** ボットかどうか */
+    public boolean bot;
     public final List<TaskEntry> tasks = new ArrayList<>();
     public int killCooldown;
     public int seerLeft;

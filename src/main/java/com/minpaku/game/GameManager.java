@@ -2,6 +2,7 @@ package com.minpaku.game;
 
 import com.minpaku.block.MarkerBlock;
 import com.minpaku.entity.BodyEntity;
+import com.minpaku.entity.BotEntity;
 import com.minpaku.network.Packets;
 import com.minpaku.registry.ModEntities;
 import com.minpaku.registry.ModItems;
@@ -21,10 +22,13 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.BossEvent;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -45,6 +49,7 @@ import java.util.UUID;
 
 /**
  * 民泊人狼のゲーム進行（サーバー側）。
+ * 参加者は「人間のプレイヤー」と「ボット（BotEntity）」のどちらか。
  */
 public final class GameManager {
     public enum Phase { LOBBY, PLAYING, MEETING, ENDED }
@@ -72,26 +77,35 @@ public final class GameManager {
     private static final int END_TICKS = 240;             // 結果画面からロビーに戻るまで
     private static final int FIRST_KILL_COOLDOWN = 200;
 
-    private final MinecraftServer server;
-    private final Random random = new Random();
+    private static final String[] BOT_NAMES = {
+            "たろう", "はなこ", "けんた", "さくら", "ゆうき", "みお", "そうた", "あおい", "りく", "ひなた", "かいと"
+    };
+
+    /** 自動テスト用：勝敗判定を止める */
+    public static boolean selfTestNoWin;
+
+    final MinecraftServer server;
+    final Random random = new Random();
     private Phase phase = Phase.LOBBY;
-    private ServerLevel level;
+    ServerLevel level;
     @Nullable
     private UUID host;
-    private final Map<UUID, PlayerState> players = new LinkedHashMap<>();
-    private final List<BodyEntity> bodies = new ArrayList<>();
-    private long ticks;
+    final Map<UUID, PlayerState> players = new LinkedHashMap<>();
+    final Map<UUID, BotEntity> bots = new HashMap<>();
+    final Map<UUID, BotBrain> brains = new HashMap<>();
+    final List<BodyEntity> bodies = new ArrayList<>();
+    long ticks;
 
     // 妨害
-    private boolean blackout;
-    private int gasTicks = -1;
+    boolean blackout;
+    int gasTicks = -1;
     private int gasMax = 1;
-    private boolean valveFixed;
-    private boolean boilerFixed;
-    private int sabotageCooldown;
+    boolean valveFixed;
+    boolean boilerFixed;
+    int sabotageCooldown;
     private ServerBossEvent gasBar;
 
-    // 「見ていると進む」作業
+    // 「見ていると進む」作業（人間用）
     private record Active(BlockPos pos, MarkerType type, int need) {
     }
 
@@ -99,11 +113,11 @@ public final class GameManager {
     private final Map<UUID, Integer> activeProgress = new HashMap<>();
 
     // 会議
-    private int meetingTicks;
-    private int discussionTicks;
-    private int votingTicks;
-    private final Map<UUID, UUID> votes = new LinkedHashMap<>();
-    private boolean resultShown;
+    int meetingTicks;
+    int discussionTicks;
+    int votingTicks;
+    final Map<UUID, UUID> votes = new LinkedHashMap<>();
+    boolean resultShown;
     private int postTimer;
     @Nullable
     private UUID ejected;
@@ -134,11 +148,15 @@ public final class GameManager {
         return running() && players.containsKey(p.getUUID()) && !players.get(p.getUUID()).left;
     }
 
-    private GameSettings settings() {
+    public boolean isBot(UUID id) {
+        return bots.containsKey(id);
+    }
+
+    GameSettings settings() {
         return MapData.get(level).settings();
     }
 
-    private MapData map() {
+    MapData map() {
         return MapData.get(level);
     }
 
@@ -147,9 +165,22 @@ public final class GameManager {
         return server.getPlayerList().getPlayer(id);
     }
 
+    /** 参加者の体（人間ならプレイヤー、ボットならボット） */
+    @Nullable
+    LivingEntity entityOf(PlayerState ps) {
+        if (ps.bot) {
+            BotEntity b = bots.get(ps.id);
+            return b != null && b.isAlive() ? b : null;
+        }
+        return player(ps.id);
+    }
+
     private List<ServerPlayer> online() {
         List<ServerPlayer> out = new ArrayList<>();
         for (PlayerState ps : players.values()) {
+            if (ps.bot) {
+                continue;
+            }
             ServerPlayer p = player(ps.id);
             if (p != null && !ps.left) {
                 out.add(p);
@@ -170,12 +201,33 @@ public final class GameManager {
         }
     }
 
-    private static void actionBar(ServerPlayer p, String text, ChatFormatting color) {
-        p.displayClientMessage(Component.literal(text).withStyle(color), true);
+    private static void actionBar(@Nullable ServerPlayer p, String text, ChatFormatting color) {
+        if (p != null) {
+            p.displayClientMessage(Component.literal(text).withStyle(color), true);
+        }
     }
 
     private boolean canManage(ServerPlayer p) {
         return p.hasPermissions(2) || server.isSingleplayerOwner(p.getGameProfile());
+    }
+
+    /** ボットの発言をチャットに流す */
+    void botSay(PlayerState ps, String text) {
+        Component msg = Component.literal("<" + ps.name + "> ").withStyle(ChatFormatting.AQUA)
+                .append(Component.literal(text).withStyle(ChatFormatting.WHITE));
+        for (ServerPlayer p : online()) {
+            p.sendSystemMessage(msg);
+        }
+    }
+
+    List<PlayerState> living() {
+        List<PlayerState> out = new ArrayList<>();
+        for (PlayerState ps : players.values()) {
+            if (ps.alive && !ps.left) {
+                out.add(ps);
+            }
+        }
+        return out;
     }
 
     // ================================================================= 設定
@@ -238,46 +290,61 @@ public final class GameManager {
         host = starter.getUUID();
         GameSettings s = settings();
 
-        List<ServerPlayer> joiners = new ArrayList<>();
+        List<ServerPlayer> humans = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             if (!p.isSpectator()) {
-                joiners.add(p);
+                humans.add(p);
             }
         }
-        if (joiners.isEmpty()) {
+        if (humans.isEmpty()) {
             return;
         }
-        Collections.shuffle(joiners, random);
 
         players.clear();
+        bots.clear();
+        brains.clear();
         bodies.clear();
         active.clear();
         activeProgress.clear();
         blackout = false;
         gasTicks = -1;
-        sabotageCooldown = 200;
+        sabotageCooldown = 300;
 
-        // 役職を配る
+        // 参加者の一覧（人間＋足りないぶんのボット）
+        List<PlayerState> all = new ArrayList<>();
+        for (ServerPlayer p : humans) {
+            PlayerState ps = new PlayerState(p.getUUID(), p.getGameProfile().getName());
+            ps.previousMode = p.gameMode.getGameModeForPlayer();
+            all.add(ps);
+        }
+        int botCount = Math.max(0, s.get("bot_fill") - humans.size());
+        for (int i = 0; i < botCount && i < BOT_NAMES.length; i++) {
+            PlayerState ps = new PlayerState(UUID.randomUUID(), BOT_NAMES[i]);
+            ps.bot = true;
+            all.add(ps);
+        }
+        Collections.shuffle(all, random);
+
+        // 役職を配る（人狼を先頭に。特別な役職は「人数 - 1」まで）
         List<Role> deck = new ArrayList<>();
         for (Role r : Role.special()) {
             for (int i = 0; i < s.roleCount(r); i++) {
                 deck.add(r);
             }
         }
-        // 人狼を先頭にして、人数が足りないときも人狼から配られるようにする
         deck.sort(Comparator.comparingInt(r -> r == Role.WOLF ? 0 : 1));
-        // 特別な役職は「参加人数 - 1」まで（1人で試すときは人狼1人）
-        int limit = Math.max(1, joiners.size() - 1);
-        int i = 0;
-        for (ServerPlayer p : joiners) {
-            PlayerState ps = new PlayerState(p.getUUID(), p.getGameProfile().getName());
+        int limit = Math.max(1, all.size() - 1);
+        for (int i = 0; i < all.size(); i++) {
+            PlayerState ps = all.get(i);
             ps.role = i < deck.size() && i < limit ? deck.get(i) : Role.VILLAGER;
-            i++;
-            ps.previousMode = p.gameMode.getGameModeForPlayer();
             ps.killCooldown = FIRST_KILL_COOLDOWN;
             ps.seerLeft = s.get("seer_uses");
             ps.knightLeft = s.get("knight_uses");
             ps.emergencyLeft = s.get("emergency_uses");
+        }
+        // 表示の順番は人間 → ボット
+        all.sort(Comparator.comparing(ps -> ps.bot));
+        for (PlayerState ps : all) {
             players.put(ps.id, ps);
         }
 
@@ -301,29 +368,50 @@ public final class GameManager {
             }
         }
 
-        // スタート地点へ
+        // スタート地点へ。ボットを出す
         List<BlockPos> spawns = map().get(MarkerType.SPAWN);
+        Vec3 center = spawns.isEmpty() ? starter.position() : Vec3.atBottomCenterOf(spawns.get(0)).add(0, 0.1, 0);
         int n = 0;
-        for (ServerPlayer p : joiners) {
-            if (!spawns.isEmpty()) {
-                BlockPos sp = spawns.get(n % spawns.size());
-                double a = (n / (double) joiners.size()) * Math.PI * 2;
-                double r = spawns.size() == 1 ? 1.5 : 0.0;
-                p.teleportTo(level, sp.getX() + 0.5 + Math.cos(a) * r, sp.getY() + 0.1, sp.getZ() + 0.5 + Math.sin(a) * r,
-                        p.getYRot(), 0);
-            }
+        for (PlayerState ps : players.values()) {
+            double a = (n / (double) players.size()) * Math.PI * 2;
+            double r = 1.6;
+            double x = center.x + Math.cos(a) * r;
+            double z = center.z + Math.sin(a) * r;
             n++;
-            preparePlayer(p, players.get(p.getUUID()));
+            if (ps.bot) {
+                BotEntity bot = ModEntities.BOT.create(level);
+                if (bot == null) {
+                    continue;
+                }
+                bot.setUUID(ps.id);
+                bot.moveTo(x, center.y, z, random.nextFloat() * 360f, 0);
+                bot.setCustomName(Component.literal(ps.name));
+                level.addFreshEntity(bot);
+                bots.put(ps.id, bot);
+                brains.put(ps.id, new BotBrain(this, ps));
+            } else {
+                ServerPlayer p = player(ps.id);
+                if (p != null) {
+                    if (!spawns.isEmpty()) {
+                        p.teleportTo(level, x, center.y, z, p.getYRot(), 0);
+                    }
+                    preparePlayer(p, ps);
+                }
+            }
         }
 
         phase = Phase.PLAYING;
         ticks = 0;
 
-        for (ServerPlayer p : joiners) {
+        for (ServerPlayer p : humans) {
             PlayerState ps = players.get(p.getUUID());
-            send(p, new Packets.Reveal(ps.role.id, mates(ps), joiners.size()));
+            send(p, new Packets.Reveal(ps.role.id, mates(ps), players.size()));
         }
         syncAll();
+        if (botCount > 0) {
+            starter.sendSystemMessage(Component.literal("ボット " + botCount + " 人が参加しています。会議ではチャットで名前を出すと、ボットが参考にします。")
+                    .withStyle(ChatFormatting.AQUA));
+        }
         if (map().count(MarkerType.BELL) == 0) {
             starter.sendSystemMessage(Component.literal("注意: 呼び鈴（緊急ボタン）が置かれていません").withStyle(ChatFormatting.YELLOW));
         }
@@ -348,7 +436,7 @@ public final class GameManager {
         }
     }
 
-    private List<Packets.Mate> mates(PlayerState ps) {
+    List<Packets.Mate> mates(PlayerState ps) {
         List<Packets.Mate> out = new ArrayList<>();
         if (ps.role.knowsWolves()) {
             for (PlayerState o : players.values()) {
@@ -379,6 +467,9 @@ public final class GameManager {
         endTimer = END_TICKS;
         clearSabotage();
         removeBodies();
+        for (BotEntity b : bots.values()) {
+            b.getNavigation().stop();
+        }
         List<Packets.Participant> list = new ArrayList<>();
         for (PlayerState ps : players.values()) {
             list.add(new Packets.Participant(ps.id, ps.name, ps.alive && !ps.left, ps.role.id));
@@ -396,6 +487,9 @@ public final class GameManager {
     private void resetToLobby() {
         clearSabotage();
         removeBodies();
+        for (BotEntity b : bots.values()) {
+            b.discard();
+        }
         List<BlockPos> spawns = map().get(MarkerType.SPAWN);
         for (ServerPlayer p : online()) {
             PlayerState ps = players.get(p.getUUID());
@@ -412,6 +506,8 @@ public final class GameManager {
         }
         List<ServerPlayer> notify = online();
         players.clear();
+        bots.clear();
+        brains.clear();
         active.clear();
         activeProgress.clear();
         votes.clear();
@@ -448,9 +544,16 @@ public final class GameManager {
         if (sabotageCooldown > 0) {
             sabotageCooldown--;
         }
-        for (PlayerState ps : players.values()) {
+        for (PlayerState ps : new ArrayList<>(players.values())) {
+            if (phase != Phase.PLAYING) {
+                return;
+            }
             if (ps.killCooldown > 0 && ps.alive) {
                 ps.killCooldown--;
+            }
+            if (ps.bot) {
+                tickBot(ps);
+                continue;
             }
             ServerPlayer p = player(ps.id);
             if (p == null || ps.left) {
@@ -464,6 +567,9 @@ public final class GameManager {
             if (blackout && ps.alive && !ps.role.canSabotage() && ticks % 20 == 0) {
                 p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0, false, false));
             }
+        }
+        if (phase != Phase.PLAYING) {
+            return;
         }
 
         // ガス漏れ
@@ -485,6 +591,27 @@ public final class GameManager {
         if (ticks % 10 == 0) {
             checkWin();
         }
+    }
+
+    private void tickBot(PlayerState ps) {
+        if (!ps.alive) {
+            // 幽霊になったボットは、見えないところでタスクを少しずつ進める
+            if (ps.tasksCount() && ticks % 300 == ps.id.hashCode() % 300) {
+                for (PlayerState.TaskEntry t : ps.tasks) {
+                    if (!t.done) {
+                        t.done = true;
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+        BotEntity bot = bots.get(ps.id);
+        BotBrain brain = brains.get(ps.id);
+        if (bot == null || brain == null || !bot.isAlive()) {
+            return;
+        }
+        brain.tickPlaying(bot);
     }
 
     private void tickActive() {
@@ -551,7 +678,7 @@ public final class GameManager {
         }
     }
 
-    private float taskProgress() {
+    float taskProgress() {
         int total = 0;
         int done = 0;
         for (PlayerState ps : players.values()) {
@@ -579,7 +706,6 @@ public final class GameManager {
         }
         Active a = active.get(ps.id);
         float ap = a == null ? 0f : activeProgress.getOrDefault(ps.id, 0) / (float) a.need;
-        // クリック型の進み具合も表示する
         int at = a == null ? -1 : a.type.ordinal();
         int phaseNum = switch (phase) {
             case LOBBY -> 0;
@@ -594,10 +720,7 @@ public final class GameManager {
 
     // ================================================================= 勝敗
 
-    /** 自動テスト用：勝敗判定を止める */
-    public static boolean selfTestNoWin;
-
-    private void checkWin() {
+    void checkWin() {
         if (!running() || selfTestNoWin) {
             return;
         }
@@ -624,46 +747,82 @@ public final class GameManager {
 
     // ================================================================= キル
 
-    /** 人狼が人を殴った。true ならキル処理をした（普通の攻撃はいつでも無効） */
-    public void tryKill(ServerPlayer killer, ServerPlayer target) {
+    @Nullable
+    private PlayerState stateOf(Entity e) {
+        return players.get(e.getUUID());
+    }
+
+    /** 人間の人狼が誰かを殴った */
+    public void tryKill(ServerPlayer killer, LivingEntity target) {
         if (phase != Phase.PLAYING) {
             return;
         }
         PlayerState k = players.get(killer.getUUID());
-        PlayerState t = players.get(target.getUUID());
-        if (k == null || t == null || !k.alive || !t.alive || !k.role.canKill() || k.vent != null || t.vent != null) {
+        PlayerState t = stateOf(target);
+        if (k == null || t == null) {
             return;
         }
-        if (t.role.knowsWolves() && k.role.knowsWolves()) {
-            return;
-        }
-        if (k.killCooldown > 0) {
+        if (k.killCooldown > 0 && k.alive && k.role.canKill()) {
             actionBar(killer, "キルまであと " + (k.killCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
             return;
         }
-        double range = settings().get("kill_range") + 0.6;
-        if (killer.distanceTo(target) > range) {
-            return;
-        }
-        if (!isBehind(killer, target)) {
+        if (k.alive && k.role.canKill() && t.alive && !isBehind(killer, target)
+                && killer.distanceTo(target) <= settings().get("kill_range") + 0.6) {
             actionBar(killer, "背後から近づかないとキルできない", ChatFormatting.GOLD);
             return;
         }
+        attemptKill(k, killer, t, target);
+    }
+
+    /** キルを試す（人間・ボット共通）。成功・失敗にかかわらず条件を満たせば true */
+    boolean attemptKill(PlayerState k, LivingEntity killer, PlayerState t, LivingEntity target) {
+        if (phase != Phase.PLAYING || !k.alive || !t.alive || !k.role.canKill() || k.vent != null || t.vent != null) {
+            return false;
+        }
+        if (t.role.knowsWolves() && k.role.knowsWolves()) {
+            return false;
+        }
+        if (k.killCooldown > 0) {
+            return false;
+        }
+        double range = settings().get("kill_range") + 0.6;
+        if (killer.distanceTo(target) > range || !isBehind(killer, target)) {
+            return false;
+        }
         k.killCooldown = settings().get("kill_cooldown") * 20;
+        killer.swing(InteractionHand.MAIN_HAND, true);
+        ServerPlayer kp = k.bot ? null : player(k.id);
         if (t.protectedByKnight) {
             t.protectedByKnight = false;
-            send(killer, new Packets.KillFx(2, t.name));
+            if (kp != null) {
+                send(kp, new Packets.KillFx(2, t.name));
+            }
             level.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1f, 1f);
-            return;
+            return true;
         }
-        kill(target, t, killer.getGameProfile().getName());
-        send(killer, new Packets.KillFx(1, t.name));
+        kill(target, t, k.name);
+        if (kp != null) {
+            send(kp, new Packets.KillFx(1, t.name));
+        }
+        // 見ていたボットは覚える
+        for (PlayerState o : players.values()) {
+            BotBrain brain = brains.get(o.id);
+            BotEntity eye = bots.get(o.id);
+            if (brain != null && eye != null && o.alive && o != k && o != t) {
+                double sight = blackout ? 5 : 12;
+                if (eye.distanceTo(killer) <= sight && eye.hasLineOfSight(killer)) {
+                    brain.sawKill(k, t);
+                }
+            }
+        }
         checkWin();
+        return true;
     }
 
     /** killer が target の背後にいるか（target の向いている方向と反対側） */
-    public static boolean isBehind(net.minecraft.world.entity.player.Player killer, net.minecraft.world.entity.player.Player target) {
-        Vec3 look = Vec3.directionFromRotation(0, target.getYRot());
+    public static boolean isBehind(Entity killer, Entity target) {
+        float yaw = target instanceof LivingEntity le ? le.getYHeadRot() : target.getYRot();
+        Vec3 look = Vec3.directionFromRotation(0, yaw);
         Vec3 toKiller = new Vec3(killer.getX() - target.getX(), 0, killer.getZ() - target.getZ());
         if (toKiller.lengthSqr() < 1.0E-4) {
             return true;
@@ -671,7 +830,7 @@ public final class GameManager {
         return look.dot(toKiller.normalize()) < -0.25;
     }
 
-    private void kill(ServerPlayer target, PlayerState t, String killerName) {
+    private void kill(LivingEntity target, PlayerState t, String killerName) {
         BodyEntity body = ModEntities.BODY.create(level);
         if (body != null) {
             body.moveTo(target.getX(), target.getY(), target.getZ(), target.getYRot(), 0);
@@ -682,8 +841,14 @@ public final class GameManager {
         level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.2f, 0.6f);
         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.defaultBlockState()),
                 target.getX(), target.getY() + 0.8, target.getZ(), 40, 0.3, 0.4, 0.3, 0.1);
-        becomeGhost(target, t);
-        send(target, new Packets.KillFx(0, killerName));
+        if (t.bot) {
+            t.alive = false;
+            t.protectedByKnight = false;
+            target.discard();
+        } else if (target instanceof ServerPlayer sp) {
+            becomeGhost(sp, t);
+            send(sp, new Packets.KillFx(0, killerName));
+        }
     }
 
     private void becomeGhost(ServerPlayer p, PlayerState ps) {
@@ -700,9 +865,9 @@ public final class GameManager {
 
     // ================================================================= 役職の能力
 
-    public void useSeer(ServerPlayer seer, ServerPlayer target) {
+    public void useSeer(ServerPlayer seer, LivingEntity target) {
         PlayerState s = players.get(seer.getUUID());
-        PlayerState t = players.get(target.getUUID());
+        PlayerState t = stateOf(target);
         if (phase != Phase.PLAYING || s == null || t == null || !s.alive || !t.alive || s.role != Role.SEER) {
             return;
         }
@@ -724,9 +889,9 @@ public final class GameManager {
                 wolf ? 0xFF5555 : 0x55FF55, 3));
     }
 
-    public void useKnight(ServerPlayer knight, ServerPlayer target) {
+    public void useKnight(ServerPlayer knight, LivingEntity target) {
         PlayerState k = players.get(knight.getUUID());
-        PlayerState t = players.get(target.getUUID());
+        PlayerState t = stateOf(target);
         if (phase != Phase.PLAYING || k == null || t == null || !k.alive || !t.alive || k.role != Role.KNIGHT) {
             return;
         }
@@ -793,7 +958,7 @@ public final class GameManager {
                 } else {
                     ps.emergencyLeft--;
                     level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2f, 1.2f);
-                    startMeeting(0, ps.name, "");
+                    startMeeting(0, ps, null);
                 }
             }
             case VENT -> {
@@ -898,7 +1063,8 @@ public final class GameManager {
             return;
         }
         for (PlayerState.TaskEntry t : ps.tasks) {
-            if (t.pos.equals(pos) && !t.done && (t.type.use == MarkerType.Use.WIRES || t.type.use == MarkerType.Use.NUMBERS || t.type.use == MarkerType.Use.HOLES)) {
+            if (t.pos.equals(pos) && !t.done && (t.type.use == MarkerType.Use.WIRES
+                    || t.type.use == MarkerType.Use.NUMBERS || t.type.use == MarkerType.Use.HOLES)) {
                 completeTask(p, ps, t);
                 return;
             }
@@ -917,7 +1083,13 @@ public final class GameManager {
         checkWin();
     }
 
-    private void workFx(BlockPos pos, MarkerType type) {
+    /** ボットがタスクを終えた */
+    void botCompleteTask(PlayerState ps, PlayerState.TaskEntry t) {
+        t.done = true;
+        checkWin();
+    }
+
+    void workFx(BlockPos pos, MarkerType type) {
         double x = pos.getX() + 0.5;
         double y = pos.getY() + 0.6;
         double z = pos.getZ() + 0.5;
@@ -984,7 +1156,7 @@ public final class GameManager {
         level.playSound(null, pos, sound, SoundSource.BLOCKS, 0.8f, pitch);
     }
 
-    // ================================================================= ベント
+    // ================================================================= ベント（人間の人狼だけ）
 
     private void enterVent(ServerPlayer p, PlayerState ps, BlockPos pos) {
         ps.vent = pos.immutable();
@@ -1017,8 +1189,8 @@ public final class GameManager {
         actionBar(p, "ベント " + (next + 1) + " / " + vents.size() + "  （A/D で移動、スニークで出る）", ChatFormatting.LIGHT_PURPLE);
     }
 
-    private void exitVent(ServerPlayer p, PlayerState ps, boolean sound) {
-        if (ps == null || ps.vent == null) {
+    private void exitVent(@Nullable ServerPlayer p, @Nullable PlayerState ps, boolean sound) {
+        if (p == null || ps == null || ps.vent == null) {
             return;
         }
         BlockPos pos = ps.vent;
@@ -1036,21 +1208,27 @@ public final class GameManager {
 
     public void sabotage(ServerPlayer p, int kind) {
         PlayerState ps = players.get(p.getUUID());
-        if (phase != Phase.PLAYING || ps == null || !ps.role.canSabotage()) {
-            return;
+        if (ps != null) {
+            sabotageBy(ps, p, kind);
+        }
+    }
+
+    boolean sabotageBy(PlayerState ps, @Nullable ServerPlayer feedback, int kind) {
+        if (phase != Phase.PLAYING || !ps.role.canSabotage()) {
+            return false;
         }
         if (blackout || gasTicks >= 0) {
-            actionBar(p, "今は別の妨害が起きている", ChatFormatting.GRAY);
-            return;
+            actionBar(feedback, "今は別の妨害が起きている", ChatFormatting.GRAY);
+            return false;
         }
         if (sabotageCooldown > 0) {
-            actionBar(p, "妨害まであと " + (sabotageCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
-            return;
+            actionBar(feedback, "妨害まであと " + (sabotageCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
+            return false;
         }
         if (kind == 0) {
             if (map().count(MarkerType.BREAKER) == 0) {
-                actionBar(p, "配電盤が置かれていないので停電を起こせない", ChatFormatting.GRAY);
-                return;
+                actionBar(feedback, "配電盤が置かれていないので停電を起こせない", ChatFormatting.GRAY);
+                return false;
             }
             blackout = true;
             for (ServerPlayer o : online()) {
@@ -1060,8 +1238,8 @@ public final class GameManager {
             }
         } else {
             if (map().count(MarkerType.GAS_VALVE) == 0 || map().count(MarkerType.BOILER) == 0) {
-                actionBar(p, "ガスの元栓とボイラーが置かれていないので起こせない", ChatFormatting.GRAY);
-                return;
+                actionBar(feedback, "ガスの元栓とボイラーが置かれていないので起こせない", ChatFormatting.GRAY);
+                return false;
             }
             gasMax = settings().get("gas_time") * 20;
             gasTicks = gasMax;
@@ -1074,9 +1252,13 @@ public final class GameManager {
             }
         }
         sabotageCooldown = settings().get("sabotage_cooldown") * 20;
+        return true;
     }
 
-    private void fixBlackout(ServerPlayer by) {
+    void fixBlackout(@Nullable ServerPlayer by) {
+        if (!blackout) {
+            return;
+        }
         blackout = false;
         for (ServerPlayer o : online()) {
             o.removeEffect(MobEffects.BLINDNESS);
@@ -1085,7 +1267,7 @@ public final class GameManager {
         sabotageCooldown = Math.max(sabotageCooldown, settings().get("sabotage_cooldown") * 20);
     }
 
-    private void fixGas(ServerPlayer by, MarkerType type) {
+    void fixGas(@Nullable ServerPlayer by, MarkerType type) {
         if (gasTicks < 0) {
             return;
         }
@@ -1132,10 +1314,29 @@ public final class GameManager {
         if (p.distanceTo(body) > 4) {
             return;
         }
-        startMeeting(1, ps.name, body.ownerName());
+        startMeeting(1, ps, body);
     }
 
-    private void startMeeting(int reason, String caller, String bodyName) {
+    /** ボットが通報する */
+    void botReport(PlayerState ps, BodyEntity body) {
+        if (phase != Phase.PLAYING || !ps.alive || gasTicks >= 0) {
+            return;
+        }
+        startMeeting(1, ps, body);
+    }
+
+    /** ボットが呼び鈴を鳴らす */
+    void botEmergency(PlayerState ps) {
+        if (phase != Phase.PLAYING || !ps.alive || gasTicks >= 0 || ps.emergencyLeft <= 0) {
+            return;
+        }
+        ps.emergencyLeft--;
+        startMeeting(0, ps, null);
+    }
+
+    private void startMeeting(int reason, PlayerState caller, @Nullable BodyEntity body) {
+        String bodyName = body != null ? body.ownerName() : "";
+        UUID bodyOwner = body != null ? body.owner().orElse(null) : null;
         phase = Phase.MEETING;
         meetingTicks = 0;
         votes.clear();
@@ -1154,28 +1355,37 @@ public final class GameManager {
         Vec3 center = !bells.isEmpty() ? Vec3.atBottomCenterOf(bells.get(0))
                 : !spawns.isEmpty() ? Vec3.atBottomCenterOf(spawns.get(0)) : null;
 
-        List<ServerPlayer> living = new ArrayList<>();
         for (ServerPlayer p : online()) {
             PlayerState ps = players.get(p.getUUID());
             exitVent(p, ps, false);
             p.removeEffect(MobEffects.BLINDNESS);
-            if (ps.alive) {
-                living.add(p);
-            }
         }
+        List<PlayerState> living = living();
         for (int i = 0; i < living.size(); i++) {
-            ServerPlayer p = living.get(i);
-            PlayerState ps = players.get(p.getUUID());
+            PlayerState ps = living.get(i);
+            LivingEntity e = entityOf(ps);
+            if (e == null) {
+                continue;
+            }
             if (center != null) {
                 double a = i / (double) living.size() * Math.PI * 2;
                 double r = 2.5;
                 double x = center.x + Math.cos(a) * r;
                 double z = center.z + Math.sin(a) * r;
                 float yaw = (float) (Mth.atan2(center.z - z, center.x - x) * Mth.RAD_TO_DEG) - 90f;
-                p.teleportTo(level, x, center.y, z, yaw, 10f);
                 ps.seat = new Vec3(x, center.y, z);
+                if (e instanceof ServerPlayer sp) {
+                    sp.teleportTo(level, x, center.y, z, yaw, 10f);
+                } else {
+                    e.moveTo(x, center.y, z, yaw, 0);
+                    e.setYHeadRot(yaw);
+                    e.setYBodyRot(yaw);
+                }
             } else {
-                ps.seat = p.position();
+                ps.seat = e.position();
+            }
+            if (e instanceof BotEntity b) {
+                b.getNavigation().stop();
             }
         }
 
@@ -1188,7 +1398,10 @@ public final class GameManager {
         List<Packets.Participant> parts = participants(false);
         for (ServerPlayer p : online()) {
             PlayerState ps = players.get(p.getUUID());
-            send(p, new Packets.Meeting(reason, caller, bodyName, parts, discussionTicks, votingTicks, ps.alive));
+            send(p, new Packets.Meeting(reason, caller.name, bodyName, parts, discussionTicks, votingTicks, ps.alive));
+        }
+        for (BotBrain brain : brains.values()) {
+            brain.onMeetingStart(reason, caller, bodyOwner);
         }
         syncAll();
     }
@@ -1204,10 +1417,17 @@ public final class GameManager {
     private void tickMeeting() {
         meetingTicks++;
         // 席から動けない
-        for (ServerPlayer p : online()) {
-            PlayerState ps = players.get(p.getUUID());
-            if (ps.alive && ps.seat != null && p.position().distanceToSqr(ps.seat) > 0.25) {
-                p.teleportTo(level, ps.seat.x, ps.seat.y, ps.seat.z, p.getYRot(), p.getXRot());
+        for (PlayerState ps : living()) {
+            LivingEntity e = entityOf(ps);
+            if (e == null || ps.seat == null) {
+                continue;
+            }
+            if (e.position().distanceToSqr(ps.seat) > 0.25) {
+                if (e instanceof ServerPlayer sp) {
+                    sp.teleportTo(level, ps.seat.x, ps.seat.y, ps.seat.z, sp.getYRot(), sp.getXRot());
+                } else {
+                    e.moveTo(ps.seat.x, ps.seat.y, ps.seat.z, e.getYRot(), 0);
+                }
             }
         }
         if (resultShown) {
@@ -1216,17 +1436,30 @@ public final class GameManager {
             }
             return;
         }
-        if (meetingTicks >= discussionTicks + votingTicks) {
+        for (BotBrain brain : new ArrayList<>(brains.values())) {
+            if (resultShown) {
+                break;
+            }
+            brain.tickMeeting();
+        }
+        if (!resultShown && meetingTicks >= discussionTicks + votingTicks) {
             tally();
         }
     }
 
     public void vote(ServerPlayer p, UUID target) {
         PlayerState ps = players.get(p.getUUID());
-        if (phase != Phase.MEETING || resultShown || ps == null || !ps.alive || ps.left) {
-            return;
+        if (ps != null) {
+            castVote(ps, target);
         }
-        if (meetingTicks < discussionTicks || votes.containsKey(ps.id)) {
+    }
+
+    boolean votingOpen() {
+        return phase == Phase.MEETING && !resultShown && meetingTicks >= discussionTicks;
+    }
+
+    void castVote(PlayerState ps, UUID target) {
+        if (!votingOpen() || !ps.alive || ps.left || votes.containsKey(ps.id)) {
             return;
         }
         if (!target.equals(Packets.NONE)) {
@@ -1236,15 +1469,20 @@ public final class GameManager {
             }
         }
         votes.put(ps.id, target);
-        level.playSound(null, p.blockPosition(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.6f, 1.2f);
+        LivingEntity e = entityOf(ps);
+        if (e != null) {
+            level.playSound(null, e.blockPosition(), SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.6f, 1.2f);
+        }
         sendAll(new Packets.Voted(new ArrayList<>(votes.keySet())));
-        long living = players.values().stream().filter(x -> x.alive && !x.left).count();
-        if (votes.size() >= living) {
+        if (votes.size() >= living().size()) {
             tally();
         }
     }
 
     private void tally() {
+        if (resultShown) {
+            return;
+        }
         Map<UUID, Integer> counts = new HashMap<>();
         int skip = 0;
         for (UUID t : votes.values()) {
@@ -1294,18 +1532,36 @@ public final class GameManager {
     private void finishMeeting() {
         if (ejected != null) {
             PlayerState e = players.get(ejected);
-            ServerPlayer ep = player(ejected);
             if (e != null) {
-                if (ep != null) {
-                    becomeGhost(ep, e);
-                } else {
+                if (e.bot) {
                     e.alive = false;
+                    BotEntity b = bots.get(e.id);
+                    if (b != null) {
+                        b.discard();
+                    }
+                } else {
+                    ServerPlayer ep = player(ejected);
+                    if (ep != null) {
+                        becomeGhost(ep, e);
+                    } else {
+                        e.alive = false;
+                    }
                 }
+                boolean wolf = e.role.isWolf();
                 if (settings().flag("medium_result")) {
                     for (PlayerState m : players.values()) {
+                        if (m.role != Role.MEDIUM || !m.alive) {
+                            continue;
+                        }
+                        if (m.bot) {
+                            BotBrain brain = brains.get(m.id);
+                            if (brain != null) {
+                                brain.mediumResult(e, wolf);
+                            }
+                            continue;
+                        }
                         ServerPlayer mp = player(m.id);
-                        if (m.role == Role.MEDIUM && m.alive && mp != null) {
-                            boolean wolf = e.role.isWolf();
+                        if (mp != null) {
                             mp.sendSystemMessage(Component.literal("【霊媒】" + e.name + " は ")
                                     .append(Component.literal(wolf ? "人狼だった" : "人狼ではなかった")
                                             .withStyle(wolf ? ChatFormatting.RED : ChatFormatting.GREEN)));
@@ -1314,6 +1570,9 @@ public final class GameManager {
                         }
                     }
                 }
+                for (BotBrain brain : brains.values()) {
+                    brain.onEjected(e);
+                }
             }
         }
         phase = Phase.PLAYING;
@@ -1321,6 +1580,9 @@ public final class GameManager {
         for (PlayerState ps : players.values()) {
             ps.killCooldown = cd;
             ps.seat = null;
+        }
+        for (BotBrain brain : brains.values()) {
+            brain.onMeetingEnd();
         }
         syncAll();
         checkWin();
@@ -1331,9 +1593,28 @@ public final class GameManager {
             b.discard();
         }
         bodies.clear();
-        // 念のため残っている死体も消す
         for (BodyEntity b : level.getEntities(ModEntities.BODY, e -> true)) {
             b.discard();
+        }
+    }
+
+    /** 会議中に人間がチャットで名前を出したら、ボットが参考にする */
+    public void onChat(ServerPlayer sender, String text) {
+        if (!running()) {
+            return;
+        }
+        PlayerState s = players.get(sender.getUUID());
+        if (s == null) {
+            return;
+        }
+        for (PlayerState ps : players.values()) {
+            if (ps == s || !ps.alive || ps.name.length() < 2 || !text.contains(ps.name)) {
+                continue;
+            }
+            boolean clear = text.contains("白") || text.contains("違う") || text.contains("ちがう") || text.contains("味方");
+            for (BotBrain brain : brains.values()) {
+                brain.heard(s, ps, clear ? -30 : 35);
+            }
         }
     }
 
@@ -1347,11 +1628,8 @@ public final class GameManager {
         ps.left = true;
         ps.alive = false;
         active.remove(ps.id);
-        if (phase == Phase.MEETING && !resultShown) {
-            long living = players.values().stream().filter(x -> x.alive && !x.left).count();
-            if (votes.size() >= living) {
-                tally();
-            }
+        if (phase == Phase.MEETING && !resultShown && votes.size() >= living().size()) {
+            tally();
         }
         checkWin();
     }
@@ -1359,7 +1637,6 @@ public final class GameManager {
     public void onJoin(ServerPlayer p) {
         PlayerState ps = players.get(p.getUUID());
         if (ps != null && running()) {
-            // 途中で抜けた人は幽霊として戻る
             ps.left = false;
             ps.alive = false;
             p.setGameMode(GameType.SPECTATOR);
@@ -1369,6 +1646,6 @@ public final class GameManager {
     }
 
     public String status() {
-        return "状態: " + phase + " / 参加 " + players.size() + "人 / 経過 " + ticks / 20 + "秒";
+        return "状態: " + phase + " / 参加 " + players.size() + "人（ボット " + bots.size() + "）/ 経過 " + ticks / 20 + "秒";
     }
 }

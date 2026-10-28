@@ -22,5 +22,6 @@
  "block.minpaku.flower_vase": "花瓶（タスク）",
  "block.minpaku.kitchen_sink": "流し台（タスク）",
  "block.minpaku.shoe_rack": "下駄箱（タスク）",
- "block.minpaku.shoji_screen": "障子（タスク）"
+ "block.minpaku.shoji_screen": "障子（タスク）",
+ "entity.minpaku.bot": "ボット"
 }

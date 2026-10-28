@@ -37,6 +37,7 @@ public class MinpakuClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EntityRendererRegistry.register(ModEntities.BODY, BodyRenderer::new);
+        EntityRendererRegistry.register(ModEntities.BOT, com.minpaku.client.render.BotRenderer::new);
         HudRenderCallback.EVENT.register(GameHud::render);
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
 

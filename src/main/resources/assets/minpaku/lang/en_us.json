@@ -22,5 +22,6 @@
  "block.minpaku.flower_vase": "Flower Vase (Task)",
  "block.minpaku.kitchen_sink": "Kitchen Sink (Task)",
  "block.minpaku.shoe_rack": "Shoe Rack (Task)",
- "block.minpaku.shoji_screen": "Shoji Screen (Task)"
+ "block.minpaku.shoji_screen": "Shoji Screen (Task)",
+ "entity.minpaku.bot": "Bot"
 }

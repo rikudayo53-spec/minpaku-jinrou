@@ -1,6 +1,8 @@
 package com.minpaku.game;
 
+import com.minpaku.entity.BotEntity;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -31,8 +33,18 @@ public final class GameEvents {
             }
             if (entity instanceof ServerPlayer target && gm.isParticipant(target)) {
                 gm.tryKill(sp, target);
+            } else if (entity instanceof BotEntity bot && gm.isBot(bot.getUUID())) {
+                gm.tryKill(sp, bot);
             }
             return InteractionResult.FAIL;
+        });
+
+        // 会議中のチャットをボットが参考にする
+        ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+            GameManager gm = GameManager.current();
+            if (gm != null) {
+                gm.onChat(sender, message.signedContent());
+            }
         });
 
         // ゲーム中はダメージを受けない（落下・窒息なども）
