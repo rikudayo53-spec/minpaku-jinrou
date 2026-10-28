@@ -286,7 +286,7 @@ public final class GameHud {
         float cx = w / 2f;
         float cy = h / 2f;
         g.pose().pushPose();
-        g.pose().translate(0, 0, 400);
+        g.pose().translate(0, 0, 2000);
         // 真っ暗（最初の一瞬だけ赤く光る）
         g.fill(0, 0, w, h, Ui.alpha(0xFF000000, all));
         if (t < 5) {

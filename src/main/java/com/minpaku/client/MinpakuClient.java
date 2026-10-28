@@ -102,6 +102,8 @@ public class MinpakuClient implements ClientModInitializer {
                 });
     }
 
+    private static Packets.Meeting pendingMeeting;
+
     private static void registerReceivers() {
         ClientPlayNetworking.registerGlobalReceiver(Packets.State.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             int before = ClientGame.state.phase();
@@ -125,7 +127,12 @@ public class MinpakuClient implements ClientModInitializer {
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Meeting.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             ClientGame.talk.clear();
-            Minecraft.getInstance().setScreen(new MeetingScreen(p));
+            if (ClientGame.killFxKind == 0 && ClientGame.killFxTicks > 0) {
+                // 襲われた演出の途中なら、終わってから会議画面を開く
+                pendingMeeting = p;
+            } else {
+                Minecraft.getInstance().setScreen(new MeetingScreen(p));
+            }
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Voted.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             if (Minecraft.getInstance().screen instanceof MeetingScreen m) {
@@ -192,6 +199,12 @@ public class MinpakuClient implements ClientModInitializer {
     }
 
     private static void tick(Minecraft mc) {
+        if (pendingMeeting != null && (ClientGame.killFxTicks <= 0 || ClientGame.killFxKind != 0)) {
+            if (ClientGame.state.phase() == 2) {
+                mc.setScreen(new MeetingScreen(pendingMeeting));
+            }
+            pendingMeeting = null;
+        }
         ClientGame.tick();
         SelfTest.tick(mc);
         if (mc.player == null || !ClientGame.inGame()) {
