@@ -107,7 +107,7 @@ public final class SelfTest {
                 spawn = sp.blockPosition();
             });
             case 160 -> shot(mc, "01_entrance");
-            case 170 -> tp(mc, 0, 35, 22, 180f, 60f);
+            case 170 -> tp(mc, 0, 38, 30, 180f, 42f);
             case 230 -> shot(mc, "02_aerial");
             case 240 -> tp(mc, 0, 2, -8, 180f, 20f);
             case 290 -> shot(mc, "03_corridor");

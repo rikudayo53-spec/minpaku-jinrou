@@ -146,10 +146,11 @@ public final class Ui {
             double a1 = -Math.PI / 2 + t1 * Math.PI * 2;
             float c0 = (float) Math.cos(a0), s0 = (float) Math.sin(a0);
             float c1 = (float) Math.cos(a1), s1 = (float) Math.sin(a1);
+            // 画面の向き（裏向きは描かれない）に合わせた順番で頂点を出す
             vc.addVertex(m, cx + c0 * rInner, cy + s0 * rInner, 0).setColor(c);
-            vc.addVertex(m, cx + c0 * rOuter, cy + s0 * rOuter, 0).setColor(c);
-            vc.addVertex(m, cx + c1 * rOuter, cy + s1 * rOuter, 0).setColor(c);
             vc.addVertex(m, cx + c1 * rInner, cy + s1 * rInner, 0).setColor(c);
+            vc.addVertex(m, cx + c1 * rOuter, cy + s1 * rOuter, 0).setColor(c);
+            vc.addVertex(m, cx + c0 * rOuter, cy + s0 * rOuter, 0).setColor(c);
         }
     }
 

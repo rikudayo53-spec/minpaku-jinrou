@@ -320,16 +320,13 @@ public class BotBrain {
     // ----------------------------------------------------------------- 呼び鈴
 
     private void considerBell() {
-        if (!villageSide() || ps.emergencyLeft <= 0 || mode == Mode.BELL || mode == Mode.FIX || gm.gasTicks >= 0) {
+        if (!villageSide() || ps.emergencyLeft <= 0 || mode == Mode.BELL || mode == Mode.FIX || gm.gasTicks >= 0
+                || gm.ticks - gm.lastMeetingEnd < 900) {
             return;
         }
-        boolean sure = false;
-        for (Map.Entry<UUID, Boolean> e : known.entrySet()) {
-            PlayerState o = gm.players.get(e.getKey());
-            if (e.getValue() && o != null && o.alive) {
-                sure = true;
-            }
-        }
+        // キルを目撃したときだけ呼び鈴を鳴らしに行く（占い結果は次の会議で話す）
+        PlayerState killer = witnessKiller == null ? null : gm.players.get(witnessKiller);
+        boolean sure = killer != null && killer.alive;
         if (sure) {
             List<BlockPos> bells = gm.map().get(MarkerType.BELL);
             if (!bells.isEmpty()) {

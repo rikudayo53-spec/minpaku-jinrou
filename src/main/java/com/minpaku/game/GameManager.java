@@ -95,6 +95,7 @@ public final class GameManager {
     final Map<UUID, BotBrain> brains = new HashMap<>();
     final List<BodyEntity> bodies = new ArrayList<>();
     long ticks;
+    long lastMeetingEnd;
 
     // 妨害
     boolean blackout;
@@ -1589,6 +1590,7 @@ public final class GameManager {
             }
         }
         phase = Phase.PLAYING;
+        lastMeetingEnd = ticks;
         int cd = settings().get("kill_cooldown") * 20;
         for (PlayerState ps : players.values()) {
             ps.killCooldown = cd;
