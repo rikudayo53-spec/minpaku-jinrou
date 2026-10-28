@@ -201,6 +201,9 @@ public final class KillScene {
             part.resetPose();
         }
         m.crouching = false;
+        // 初期値は子ども（頭が大きく体が小さい）なので、大人の体にする
+        m.young = false;
+        m.riding = false;
     }
 
     /**
