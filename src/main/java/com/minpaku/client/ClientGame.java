@@ -33,7 +33,28 @@ public final class ClientGame {
     public static String killFxOther = "";
     public static final int KILL_FX_LEN = 60;
 
+    // 会議中の発言
+    public static final java.util.List<Packets.Talk> talk = new java.util.ArrayList<>();
+
+    // クールダウンの最大値（ゲージの割合を出すため、値が増えたときに覚える）
+    public static int killCdMax = 1;
+    public static int sabotageCdMax = 1;
+    private static int lastKillCd;
+    private static int lastSabotageCd;
+
     private ClientGame() {
+    }
+
+    public static void onState(Packets.State s) {
+        if (s.killCooldown() > lastKillCd) {
+            killCdMax = Math.max(1, s.killCooldown());
+        }
+        if (s.sabotageCooldown() > lastSabotageCd) {
+            sabotageCdMax = Math.max(1, s.sabotageCooldown());
+        }
+        lastKillCd = s.killCooldown();
+        lastSabotageCd = s.sabotageCooldown();
+        state = s;
     }
 
     public static boolean inGame() {

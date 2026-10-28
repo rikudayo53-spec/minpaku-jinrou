@@ -1,19 +1,18 @@
 package com.minpaku.client.screen;
 
 import com.minpaku.client.ClientGame;
-import com.minpaku.client.GameHud;
+import com.minpaku.client.Ui;
 import com.minpaku.game.Role;
 import com.minpaku.network.Packets;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 
-/** ゲーム開始時の役職発表（数秒で自動で閉じる） */
+/** ゲーム開始時の役職発表：巻物が開いて、筆文字で役職が出る（数秒で自動で閉じる） */
 public class RevealScreen extends Screen {
-    private static final int LENGTH = 120;
+    private static final int LENGTH = 130;
     private final Packets.Reveal reveal;
     private final Role role;
     private int age;
@@ -30,7 +29,10 @@ public class RevealScreen extends Screen {
         if (age == 1) {
             ClientGame.play(SoundEvents.BELL_BLOCK, 0.6f);
         }
-        if (age == 40) {
+        if (age == 30) {
+            ClientGame.play(SoundEvents.BOOK_PAGE_TURN, 0.7f);
+        }
+        if (age == 48) {
             if (role.team == Role.Team.WOLF) {
                 ClientGame.play(SoundEvents.WOLF_HOWL, 0.8f);
                 ClientGame.play(SoundEvents.WITHER_SPAWN, 1.6f);
@@ -46,7 +48,9 @@ public class RevealScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float pt) {
-        g.fill(0, 0, width, height, 0xF0000000);
+        int c = role.team == Role.Team.WOLF ? 0x00500A06 : 0x00102A10;
+        g.fillGradient(0, 0, width, height / 2, 0xF0000000, 0xF0000000 | c);
+        g.fillGradient(0, height / 2, width, height, 0xF0000000 | c, 0xF0000000);
     }
 
     @Override
@@ -55,43 +59,70 @@ public class RevealScreen extends Screen {
         float t = age + pt;
         int cx = width / 2;
         int cy = height / 2;
+        float fadeOut = age > LENGTH - 14 ? Mth.clamp((LENGTH - t) / 14f, 0f, 1f) : 1f;
 
-        // 1) タイトル
-        float a1 = Mth.clamp(t / 10f, 0f, 1f) * (t > 34 ? Mth.clamp((40 - t) / 6f, 0f, 1f) : 1f);
-        if (t < 40) {
-            int a = Math.max(8, (int) (a1 * 255));
-            GameHud.drawBig(g, font, "民泊人狼", cx, cy - 40, 4f, a << 24 | 0xFFE0B2);
-            GameHud.drawBig(g, font, reveal.players() + "人の宿泊客の中に、人狼がまぎれこんでいる…", cx, cy + 10, 1.2f, a << 24 | 0xCCCCCC);
+        // 1) 最初の文字
+        if (t < 30) {
+            float a = Mth.clamp(t / 8f, 0f, 1f) * Mth.clamp((30 - t) / 6f, 0f, 1f);
+            Ui.text(g, Ui.serif("民泊人狼"), cx, cy - 34, Ui.alpha(0xFFFFE0B2, a), 4f, 0, false);
+            Ui.text(g, Ui.sans(reveal.players() + "人の宿泊客の中に、人狼がまぎれこんでいる…"), cx, cy + 14,
+                    Ui.alpha(0xFFDDDDDD, a), 1.1f, 0, false);
             return;
         }
 
-        // 2) 役職
-        float t2 = t - 40;
-        float pop = t2 < 8 ? 0.6f + 0.4f * (t2 / 8f) + (float) Math.sin(t2 / 8f * Math.PI) * 0.25f : 1f;
-        float fade = age > LENGTH - 12 ? Mth.clamp((LENGTH - t) / 12f, 0f, 1f) : 1f;
-        int a = Math.max(8, (int) (Mth.clamp(t2 / 6f, 0f, 1f) * fade * 255));
-
-        // 背景の帯
-        int band = (int) (60 * pop);
-        g.fill(0, cy - band, width, cy + band, (int) (a * 0.5f) << 24 | (role.color >> 2 & 0x3F3F3F));
-
-        GameHud.drawBig(g, font, "あなたの役職は", cx, cy - 58, 1.4f, a << 24 | 0xDDDDDD);
-        GameHud.drawBig(g, font, role.name, cx, cy - 34, 5f * pop, a << 24 | role.color);
-        GameHud.drawBig(g, font, role.team.label, cx, cy + 14, 1.5f, a << 24 | role.team.color);
-        g.drawCenteredString(font, role.description, cx, cy + 34, a << 24 | 0xFFFFFF);
-
-        // 人狼の仲間
-        if (!reveal.mates().isEmpty()) {
-            g.drawCenteredString(font, "仲間の人狼", cx, cy + 56, a << 24 | 0xFF7777);
-            int n = reveal.mates().size();
-            int x0 = cx - n * 40 / 2;
-            for (int i = 0; i < n; i++) {
-                Packets.Mate m = reveal.mates().get(i);
-                int x = x0 + i * 40 + 8;
-                PlayerFaceRenderer.draw(g, ClientGame.skin(m.id()), x, cy + 68, 24);
-                g.drawCenteredString(font, m.name(), x + 12, cy + 96, a << 24 | 0xFFFFFF);
+        // 2) 巻物が開く
+        float open = Mth.clamp((t - 30) / 16f, 0f, 1f);
+        open = 1 - (1 - open) * (1 - open);
+        int sw = Math.min(width - 40, 300);
+        int fullH = Math.min(height - 40, 230);
+        int sh = (int) (fullH * open);
+        int x = cx - sw / 2;
+        int top = cy - sh / 2;
+        g.pose().pushPose();
+        if (fadeOut < 1f) {
+            g.pose().translate(0, (1 - fadeOut) * 10, 0);
+        }
+        Ui.sprite(g, "panel", x + 8, top, sw - 16, sh);
+        // 軸（上下の木の棒）
+        Ui.sprite(g, "board", x, top - 8, sw, 12);
+        Ui.sprite(g, "board", x, top + sh - 4, sw, 12);
+        if (open >= 1f) {
+            float t2 = t - 46;
+            float a = Mth.clamp(t2 / 6f, 0f, 1f) * fadeOut;
+            float pop = t2 < 8 ? 0.7f + 0.3f * (t2 / 8f) + (float) Math.sin(t2 / 8f * Math.PI) * 0.15f : 1f;
+            int y0 = top + 14;
+            Ui.text(g, Ui.sans("あなたの役職は"), cx, y0, Ui.alpha(Ui.INK_SOFT, a), 1f, 0, false);
+            Ui.text(g, Ui.serif(role.name), cx, y0 + 16 + (1 - pop) * 20, Ui.alpha(0xFF000000 | role.color, a),
+                    (role.name.length() > 2 ? 4.2f : 5.5f) * pop, 0, false);
+            Ui.chip(g, role.team.label, cx, y0 + 80, Ui.alpha(0xFF000000 | role.team.color, a * 0.9f), Ui.alpha(0xFFFFFFFF, a));
+            int ly = y0 + 98;
+            for (var line : Ui.split(role.description, sw - 50)) {
+                int lw = font.width(line);
+                g.drawString(font, line, cx - lw / 2, ly, Ui.alpha(Ui.INK, a), false);
+                ly += 10;
+            }
+            // 仲間の人狼
+            if (!reveal.mates().isEmpty()) {
+                Ui.text(g, Ui.sans("仲間の人狼"), cx, ly + 4, Ui.alpha(Ui.VERMILION, a), 0.9f, 0, false);
+                int n = reveal.mates().size();
+                int fx = cx - n * 34 / 2;
+                for (int i = 0; i < n; i++) {
+                    Packets.Mate m = reveal.mates().get(i);
+                    Ui.face(g, m.id(), fx + i * 34 + 7, ly + 16, 20);
+                    Ui.text(g, Ui.sans(m.name()), fx + i * 34 + 17, ly + 38, Ui.alpha(Ui.INK, a), 0.8f, 0, false);
+                }
+            }
+            if (t2 > 10) {
+                float st = Mth.clamp((t2 - 10) / 5f, 0f, 1f);
+                float scale = 1.6f - 0.6f * st;
+                g.pose().pushPose();
+                g.pose().translate(x + sw - 40, top + sh - 40, 0);
+                g.pose().scale(scale, scale, 1f);
+                Ui.stamp(g, "民泊人狼", 0, 0, 34, Ui.alpha(Ui.VERMILION, st * fadeOut), -10, false);
+                g.pose().popPose();
             }
         }
+        g.pose().popPose();
     }
 
     @Override

@@ -47,7 +47,7 @@ public class NumbersScreen extends TaskGameScreen {
             g.drawString(font, s, -font.width(s) / 2, 0, done ? 0xFFFFFFFF : 0xFF3E2723, false);
             g.pose().popPose();
         }
-        g.drawCenteredString(font, "台帳のページを 1 から順番に押そう（次: " + Math.min(next, 10) + "）",
+        com.minpaku.client.Ui.sansCentered(g, "台帳のページを 1 から順番に押そう（次: " + Math.min(next, 10) + "）",
                 width / 2, top() + panelH - 12, 0xFFAAAAAA);
     }
 

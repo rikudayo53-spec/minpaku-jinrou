@@ -213,6 +213,10 @@ public final class GameManager {
 
     /** ボットの発言をチャットに流す */
     void botSay(PlayerState ps, String text) {
+        if (!settings().flag("bot_talk")) {
+            return;
+        }
+        sendAll(new Packets.Talk(ps.id, ps.name, text));
         Component msg = Component.literal("<" + ps.name + "> ").withStyle(ChatFormatting.AQUA)
                 .append(Component.literal(text).withStyle(ChatFormatting.WHITE));
         for (ServerPlayer p : online()) {
@@ -304,6 +308,7 @@ public final class GameManager {
         bots.clear();
         brains.clear();
         bodies.clear();
+        meetingCount = 0;
         active.clear();
         activeProgress.clear();
         blackout = false;
@@ -317,7 +322,7 @@ public final class GameManager {
             ps.previousMode = p.gameMode.getGameModeForPlayer();
             all.add(ps);
         }
-        int botCount = Math.max(0, s.get("bot_fill") - humans.size());
+        int botCount = s.flag("bots_enabled") ? Math.max(0, s.get("bot_fill") - humans.size()) : 0;
         for (int i = 0; i < botCount && i < BOT_NAMES.length; i++) {
             PlayerState ps = new PlayerState(UUID.randomUUID(), BOT_NAMES[i]);
             ps.bot = true;
@@ -471,15 +476,18 @@ public final class GameManager {
             b.getNavigation().stop();
         }
         List<Packets.Participant> list = new ArrayList<>();
+        List<Integer> kills = new ArrayList<>();
         for (PlayerState ps : players.values()) {
             list.add(new Packets.Participant(ps.id, ps.name, ps.alive && !ps.left, ps.role.id));
+            kills.add(ps.kills);
         }
+        int taskPercent = Math.round(taskProgress() * 100);
         for (ServerPlayer p : online()) {
             PlayerState ps = players.get(p.getUUID());
             exitVent(p, ps, false);
             p.removeAllEffects();
             p.addEffect(new MobEffectInstance(MobEffects.SATURATION, -1, 0, false, false));
-            send(p, new Packets.Result(winner.ordinal(), reason, list));
+            send(p, new Packets.Result(winner.ordinal(), reason, list, kills, taskPercent, meetingCount));
         }
         syncAll();
     }
@@ -702,7 +710,7 @@ public final class GameManager {
         }
         List<Packets.TaskInfo> tasks = new ArrayList<>();
         for (PlayerState.TaskEntry t : ps.tasks) {
-            tasks.add(new Packets.TaskInfo(t.pos, t.type.ordinal(), t.done));
+            tasks.add(new Packets.TaskInfo(t.pos, t.type.ordinal(), t.done, map().roomAt(t.pos)));
         }
         Active a = active.get(ps.id);
         float ap = a == null ? 0f : activeProgress.getOrDefault(ps.id, 0) / (float) a.need;
@@ -715,7 +723,8 @@ public final class GameManager {
         };
         send(p, new Packets.State(phaseNum, ps.role.id, ps.alive, mates(ps), tasks, !ps.tasksCount(), progress,
                 ps.killCooldown, ps.seerLeft, ps.knightLeft, ps.emergencyLeft, blackout, gasTicks, gasMax,
-                valveFixed, boilerFixed, sabotageCooldown, ps.vent != null, at, ap));
+                valveFixed, boilerFixed, sabotageCooldown, ps.vent != null, at, ap,
+                map().roomAt(ps.vent != null ? ps.vent : p.blockPosition())));
     }
 
     // ================================================================= 勝敗
@@ -801,6 +810,7 @@ public final class GameManager {
             return true;
         }
         kill(target, t, k.name);
+        k.kills++;
         if (kp != null) {
             send(kp, new Packets.KillFx(1, t.name));
         }
@@ -1334,7 +1344,10 @@ public final class GameManager {
         startMeeting(0, ps, null);
     }
 
+    private int meetingCount;
+
     private void startMeeting(int reason, PlayerState caller, @Nullable BodyEntity body) {
+        meetingCount++;
         String bodyName = body != null ? body.ownerName() : "";
         UUID bodyOwner = body != null ? body.owner().orElse(null) : null;
         phase = Phase.MEETING;
@@ -1606,6 +1619,9 @@ public final class GameManager {
         PlayerState s = players.get(sender.getUUID());
         if (s == null) {
             return;
+        }
+        if (phase == Phase.MEETING) {
+            sendAll(new Packets.Talk(s.id, s.name, text));
         }
         for (PlayerState ps : players.values()) {
             if (ps == s || !ps.alive || ps.name.length() < 2 || !text.contains(ps.name)) {

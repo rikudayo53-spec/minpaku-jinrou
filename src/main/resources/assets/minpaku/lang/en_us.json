@@ -23,5 +23,7 @@
  "block.minpaku.kitchen_sink": "Kitchen Sink (Task)",
  "block.minpaku.shoe_rack": "Shoe Rack (Task)",
  "block.minpaku.shoji_screen": "Shoji Screen (Task)",
- "entity.minpaku.bot": "Bot"
+ "entity.minpaku.bot": "Bot",
+ "key.minpaku.ledger": "Show task ledger",
+ "key.categories.minpaku": "Minpaku Jinrou"
 }

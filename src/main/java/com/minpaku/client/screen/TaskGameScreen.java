@@ -56,22 +56,22 @@ public abstract class TaskGameScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float pt) {
-        g.fill(0, 0, width, height, 0x99000000);
+        g.fill(0, 0, width, height, 0xA0100C08);
         int x = left();
         int y = top();
-        g.fill(x - 6, y - 22, x + panelW + 6, y + panelH + 6, 0xFF4E342E);
-        g.fill(x - 3, y - 19, x + panelW + 3, y + panelH + 3, 0xFF6D4C41);
-        g.fill(x, y, x + panelW, y + panelH, 0xFF2B2B2B);
-        g.drawCenteredString(font, title, width / 2, y - 15, 0xFFFFE0B2);
+        com.minpaku.client.Ui.sprite(g, "board", x - 12, y - 28, panelW + 24, panelH + 40);
+        com.minpaku.client.Ui.serif(g, title.getString(), width / 2f, y - 21, com.minpaku.client.Ui.CREAM, 1.2f, 0);
+        g.fill(x - 2, y - 2, x + panelW + 2, y + panelH + 2, com.minpaku.client.Ui.GOLD);
+        g.fill(x, y, x + panelW, y + panelH, 0xFF1B2A3A);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float pt) {
-        super.render(g, mouseX, mouseY, pt);
+        renderBackground(g, mouseX, mouseY, pt);
         renderGame(g, mouseX, mouseY, pt);
         if (finished()) {
-            g.fill(left(), top(), left() + panelW, top() + panelH, 0x8800AA00);
-            GameHud.drawBig(g, font, "完了！", width / 2, height / 2 - 10, 3f, 0xFFFFFFFF);
+            g.fill(left(), top(), left() + panelW, top() + panelH, 0x8800801A);
+            com.minpaku.client.Ui.stamp(g, "完了", width / 2f, height / 2f, 48, 0xFFFFFFFF, -8, false);
         }
     }
 

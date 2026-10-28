@@ -67,10 +67,14 @@ public class BotBrain {
     @Nullable
     private UUID seerSaid;
 
+    /** 強さ 1（よわい）〜 3（つよい） */
+    private final int level;
+
     BotBrain(GameManager gm, PlayerState ps) {
         this.gm = gm;
         this.ps = ps;
         this.r = gm.random;
+        this.level = gm.settings().get("bot_level");
     }
 
     private boolean villageSide() {
@@ -113,7 +117,8 @@ public class BotBrain {
     /** 死体を見つけたら通報（人狼はたまにしか通報しない） */
     private boolean lookForBodies(BotEntity bot) {
         for (BodyEntity body : new ArrayList<>(gm.bodies)) {
-            if (!body.isAlive() || bot.distanceTo(body) > (gm.blackout ? 4 : 8) || !bot.hasLineOfSight(body)) {
+            double sight = (gm.blackout ? 3 : 5) + level * (gm.blackout ? 1 : 2);
+            if (!body.isAlive() || bot.distanceTo(body) > sight || !bot.hasLineOfSight(body)) {
                 continue;
             }
             if (ps.role.canKill() && r.nextFloat() > 0.05f) {
@@ -171,7 +176,7 @@ public class BotBrain {
     // ----------------------------------------------------------------- 人狼
 
     private void considerHunt(BotEntity bot) {
-        if (ps.killCooldown > 0 || gm.ticks < 200 || r.nextFloat() > 0.6f) {
+        if (ps.killCooldown > 0 || gm.ticks < 200 || r.nextFloat() > 0.25f + 0.25f * level) {
             return;
         }
         PlayerState best = null;
@@ -702,8 +707,8 @@ public class BotBrain {
                 target = randomOther(true);
             }
         } else {
-            target = topSuspect(45);
-            if (target == null && r.nextFloat() < 0.25f) {
+            target = topSuspect(level >= 3 ? 35 : 45);
+            if (target == null && r.nextFloat() < (level == 1 ? 0.45f : 0.2f)) {
                 target = randomOther(false);
             }
         }

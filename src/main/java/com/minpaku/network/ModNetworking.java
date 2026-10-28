@@ -20,6 +20,7 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(Packets.OpenTask.TYPE, Packets.OpenTask.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Announce.TYPE, Packets.Announce.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Result.TYPE, Packets.Result.CODEC);
+        PayloadTypeRegistry.playS2C().register(Packets.Talk.TYPE, Packets.Talk.CODEC);
 
         PayloadTypeRegistry.playC2S().register(Packets.SetSetting.TYPE, Packets.SetSetting.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.Control.TYPE, Packets.Control.CODEC);

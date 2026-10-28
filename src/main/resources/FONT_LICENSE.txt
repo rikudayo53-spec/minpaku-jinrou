@@ -1,0 +1,4 @@
+このmodの assets/minpaku/font/ui_sans.ttf と ui_serif.ttf は、
+Noto Sans CJK JP / Noto Serif CJK JP（Google / Adobe）を、使う文字だけに絞って作ったものです。
+ライセンス: SIL Open Font License, Version 1.1  https://openfontlicense.org
+Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.

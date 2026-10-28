@@ -30,6 +30,8 @@ public class PlayerState {
     public boolean left;
     /** ボットかどうか */
     public boolean bot;
+    /** キルした回数（結果画面用） */
+    public int kills;
     public final List<TaskEntry> tasks = new ArrayList<>();
     public int killCooldown;
     public int seerLeft;

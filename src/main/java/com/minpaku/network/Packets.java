@@ -57,15 +57,16 @@ public final class Packets {
         }
     }
 
-    public record TaskInfo(BlockPos pos, int type, boolean done) {
+    public record TaskInfo(BlockPos pos, int type, boolean done, String room) {
         static void write(FriendlyByteBuf b, TaskInfo t) {
             b.writeBlockPos(t.pos);
             b.writeVarInt(t.type);
             b.writeBoolean(t.done);
+            b.writeUtf(t.room);
         }
 
         static TaskInfo read(FriendlyByteBuf b) {
-            return new TaskInfo(b.readBlockPos(), b.readVarInt(), b.readBoolean());
+            return new TaskInfo(b.readBlockPos(), b.readVarInt(), b.readBoolean(), b.readUtf());
         }
     }
 
@@ -100,13 +101,13 @@ public final class Packets {
                         boolean fakeTasks, float taskProgress, int killCooldown, int seerLeft, int knightLeft,
                         int emergencyLeft, boolean blackout, int gasTicks, int gasMax, boolean valveFixed,
                         boolean boilerFixed, int sabotageCooldown, boolean inVent, int activeType,
-                        float activeProgress) implements CustomPacketPayload {
+                        float activeProgress, String room) implements CustomPacketPayload {
         public static final Type<State> TYPE = key("state");
         public static final StreamCodec<FriendlyByteBuf, State> CODEC = CustomPacketPayload.codec(State::write, State::read);
 
         public static State lobby() {
             return new State(0, "", true, List.of(), List.of(), false, 0, 0, 0, 0, 0,
-                    false, -1, 1, false, false, 0, false, -1, 0);
+                    false, -1, 1, false, false, 0, false, -1, 0, "");
         }
 
         private void write(FriendlyByteBuf b) {
@@ -130,13 +131,14 @@ public final class Packets {
             b.writeBoolean(inVent);
             b.writeInt(activeType);
             b.writeFloat(activeProgress);
+            b.writeUtf(room);
         }
 
         private static State read(FriendlyByteBuf b) {
             return new State(b.readVarInt(), b.readUtf(), b.readBoolean(), readList(b, Mate::read),
                     readList(b, TaskInfo::read), b.readBoolean(), b.readFloat(), b.readVarInt(), b.readVarInt(),
                     b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readVarInt(), b.readBoolean(),
-                    b.readBoolean(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readFloat());
+                    b.readBoolean(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readFloat(), b.readUtf());
         }
 
         @Override
@@ -335,7 +337,8 @@ public final class Packets {
     }
 
     /** ゲーム終了（winner = Role.Team の番号） */
-    public record Result(int winner, String reason, List<Participant> players) implements CustomPacketPayload {
+    public record Result(int winner, String reason, List<Participant> players, List<Integer> kills, int taskPercent,
+                         int meetings) implements CustomPacketPayload {
         public static final Type<Result> TYPE = key("result");
         public static final StreamCodec<FriendlyByteBuf, Result> CODEC = CustomPacketPayload.codec(Result::write, Result::read);
 
@@ -343,10 +346,35 @@ public final class Packets {
             b.writeVarInt(winner);
             b.writeUtf(reason);
             writeList(b, players, Participant::write);
+            writeList(b, kills, (bb, k) -> bb.writeVarInt(k));
+            b.writeVarInt(taskPercent);
+            b.writeVarInt(meetings);
         }
 
         private static Result read(FriendlyByteBuf b) {
-            return new Result(b.readVarInt(), b.readUtf(), readList(b, Participant::read));
+            return new Result(b.readVarInt(), b.readUtf(), readList(b, Participant::read), readList(b, bb -> bb.readVarInt()),
+                    b.readVarInt(), b.readVarInt());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** 会議中の発言（ボット・人間とも）。画面の右側に並べる */
+    public record Talk(UUID id, String name, String text) implements CustomPacketPayload {
+        public static final Type<Talk> TYPE = key("talk");
+        public static final StreamCodec<FriendlyByteBuf, Talk> CODEC = CustomPacketPayload.codec(Talk::write, Talk::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeUUID(id);
+            b.writeUtf(name);
+            b.writeUtf(text);
+        }
+
+        private static Talk read(FriendlyByteBuf b) {
+            return new Talk(b.readUUID(), b.readUtf(), b.readUtf());
         }
 
         @Override

@@ -37,9 +37,9 @@ public class BreakerScreen extends TaskGameScreen {
             g.renderOutline(x, y, 26, 80, 0xFF9E9E9E);
             int ky = on[i] ? y + 6 : y + 44;
             g.fill(x + 4, ky, x + 22, ky + 30, on[i] ? 0xFF66BB6A : 0xFFEF5350);
-            g.drawCenteredString(font, on[i] ? "入" : "切", x + 13, y + 86, on[i] ? 0xFF66BB6A : 0xFFEF5350);
+            com.minpaku.client.Ui.sansCentered(g, on[i] ? "入" : "切", x + 13, y + 86, on[i] ? 0xFF66BB6A : 0xFFEF5350);
         }
-        g.drawCenteredString(font, "クリックで切りかえ", width / 2, top() + panelH - 12, 0xFFAAAAAA);
+        com.minpaku.client.Ui.sansCentered(g, "クリックで切りかえ", width / 2, top() + panelH - 12, 0xFFAAAAAA);
     }
 
     @Override

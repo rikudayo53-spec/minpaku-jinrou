@@ -43,6 +43,8 @@ public class MinpakuClient implements ClientModInitializer {
         registerItemModels();
         EntityRendererRegistry.register(ModEntities.BOT, com.minpaku.client.render.BotRenderer::new);
         HudRenderCallback.EVENT.register(GameHud::render);
+        GameHud.LEDGER_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
+                new net.minecraft.client.KeyMapping("key.minpaku.ledger", org.lwjgl.glfw.GLFW.GLFW_KEY_J, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
 
         ClientBridge.openSettings = () -> Minecraft.getInstance().setScreen(new SettingsScreen());
@@ -90,7 +92,7 @@ public class MinpakuClient implements ClientModInitializer {
     private static void registerReceivers() {
         ClientPlayNetworking.registerGlobalReceiver(Packets.State.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             int before = ClientGame.state.phase();
-            ClientGame.state = p;
+            ClientGame.onState(p);
             Minecraft mc = Minecraft.getInstance();
             // 会議が終わったのに画面が残っていたら閉じる
             if (before == 2 && p.phase() == 1 && mc.screen instanceof MeetingScreen) {
@@ -108,8 +110,10 @@ public class MinpakuClient implements ClientModInitializer {
                 s.refresh();
             }
         }));
-        ClientPlayNetworking.registerGlobalReceiver(Packets.Meeting.TYPE, (p, ctx) -> ctx.client().execute(() ->
-                Minecraft.getInstance().setScreen(new MeetingScreen(p))));
+        ClientPlayNetworking.registerGlobalReceiver(Packets.Meeting.TYPE, (p, ctx) -> ctx.client().execute(() -> {
+            ClientGame.talk.clear();
+            Minecraft.getInstance().setScreen(new MeetingScreen(p));
+        }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Voted.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             if (Minecraft.getInstance().screen instanceof MeetingScreen m) {
                 m.onVoted(p.voters());
@@ -160,6 +164,12 @@ public class MinpakuClient implements ClientModInitializer {
                 case 3 -> ClientGame.play(SoundEvents.AMETHYST_BLOCK_CHIME, 1.0f);
                 default -> {
                 }
+            }
+        }));
+        ClientPlayNetworking.registerGlobalReceiver(Packets.Talk.TYPE, (p, ctx) -> ctx.client().execute(() -> {
+            ClientGame.talk.add(p);
+            if (ClientGame.talk.size() > 60) {
+                ClientGame.talk.remove(0);
             }
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Result.TYPE, (p, ctx) -> ctx.client().execute(() ->

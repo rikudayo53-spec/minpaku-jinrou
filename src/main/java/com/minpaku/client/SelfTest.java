@@ -1,39 +1,37 @@
 package com.minpaku.client;
 
 import com.minpaku.MinpakuJinrou;
-import com.minpaku.block.MarkerBlock;
-import com.minpaku.client.screen.BreakerScreen;
-import com.minpaku.client.screen.NumbersScreen;
+import com.minpaku.client.screen.HolesScreen;
 import com.minpaku.client.screen.ResultScreen;
+import com.minpaku.client.screen.SabotageScreen;
 import com.minpaku.client.screen.SettingsScreen;
 import com.minpaku.client.screen.WiresScreen;
-import com.minpaku.entity.BodyEntity;
 import com.minpaku.game.GameManager;
+import com.minpaku.game.MapData;
 import com.minpaku.game.MarkerType;
 import com.minpaku.network.Packets;
-import com.minpaku.registry.ModBlocks;
-import com.minpaku.registry.ModEntities;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.block.Blocks;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * 自動テスト（環境変数 MINPAKU_SELFTEST=1 のときだけ動く）。
- * シングルプレイの世界に入ったら、ブロックを並べてゲームを進め、要所でスクリーンショットを撮る。
+ * テスト用の世界を開き、古民家マップを建ててゲームを進め、要所でスクリーンショットを撮る。
  */
 public final class SelfTest {
     public static final boolean ENABLED = "1".equals(System.getenv("MINPAKU_SELFTEST"));
     private static int t = -1;
-    private static BlockPos origin;
+    private static int menuTicks;
+    private static boolean opened;
+    private static BlockPos spawn = BlockPos.ZERO;
+    private static int meetAt = -1;
 
     private SelfTest() {
     }
@@ -43,7 +41,7 @@ public final class SelfTest {
                 c -> MinpakuJinrou.LOGGER.info("SELFTEST screenshot {}", name));
     }
 
-    private static void server(Minecraft mc, java.util.function.Consumer<ServerPlayer> task) {
+    private static void server(Minecraft mc, Consumer<ServerPlayer> task) {
         if (mc.getSingleplayerServer() == null || mc.player == null) {
             return;
         }
@@ -56,18 +54,13 @@ public final class SelfTest {
         });
     }
 
-    private static int menuTicks;
-    private static boolean opened;
-
     public static void tick(Minecraft mc) {
         if (!ENABLED) {
             return;
         }
         if (mc.level == null) {
-            // タイトル画面（または最初の案内画面）が出たら、テスト用の世界を開く
             if (!opened && mc.screen != null && ++menuTicks > 60) {
                 opened = true;
-                MinpakuJinrou.LOGGER.info("SELFTEST opening world from {}", mc.screen.getClass().getSimpleName());
                 mc.createWorldOpenFlows().openWorld("selftest", () -> MinpakuJinrou.LOGGER.error("SELFTEST open failed"));
             }
             return;
@@ -83,98 +76,105 @@ public final class SelfTest {
         }
     }
 
+    private static void tp(Minecraft mc, double dx, double dy, double dz, float yaw, float pitch) {
+        server(mc, sp -> sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5 + dx, spawn.getY() + dy, spawn.getZ() + 0.5 + dz, yaw, pitch));
+    }
+
     private static void step(Minecraft mc) {
+        if (meetAt > 0) {
+            int m = t - meetAt;
+            switch (m) {
+                case 30 -> shot(mc, "20_meeting_splash");
+                case 500 -> shot(mc, "21_meeting_talk");
+                case 1000 -> shot(mc, "22_meeting_vote");
+                case 1010 -> ClientPlayNetworking.send(new Packets.CastVote(Packets.NONE));
+                default -> {
+                }
+            }
+            if (m == 1300) {
+                shot(mc, "23_after");
+                meetAt = -1;
+                t = 5000;
+            }
+            return;
+        }
         switch (t) {
             case 60 -> server(mc, sp -> {
                 GameManager.selfTestNoWin = true;
-                ServerLevel level = sp.serverLevel();
-                level.setDayTime(6000);
                 sp.setGameMode(GameType.CREATIVE);
-                BlockPos base = sp.blockPosition();
-                origin = base;
-                // 床と壁
-                for (int x = -8; x <= 8; x++) {
-                    for (int z = -2; z <= 8; z++) {
-                        level.setBlockAndUpdate(base.offset(x, -1, z), Blocks.OAK_PLANKS.defaultBlockState());
-                        for (int y = 0; y < 4; y++) {
-                            level.setBlockAndUpdate(base.offset(x, y, z), Blocks.AIR.defaultBlockState());
-                        }
-                    }
-                    level.setBlockAndUpdate(base.offset(x, 0, 6), Blocks.WHITE_TERRACOTTA.defaultBlockState());
-                    level.setBlockAndUpdate(base.offset(x, 1, 6), Blocks.WHITE_TERRACOTTA.defaultBlockState());
-                    level.setBlockAndUpdate(base.offset(x, 2, 6), Blocks.WHITE_TERRACOTTA.defaultBlockState());
-                }
-                // ブロックを2列に並べる（プレイヤーの方を向ける = 北向きに置いて南側から見る）
-                int i = 0;
-                for (MarkerType type : MarkerType.values()) {
-                    int col = i % 7;
-                    int row = i / 7;
-                    BlockPos pos = base.offset(-6 + col * 2, 0, 3 + row * 2);
-                    level.setBlockAndUpdate(pos, ModBlocks.BLOCKS.get(type).defaultBlockState()
-                            .setValue(MarkerBlock.FACING, Direction.NORTH));
-                    i++;
-                }
-                sp.teleportTo(level, base.getX() + 0.5, base.getY(), base.getZ() - 1.5, 0f, 25f);
+                sp.setYRot(180f);
+                GameManager.get(sp.server).buildMap(sp);
+                spawn = sp.blockPosition();
             });
-            case 140 -> shot(mc, "01_blocks");
-            case 150 -> server(mc, sp -> sp.teleportTo(sp.serverLevel(), origin.getX() - 5.5, origin.getY() + 1.2,
-                    origin.getZ() + 1.0, 0f, 35f));
-            case 190 -> shot(mc, "02_blocks_close_left");
-            case 200 -> server(mc, sp -> sp.teleportTo(sp.serverLevel(), origin.getX() + 4.5, origin.getY() + 1.2,
-                    origin.getZ() + 1.0, 0f, 35f));
-            case 240 -> shot(mc, "03_blocks_close_right");
-            case 250 -> server(mc, sp -> {
-                BodyEntity body = ModEntities.BODY.create(sp.serverLevel());
-                body.moveTo(origin.getX() + 0.5, origin.getY(), origin.getZ() + 1.5, 30f, 0);
-                body.setOwner(sp.getUUID(), sp.getGameProfile().getName());
-                sp.serverLevel().addFreshEntity(body);
-                sp.teleportTo(sp.serverLevel(), origin.getX() + 0.5, origin.getY() + 0.5, origin.getZ() - 1.5, 0f, 40f);
+            case 160 -> shot(mc, "01_entrance");
+            case 170 -> tp(mc, 0, 35, 22, 180f, 60f);
+            case 230 -> shot(mc, "02_aerial");
+            case 240 -> tp(mc, 0, 2, -8, 180f, 20f);
+            case 290 -> shot(mc, "03_corridor");
+            case 300 -> server(mc, sp -> {
+                List<BlockPos> bells = MapData.get(sp.serverLevel()).get(MarkerType.BELL);
+                if (!bells.isEmpty()) {
+                    BlockPos b = bells.get(0);
+                    sp.teleportTo(sp.serverLevel(), b.getX() + 0.5, b.getY() + 1.5, b.getZ() + 4.5, 180f, 25f);
+                }
             });
-            case 300 -> shot(mc, "04_body");
-            case 310 -> server(mc, sp -> GameManager.get(sp.server).sendSettings(sp));
-            case 320 -> mc.setScreen(new SettingsScreen());
-            case 350 -> shot(mc, "05_settings");
-            case 360 -> {
+            case 350 -> shot(mc, "04_hall");
+            case 360 -> server(mc, sp -> {
+                sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 180f, 0f);
+                sp.setGameMode(GameType.ADVENTURE);
+                GameManager.get(sp.server).sendSettings(sp);
+            });
+            case 370 -> mc.setScreen(new SettingsScreen());
+            case 400 -> shot(mc, "05_settings");
+            case 410 -> {
                 mc.setScreen(null);
-                server(mc, sp -> {
-                    sp.teleportTo(sp.serverLevel(), origin.getX() + 0.5, origin.getY(), origin.getZ() - 1.5, 0f, 20f);
-                    GameManager.get(sp.server).start(sp);
-                });
+                server(mc, sp -> GameManager.get(sp.server).start(sp));
             }
-            case 385 -> shot(mc, "06_reveal_title");
-            case 440 -> shot(mc, "07_reveal_role");
-            case 520 -> shot(mc, "08_hud");
-            case 530 -> mc.setScreen(new WiresScreen(BlockPos.ZERO));
-            case 545 -> shot(mc, "09_wires");
-            case 550 -> mc.setScreen(new NumbersScreen(BlockPos.ZERO));
-            case 565 -> shot(mc, "10_numbers");
-            case 570 -> mc.setScreen(new BreakerScreen(BlockPos.ZERO));
-            case 585 -> shot(mc, "11_breaker");
-            case 590 -> {
+            case 435 -> shot(mc, "06_reveal_title");
+            case 520 -> shot(mc, "07_reveal_role");
+            case 640 -> shot(mc, "08_hud");
+            case 650 -> {
+                if (GameHud.LEDGER_KEY != null) {
+                    GameHud.LEDGER_KEY.setDown(true);
+                }
+            }
+            case 660 -> shot(mc, "09_hud_ledger");
+            case 665 -> {
+                if (GameHud.LEDGER_KEY != null) {
+                    GameHud.LEDGER_KEY.setDown(false);
+                }
+                mc.setScreen(new WiresScreen(BlockPos.ZERO));
+            }
+            case 680 -> shot(mc, "10_wires");
+            case 685 -> mc.setScreen(new HolesScreen(BlockPos.ZERO));
+            case 700 -> shot(mc, "11_shoji");
+            case 705 -> mc.setScreen(new SabotageScreen());
+            case 720 -> shot(mc, "12_sabotage");
+            case 725 -> {
                 mc.setScreen(null);
-                ClientGame.killFxKind = 0;
-                ClientGame.killFxOther = "テスト";
-                ClientGame.killFxTicks = ClientGame.KILL_FX_LEN;
+                ClientGame.announce("停電！", "配電盤を直そう", 0xFFD54F);
             }
-            case 610 -> shot(mc, "12_killed");
-            case 660 -> server(mc, sp -> {
-                List<BlockPos> bells = com.minpaku.game.MapData.get(sp.serverLevel()).get(MarkerType.BELL);
+            case 745 -> shot(mc, "13_announce");
+            case 1100 -> shot(mc, "14_bots_moving");
+            case 1110 -> server(mc, sp -> {
+                List<BlockPos> bells = MapData.get(sp.serverLevel()).get(MarkerType.BELL);
                 if (!bells.isEmpty()) {
                     GameManager.get(sp.server).onUseMarker(sp, bells.get(0), MarkerType.BELL);
                 }
+                meetAt = t + 1;
             });
-            case 680 -> shot(mc, "13_meeting_splash");
-            case 1640 -> shot(mc, "14_meeting_table");
-            case 1650 -> ClientPlayNetworking.send(new Packets.CastVote(Packets.NONE));
-            case 1665 -> shot(mc, "15_meeting_result");
-            case 1760 -> shot(mc, "16_eject");
-            case 1900 -> mc.setScreen(new ResultScreen(new Packets.Result(0, "すべてのタスクを終えた", List.of(
+            case 5040 -> mc.setScreen(new ResultScreen(new Packets.Result(1, "人狼が民泊を乗っ取った", List.of(
                     new Packets.Participant(mc.player.getUUID(), mc.player.getGameProfile().getName(), true, "wolf"),
-                    new Packets.Participant(UUID.randomUUID(), "村人A", true, "villager"),
-                    new Packets.Participant(UUID.randomUUID(), "占い師B", false, "seer"),
-                    new Packets.Participant(UUID.randomUUID(), "騎士C", true, "knight")))));
-            case 1960 -> shot(mc, "17_result");
-            case 1980 -> mc.stop();
+                    new Packets.Participant(UUID.randomUUID(), "はなこ", false, "wolf"),
+                    new Packets.Participant(UUID.randomUUID(), "たろう", true, "villager"),
+                    new Packets.Participant(UUID.randomUUID(), "みお", true, "seer"),
+                    new Packets.Participant(UUID.randomUUID(), "けんた", false, "knight"),
+                    new Packets.Participant(UUID.randomUUID(), "さくら", false, "medium"),
+                    new Packets.Participant(UUID.randomUUID(), "ゆうき", true, "villager"),
+                    new Packets.Participant(UUID.randomUUID(), "そうた", true, "madman")),
+                    List.of(2, 1, 0, 0, 0, 0, 0, 0), 74, 3)));
+            case 5100 -> shot(mc, "30_result");
+            case 5120 -> mc.stop();
             default -> {
             }
         }

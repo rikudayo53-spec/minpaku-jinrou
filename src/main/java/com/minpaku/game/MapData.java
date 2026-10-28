@@ -21,6 +21,32 @@ public class MapData extends SavedData {
     private static final String NAME = "minpaku_map";
 
     private final Map<MarkerType, Set<Long>> markers = new EnumMap<>(MarkerType.class);
+
+    /** 部屋（名前と範囲）。基本マップを建てたときに登録される */
+    public record Room(String name, int x1, int y1, int z1, int x2, int y2, int z2) {
+        public boolean contains(BlockPos p) {
+            return p.getX() >= x1 && p.getX() <= x2 && p.getY() >= y1 && p.getY() <= y2
+                    && p.getZ() >= z1 && p.getZ() <= z2;
+        }
+    }
+
+    private final List<Room> rooms = new ArrayList<>();
+
+    public void setRooms(List<Room> list) {
+        rooms.clear();
+        rooms.addAll(list);
+        setDirty();
+    }
+
+    /** その場所の部屋の名前（なければ空文字） */
+    public String roomAt(BlockPos pos) {
+        for (Room r : rooms) {
+            if (r.contains(pos)) {
+                return r.name();
+            }
+        }
+        return "";
+    }
     private final GameSettings settings = new GameSettings();
 
     public static MapData get(ServerLevel level) {
@@ -80,6 +106,14 @@ public class MapData extends SavedData {
         });
         tag.put("markers", m);
         tag.put("settings", settings.save());
+        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+        for (Room r : rooms) {
+            CompoundTag t = new CompoundTag();
+            t.putString("name", r.name());
+            t.putIntArray("box", new int[]{r.x1(), r.y1(), r.z1(), r.x2(), r.y2(), r.z2()});
+            list.add(t);
+        }
+        tag.put("rooms", list);
         return tag;
     }
 
@@ -96,6 +130,14 @@ public class MapData extends SavedData {
             }
         }
         data.settings.load(tag.getCompound("settings"));
+        net.minecraft.nbt.ListTag list = tag.getList("rooms", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag t = list.getCompound(i);
+            int[] b = t.getIntArray("box");
+            if (b.length == 6) {
+                data.rooms.add(new Room(t.getString("name"), b[0], b[1], b[2], b[3], b[4], b[5]));
+            }
+        }
         return data;
     }
 }

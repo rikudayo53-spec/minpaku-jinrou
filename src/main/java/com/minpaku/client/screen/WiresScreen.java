@@ -57,7 +57,7 @@ public class WiresScreen extends TaskGameScreen {
             int li = leftOrder.indexOf(holding);
             line(g, lx + 16, rowY(li) + 8, mouseX, mouseY, COLORS[holding]);
         }
-        g.drawCenteredString(font, "左の線をクリック → 同じ色の右の端子をクリック", width / 2, top() + panelH - 12, 0xFFAAAAAA);
+        com.minpaku.client.Ui.sansCentered(g, "左の線をクリック → 同じ色の右の端子をクリック", width / 2, top() + panelH - 12, 0xFFAAAAAA);
     }
 
     /** 太めの線を点で描く */

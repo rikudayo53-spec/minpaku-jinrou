@@ -58,7 +58,7 @@ public class HolesScreen extends TaskGameScreen {
                 left++;
             }
         }
-        g.drawCenteredString(font, "穴をクリックして紙を貼ろう（残り " + left + "）", width / 2, top() + panelH - 12, 0xFFAAAAAA);
+        com.minpaku.client.Ui.sansCentered(g, "穴をクリックして紙を貼ろう（残り " + left + "）", width / 2, top() + panelH - 12, 0xFFAAAAAA);
     }
 
     @Override

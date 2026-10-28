@@ -16,17 +16,27 @@ import java.util.Map;
  */
 public final class GameSettings {
 
-    public enum Kind { NUMBER, SECONDS, TOGGLE }
+    public enum Kind { NUMBER, SECONDS, TOGGLE, CHOICE }
 
-    public record Def(String id, String label, String group, Kind kind, int min, int max, int step, int def) {
+    public record Def(String id, String label, String group, Kind kind, int min, int max, int step, int def,
+                      String[] choices) {
+        public Def(String id, String label, String group, Kind kind, int min, int max, int step, int def) {
+            this(id, label, group, kind, min, max, step, def, null);
+        }
+
         public String format(int value) {
             return switch (kind) {
                 case TOGGLE -> value != 0 ? "ON" : "OFF";
                 case SECONDS -> value + "秒";
                 case NUMBER -> String.valueOf(value);
+                case CHOICE -> choices != null && value - min >= 0 && value - min < choices.length
+                        ? choices[value - min] : String.valueOf(value);
             };
         }
     }
+
+    /** 設定画面のタブ（この順に並ぶ） */
+    public static final String[] GROUPS = {"役職", "能力", "人狼", "会議", "タスク", "ボット"};
 
     private static final List<Def> DEFS = new ArrayList<>();
 
@@ -52,7 +62,11 @@ public final class GameSettings {
         DEFS.add(new Def("confirm_eject", "追放時に人狼だったか全員に表示", "会議", Kind.TOGGLE, 0, 1, 1, 0));
         DEFS.add(new Def("anonymous_votes", "匿名投票", "会議", Kind.TOGGLE, 0, 1, 1, 0));
         DEFS.add(new Def("tasks", "タスクの数（1人あたり）", "タスク", Kind.NUMBER, 1, 12, 1, 5));
-        DEFS.add(new Def("bot_fill", "ボットで何人までうめるか（合計人数）", "ボット", Kind.NUMBER, 0, 12, 1, 8));
+        DEFS.add(new Def("bots_enabled", "ボットを参加させる", "ボット", Kind.TOGGLE, 0, 1, 1, 1));
+        DEFS.add(new Def("bot_fill", "ボットで何人までうめるか（合計人数）", "ボット", Kind.NUMBER, 2, 12, 1, 8));
+        DEFS.add(new Def("bot_level", "ボットの強さ", "ボット", Kind.CHOICE, 1, 3, 1, 2,
+                new String[]{"よわい", "ふつう", "つよい"}));
+        DEFS.add(new Def("bot_talk", "ボットが会議でしゃべる", "ボット", Kind.TOGGLE, 0, 1, 1, 1));
     }
 
     public static List<Def> defs() {
