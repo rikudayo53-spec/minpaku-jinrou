@@ -351,7 +351,7 @@ public class BotBrain {
 
         if (!arrived) {
             work = 0;
-            if (++sinceRepath > 40 || bot.getNavigation().isDone()) {
+            if (++sinceRepath > 40 || (bot.getNavigation().isDone() && sinceRepath > 10)) {
                 sinceRepath = 0;
                 bot.getNavigation().moveTo(target.x, target.y, target.z, mode == Mode.FLEE ? 1.2 : 1.0);
             }
