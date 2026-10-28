@@ -96,6 +96,8 @@ public final class GameManager {
     final List<BodyEntity> bodies = new ArrayList<>();
     long ticks;
     long lastMeetingEnd;
+    /** 会議で使われたセリフ（ボットが同じことを言わないように） */
+    final java.util.Set<String> usedLines = new java.util.HashSet<>();
 
     // 妨害
     boolean blackout;
@@ -1349,6 +1351,7 @@ public final class GameManager {
 
     private void startMeeting(int reason, PlayerState caller, @Nullable BodyEntity body) {
         meetingCount++;
+        usedLines.clear();
         String bodyName = body != null ? body.ownerName() : "";
         UUID bodyOwner = body != null ? body.owner().orElse(null) : null;
         phase = Phase.MEETING;

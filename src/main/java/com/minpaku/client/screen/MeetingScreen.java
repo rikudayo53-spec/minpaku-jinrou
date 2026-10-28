@@ -248,7 +248,8 @@ public class MeetingScreen extends Screen {
         Ui.sans(g, p.name(), x + 28, y + 5, nameColor, 1f, -1);
         Ui.sans(g, p.alive() ? "生存" : "死亡", x + 28, y + 16, 0xFF8D7A62, 0.7f, -1);
         if (meeting.caller().equals(p.name())) {
-            Ui.sans(g, "通報", x + 28 + (int) (Ui.width(Ui.sans(p.name()))) + 4, y + 6, Ui.VERMILION, 0.7f, -1);
+            Ui.sans(g, meeting.reason() == 1 ? "通報" : "呼び鈴", x + 28 + (int) (Ui.width(Ui.sans(p.name()))) + 4, y + 6,
+                    Ui.VERMILION, 0.7f, -1);
         }
         if (result == null) {
             if (voted.contains(p.id())) {

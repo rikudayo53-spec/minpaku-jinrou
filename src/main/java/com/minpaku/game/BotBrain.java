@@ -87,8 +87,17 @@ public class BotBrain {
 
     // ================================================================= ふだんの動き
 
+    /** さっきまでいた部屋（会議で話す用） */
+    private String lastRoom = "";
+
     void tickPlaying(BotEntity bot) {
         long t = gm.ticks + (ps.id.hashCode() & 7);
+        if (t % 20 == 0) {
+            String room = gm.map().roomAt(bot.blockPosition());
+            if (!room.isEmpty()) {
+                lastRoom = room;
+            }
+        }
 
         // 人狼：狩りの最中は毎tickキルを試す
         if (mode == Mode.HUNT) {
@@ -631,10 +640,8 @@ public class BotBrain {
                 line = scape.name + " がずっとうろうろしてて怪しいと思う。";
                 accused = scape;
                 strength = 25;
-            } else if (f < 0.75f) {
-                line = "ずっとタスクしてたから何も見てないよ。";
             } else {
-                line = "うーん、情報が少ないね。スキップでいいかも。";
+                line = filler();
             }
         } else {
             PlayerState top = topSuspect(40);
@@ -643,9 +650,7 @@ public class BotBrain {
                 accused = top;
                 strength = 20;
             } else {
-                String[] lines = {"タスクしてたから何も見てない…", "スキップでいいと思う。", "誰か怪しい人いる？",
-                        "まだ分からないね。", "台所のほうにいたけど、何もなかったよ。"};
-                line = lines[r.nextInt(lines.length)];
+                line = filler();
             }
         }
         gm.botSay(ps, line);
@@ -656,6 +661,34 @@ public class BotBrain {
                 }
             }
         }
+    }
+
+    /** 特に情報がないときのひとこと（同じ会議で同じセリフはなるべく使わない） */
+    private String filler() {
+        String room = lastRoom.isEmpty() ? "家の中" : lastRoom;
+        PlayerState other = randomOther(false);
+        String on = other == null ? "だれか" : other.name;
+        String[] lines = {
+                room + "でタスクしてたから、何も見てないよ。",
+                room + "にいたけど、変わったことはなかった。",
+                "スキップでいいと思う。情報が少なすぎる。",
+                "誰か怪しい人いる？",
+                "まだ分からないね…。",
+                "さっきまで " + on + " と一緒にいたよ。",
+                on + " ってどこにいた？",
+                "ずっと " + room + " のあたりを回ってた。",
+                "停電のとき、誰がどこにいたか覚えてる？",
+                "今回は様子見かな。",
+                "タスク、あと少しで終わるよ。",
+                on + " は落ち着いてるし、白っぽい気がする。"
+        };
+        for (int i = 0; i < 12; i++) {
+            String l = lines[r.nextInt(lines.length)];
+            if (gm.usedLines.add(l)) {
+                return l;
+            }
+        }
+        return lines[r.nextInt(lines.length)];
     }
 
     @Nullable
