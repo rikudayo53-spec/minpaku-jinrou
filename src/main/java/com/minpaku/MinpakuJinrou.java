@@ -3,6 +3,7 @@ package com.minpaku;
 import com.minpaku.game.GameCommands;
 import com.minpaku.game.GameEvents;
 import com.minpaku.network.ModNetworking;
+import com.minpaku.registry.ModBlockEntities;
 import com.minpaku.registry.ModBlocks;
 import com.minpaku.registry.ModEntities;
 import com.minpaku.registry.ModItems;
@@ -25,6 +26,7 @@ public class MinpakuJinrou implements ModInitializer {
     @Override
     public void onInitialize() {
         ModBlocks.init();
+        ModBlockEntities.init();
         ModItems.init();
         ModEntities.init();
         ModNetworking.registerCommon();

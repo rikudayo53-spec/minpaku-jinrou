@@ -11,6 +11,8 @@
    - コマンドでも可: `/minpaku start` `/minpaku stop` `/minpaku key`
 
 ## 開発
-- `tools/models/gen_models.py` … 3Dブロック・アイテムのモデルを作る
+- `tools/blender/minpaku_models.py` … ブロック・アイテムの3DモデルをBlenderで作って書き出す（assets/minpaku/mesh/）
+  - 書き出したJSONを `.minecraft/config/minpaku/mesh/` に入れて F3+T で、jarを作り直さずに見た目を試せる
+- `tools/models/gen_models.py` … （旧）箱で作ったモデル。今は壊したときの粒のテクスチャだけ使用
 - `tools/models/gen_textures.py` … オリジナルのテクスチャを作る
 - 役職の追加: `game/Role.java`、設定の追加: `game/GameSettings.java`、タスクの追加: `game/MarkerType.java`

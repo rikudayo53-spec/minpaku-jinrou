@@ -37,6 +37,10 @@ public class MinpakuClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EntityRendererRegistry.register(ModEntities.BODY, BodyRenderer::new);
+        com.minpaku.client.model.MeshCache.register();
+        net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
+                com.minpaku.registry.ModBlockEntities.MARKER, com.minpaku.client.render.MarkerRenderer::new);
+        registerItemModels();
         EntityRendererRegistry.register(ModEntities.BOT, com.minpaku.client.render.BotRenderer::new);
         HudRenderCallback.EVENT.register(GameHud::render);
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
@@ -56,6 +60,31 @@ public class MinpakuClient implements ClientModInitializer {
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(ClientGame::reset));
         ClientTickEvents.END_CLIENT_TICK.register(MinpakuClient::tick);
+    }
+
+    /** ブロックとアイテムの手持ち・インベントリ表示も Blender の3Dモデルで描く */
+    private static void registerItemModels() {
+        for (var entry : com.minpaku.registry.ModBlocks.BLOCKS.entrySet()) {
+            itemModel(entry.getValue().asItem(), entry.getKey().blockId);
+        }
+        itemModel(com.minpaku.registry.ModItems.KEY, "manager_key");
+        itemModel(com.minpaku.registry.ModItems.CRYSTAL, "seer_crystal");
+        itemModel(com.minpaku.registry.ModItems.CHARM, "knight_charm");
+        itemModel(com.minpaku.registry.ModItems.TALISMAN, "sabotage_talisman");
+    }
+
+    private static void itemModel(net.minecraft.world.item.Item item, String mesh) {
+        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item,
+                (stack, mode, ps, buffers, light, overlay) -> {
+                    com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(mesh);
+                    if (m == null) {
+                        return;
+                    }
+                    ps.pushPose();
+                    ps.translate(0.5, 0.0, 0.5);
+                    m.render(ps, buffers, light, overlay);
+                    ps.popPose();
+                });
     }
 
     private static void registerReceivers() {

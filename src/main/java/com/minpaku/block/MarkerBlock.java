@@ -17,6 +17,10 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,7 +37,7 @@ import java.util.List;
  * マップに置く専用ブロック（呼び鈴・ベント・タスクなど）。
  * 置くとマップに登録され、壊すと登録が消える。
  */
-public class MarkerBlock extends Block {
+public class MarkerBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     private final MarkerType type;
@@ -64,6 +68,18 @@ public class MarkerBlock extends Block {
             case SHOJI -> Block.box(0, 0, 13, 16, 16, 16);
             default -> Block.box(1, 0, 1, 15, 16, 15);
         };
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new MarkerBlockEntity(pos, state);
+    }
+
+    /** 見た目は Blender の3Dモデルを MarkerBlockEntity で描く */
+    @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        return RenderShape.ENTITYBLOCK_ANIMATED;
     }
 
     @Override
