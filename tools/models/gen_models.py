@@ -66,8 +66,8 @@ ITEM_DISPLAY = {
     "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.8, 0.8, 0.8]},
     "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 2, 1], "scale": [0.6, 0.6, 0.6]},
     "thirdperson_lefthand": {"rotation": [0, -90, 0], "translation": [0, 2, 1], "scale": [0.6, 0.6, 0.6]},
-    "firstperson_righthand": {"rotation": [0, -70, 10], "translation": [1, 2, 0], "scale": [0.6, 0.6, 0.6]},
-    "firstperson_lefthand": {"rotation": [0, 110, -10], "translation": [1, 2, 0], "scale": [0.6, 0.6, 0.6]},
+    "firstperson_righthand": {"rotation": [0, -20, 10], "translation": [1.5, 3.5, -1], "scale": [0.4, 0.4, 0.4]},
+    "firstperson_lefthand": {"rotation": [0, 20, -10], "translation": [1.5, 3.5, -1], "scale": [0.4, 0.4, 0.4]},
 }
 
 

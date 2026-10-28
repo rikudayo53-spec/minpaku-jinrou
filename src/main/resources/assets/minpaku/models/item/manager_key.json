@@ -384,35 +384,35 @@
   "firstperson_righthand": {
    "rotation": [
     0,
-    -70,
+    -20,
     10
    ],
    "translation": [
-    1,
-    2,
-    0
+    1.5,
+    3.5,
+    -1
    ],
    "scale": [
-    0.6,
-    0.6,
-    0.6
+    0.4,
+    0.4,
+    0.4
    ]
   },
   "firstperson_lefthand": {
    "rotation": [
     0,
-    110,
+    20,
     -10
    ],
    "translation": [
-    1,
-    2,
-    0
+    1.5,
+    3.5,
+    -1
    ],
    "scale": [
-    0.6,
-    0.6,
-    0.6
+    0.4,
+    0.4,
+    0.4
    ]
   }
  }
