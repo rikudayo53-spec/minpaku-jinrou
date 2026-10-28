@@ -372,7 +372,7 @@ public final class MapBuilder {
             }
         }
         marker(MarkerType.VASE, 16, y1, 1, Direction.SOUTH);         // 床の間
-        set(14, y1, 1, Blocks.POTTED_AZALEA_BUSH);
+        set(14, y1, 1, Blocks.POTTED_AZALEA);
         set(18, y1, 1, Blocks.BOOKSHELF);
         set(12, y1, 8, Blocks.CHISELED_BOOKSHELF);
         marker(MarkerType.SHOJI, 20, y1, 9, Direction.NORTH);
