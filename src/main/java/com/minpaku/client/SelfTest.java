@@ -124,14 +124,6 @@ public final class SelfTest {
                 sp.setGameMode(GameType.ADVENTURE);
                 GameManager.get(sp.server).sendSettings(sp);
             });
-            case 362 -> server(mc, sp -> {
-                sp.getInventory().selected = 0;
-                sp.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(com.minpaku.registry.ModItems.CLAW));
-            });
-            case 366 -> mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
-            case 380 -> shot(mc, "05a_claw_3rd");
-            case 384 -> mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
-            case 392 -> shot(mc, "05b_claw_hand");
             case 395 -> mc.setScreen(new SettingsScreen());
             case 405 -> shot(mc, "05_settings");
             case 412 -> {

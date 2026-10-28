@@ -25,6 +25,7 @@ public final class ModNetworking {
         PayloadTypeRegistry.playC2S().register(Packets.SetSetting.TYPE, Packets.SetSetting.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.Control.TYPE, Packets.Control.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.CastVote.TYPE, Packets.CastVote.CODEC);
+        PayloadTypeRegistry.playC2S().register(Packets.KillRequest.TYPE, Packets.KillRequest.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.TaskDone.TYPE, Packets.TaskDone.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.Sabotage.TYPE, Packets.Sabotage.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.VentMove.TYPE, Packets.VentMove.CODEC);
@@ -37,6 +38,10 @@ public final class ModNetworking {
         ServerPlayNetworking.registerGlobalReceiver(Packets.Control.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
             player.server.execute(() -> GameManager.get(player.server).control(player, p.action()));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(Packets.KillRequest.TYPE, (p, ctx) -> {
+            ServerPlayer player = ctx.player();
+            player.server.execute(() -> GameManager.get(player.server).requestKill(player, p.target()));
         });
         ServerPlayNetworking.registerGlobalReceiver(Packets.CastVote.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();

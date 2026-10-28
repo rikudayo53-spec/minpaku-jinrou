@@ -20,8 +20,6 @@ public class BotRenderer extends LivingEntityRenderer<BotEntity, PlayerModel<Bot
         super(ctx, new PlayerModel<>(ctx.bakeLayer(ModelLayers.PLAYER), false), 0.5f);
         this.wide = this.model;
         this.slim = new PlayerModel<>(ctx.bakeLayer(ModelLayers.PLAYER_SLIM), true);
-        // 手に持ったもの（人狼のボットの鉤爪。人狼以外の画面では描かれない）
-        this.addLayer(new net.minecraft.client.renderer.entity.layers.ItemInHandLayer<>(this, ctx.getItemInHandRenderer()));
     }
 
     @Override

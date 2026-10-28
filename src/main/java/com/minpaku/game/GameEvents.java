@@ -1,6 +1,5 @@
 package com.minpaku.game;
 
-import com.minpaku.entity.BotEntity;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -22,7 +21,7 @@ public final class GameEvents {
             }
         });
 
-        // ゲーム中の攻撃は全部止めて、人狼のキルだけ処理する
+        // ゲーム中の攻撃は全部止める
         AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
             if (level.isClientSide() || !(player instanceof ServerPlayer sp)) {
                 return InteractionResult.PASS;
@@ -31,11 +30,7 @@ public final class GameEvents {
             if (gm == null || !gm.isParticipant(sp)) {
                 return InteractionResult.PASS;
             }
-            if (entity instanceof ServerPlayer target && gm.isParticipant(target)) {
-                gm.tryKill(sp, target);
-            } else if (entity instanceof BotEntity bot && gm.isBot(bot.getUUID())) {
-                gm.tryKill(sp, bot);
-            }
+            // キルは殴るのではなく能力（キルキー）で行う
             return InteractionResult.FAIL;
         });
 

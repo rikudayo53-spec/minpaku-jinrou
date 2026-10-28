@@ -394,10 +394,6 @@ public final class GameManager {
                 bot.setUUID(ps.id);
                 bot.moveTo(x, center.y, z, random.nextFloat() * 360f, 0);
                 bot.setCustomName(Component.literal(ps.name));
-                if (ps.role.canKill()) {
-                    // 人狼のボットは鉤爪を持つ（人狼の画面にだけ見える）
-                    bot.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(ModItems.CLAW));
-                }
                 level.addFreshEntity(bot);
                 bots.put(ps.id, bot);
                 brains.put(ps.id, new BotBrain(this, ps));
@@ -432,33 +428,6 @@ public final class GameManager {
         }
     }
 
-    /** 鉤爪は生きている人狼だけが持つ（捨てた・拾った・死んだときに直す） */
-    private void keepClaws() {
-        for (net.minecraft.world.entity.item.ItemEntity e : level.getEntities(
-                net.minecraft.world.level.entity.EntityTypeTest.forClass(net.minecraft.world.entity.item.ItemEntity.class),
-                e -> e.getItem().is(ModItems.CLAW))) {
-            e.discard();
-        }
-        for (PlayerState ps : players.values()) {
-            if (ps.bot) {
-                continue;
-            }
-            ServerPlayer p = player(ps.id);
-            if (p == null) {
-                continue;
-            }
-            boolean should = ps.alive && ps.role.canKill();
-            boolean has = p.getInventory().contains(new ItemStack(ModItems.CLAW));
-            if (should && !has) {
-                if (!p.getInventory().add(new ItemStack(ModItems.CLAW))) {
-                    p.getInventory().setItem(8, new ItemStack(ModItems.CLAW));
-                }
-            } else if (!should && has) {
-                p.getInventory().clearOrCountMatchingItems(s -> s.is(ModItems.CLAW), -1, p.inventoryMenu.getCraftSlots());
-            }
-        }
-    }
-
     private void preparePlayer(ServerPlayer p, PlayerState ps) {
         p.setGameMode(GameType.ADVENTURE);
         p.getInventory().clearContent();
@@ -466,15 +435,12 @@ public final class GameManager {
         p.setHealth(p.getMaxHealth());
         p.getFoodData().setFoodLevel(20);
         p.addEffect(new MobEffectInstance(MobEffects.SATURATION, -1, 0, false, false));
-        if (ps.role.canKill()) {
-            p.getInventory().setItem(0, new ItemStack(ModItems.CLAW));
-        }
         if (ps.role == Role.SEER) {
             p.getInventory().setItem(0, new ItemStack(ModItems.CRYSTAL));
         } else if (ps.role == Role.KNIGHT) {
             p.getInventory().setItem(0, new ItemStack(ModItems.CHARM));
         } else if (ps.role.canSabotage()) {
-            p.getInventory().setItem(ps.role.canKill() ? 1 : 0, new ItemStack(ModItems.TALISMAN));
+            p.getInventory().setItem(0, new ItemStack(ModItems.TALISMAN));
         }
     }
 
@@ -588,9 +554,6 @@ public final class GameManager {
     private void tickPlaying() {
         if (sabotageCooldown > 0) {
             sabotageCooldown--;
-        }
-        if (ticks % 10 == 0) {
-            keepClaws();
         }
         for (PlayerState ps : new ArrayList<>(players.values())) {
             if (phase != Phase.PLAYING) {
@@ -764,7 +727,8 @@ public final class GameManager {
         send(p, new Packets.State(phaseNum, ps.role.id, ps.alive, mates(ps), tasks, !ps.tasksCount(), progress,
                 ps.killCooldown, ps.seerLeft, ps.knightLeft, ps.emergencyLeft, blackout, gasTicks, gasMax,
                 valveFixed, boilerFixed, sabotageCooldown, ps.vent != null, at, ap,
-                map().roomAt(ps.vent != null ? ps.vent : p.blockPosition()), settings().get("kill_behind") != 0));
+                map().roomAt(ps.vent != null ? ps.vent : p.blockPosition()), settings().get("kill_behind") != 0,
+                settings().get("kill_range")));
     }
 
     // ================================================================= 勝敗
@@ -801,7 +765,19 @@ public final class GameManager {
         return players.get(e.getUUID());
     }
 
-    /** 人間の人狼が誰かを殴った */
+    /** 人間の人狼がキルキーを押した（target は参加者の UUID） */
+    public void requestKill(ServerPlayer killer, UUID targetId) {
+        if (phase != Phase.PLAYING) {
+            return;
+        }
+        LivingEntity target = bots.containsKey(targetId) ? bots.get(targetId) : player(targetId);
+        if (target == null || target == killer) {
+            return;
+        }
+        tryKill(killer, target);
+    }
+
+    /** 人間の人狼のキル（能力） */
     public void tryKill(ServerPlayer killer, LivingEntity target) {
         if (phase != Phase.PLAYING) {
             return;
@@ -813,10 +789,6 @@ public final class GameManager {
         }
         if (k.killCooldown > 0 && k.alive && k.role.canKill()) {
             actionBar(killer, "キルまであと " + (k.killCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
-            return;
-        }
-        if (k.alive && k.role.canKill() && !killer.getMainHandItem().is(ModItems.CLAW)) {
-            actionBar(killer, "鉤爪を手に持って殴るとキルできる", ChatFormatting.GOLD);
             return;
         }
         if (k.alive && k.role.canKill() && t.alive && behindOnly() && !isBehind(killer, target)

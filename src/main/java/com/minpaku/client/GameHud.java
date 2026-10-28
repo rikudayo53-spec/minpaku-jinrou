@@ -24,6 +24,7 @@ import net.minecraft.world.entity.player.Player;
  */
 public final class GameHud {
     public static KeyMapping LEDGER_KEY;
+    public static KeyMapping KILL_KEY;
 
     private GameHud() {
     }
@@ -175,26 +176,22 @@ public final class GameHud {
             Ui.ring(g, cx, cy, 13, 10, Mth.clamp(s.activeProgress(), 0f, 1f), 0xFFFFC94A, 0x66000000);
             Ui.sansShadow(g, ClientGame.taskName(s.activeType()), cx, cy + 17, 0xFFFFE08A, 0.85f, 0);
         }
-        // キルの合図
-        Role role = ClientGame.role();
-        if (role != null && role.canKill() && s.alive() && !s.inVent() && s.phase() == 1
-                && mc.crosshairPickEntity instanceof LivingEntity target
-                && (target instanceof Player || target instanceof BotEntity) && mc.player != null
-                && !ClientGame.isMate(target.getUUID()) && !target.isSpectator()) {
+        // キルの合図（能力：キルキー）
+        LivingEntity target = KillTarget.find(mc);
+        if (target != null) {
+            String key = KILL_KEY != null ? KILL_KEY.getTranslatedKeyMessage().getString() : "R";
+            String name = target.getName().getString();
             boolean behind = !s.killBehind() || GameManager.isBehind(mc.player, target);
-            boolean claw = mc.player.getMainHandItem().is(com.minpaku.registry.ModItems.CLAW);
             if (s.killCooldown() > 0) {
                 float f = 1f - s.killCooldown() / (float) ClientGame.killCdMax;
                 Ui.ring(g, cx, cy, 13, 11, f, 0x99FF5A4A, 0x44000000);
-            } else if (!claw) {
-                Ui.ring(g, cx, cy, 13, 11.5f, 1f, 0x88FFAA33, 0);
-                Ui.sansShadow(g, "鉤爪を持とう", cx, cy + 18, 0xFFFFC266, 0.8f, 0);
+                Ui.sansShadow(g, name, cx, cy + 18, 0xAAFFFFFF, 0.75f, 0);
             } else if (behind) {
                 Ui.ring(g, cx, cy, 14, 11, 1f, 0xEEFF5A4A, 0);
-                Ui.sansShadow(g, "左クリックでキル", cx, cy + 18, 0xFFFF8A7A, 0.9f, 0);
+                Ui.sansShadow(g, "［" + key + "］ " + name + " をキル", cx, cy + 18, 0xFFFF8A7A, 0.9f, 0);
             } else {
                 Ui.ring(g, cx, cy, 13, 11.5f, 1f, 0x88FFAA33, 0);
-                Ui.sansShadow(g, "背後に回りこもう", cx, cy + 18, 0xFFFFC266, 0.8f, 0);
+                Ui.sansShadow(g, name + " の背後に回りこもう", cx, cy + 18, 0xFFFFC266, 0.8f, 0);
             }
         }
         // 下のヒント
@@ -236,7 +233,8 @@ public final class GameHud {
         if (role.canKill()) {
             float f = s.killCooldown() > 0 ? 1f - s.killCooldown() / (float) ClientGame.killCdMax : 1f;
             String v = s.killCooldown() > 0 ? String.valueOf(s.killCooldown() / 20 + 1) : "OK";
-            x = icon(g, x, y, r, "キル", v, f, 0xFFFF5A4A);
+            String key = KILL_KEY != null ? KILL_KEY.getTranslatedKeyMessage().getString() : "R";
+            x = icon(g, x, y, r, "キル" + key, v, f, 0xFFFF5A4A);
         }
         if (role == Role.SEER) {
             x = icon(g, x, y, r, "占い", String.valueOf(s.seerLeft()), s.seerLeft() > 0 ? 1f : 0f, 0xFF6EC6FF);

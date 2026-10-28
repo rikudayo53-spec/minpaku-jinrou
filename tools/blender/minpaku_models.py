@@ -570,32 +570,10 @@ def sabotage_talisman(m, P):
     m.torus(0.05, 0.008, (0, -0.06, 0.20), P["dark"], rot=(78, 0, 0), seg=16, ring=6)
 
 
-def wolf_claw(m, P):
-    """人狼の鉤爪（人狼にしか見えない）"""
-    # 柄（黒い木に赤い紐を巻く）
-    m.cyl(0.055, 0.30, (0, 0, 0.15), P["wood_dark"], verts=16)
-    for k in range(5):
-        m.torus(0.058, 0.012, (0, 0, 0.04 + k * 0.055), P["red"], seg=16, ring=6)
-    m.sphere(0.065, (0, 0, 0.0), P["iron"], scale=(1, 1, 0.6))
-    # 手の甲あて（鉄の板）
-    m.box((0.40, 0.10, 0.08), (0, 0, 0.34), P["iron"], bevel=0.02)
-    m.box((0.42, 0.11, 0.02), (0, 0, 0.385), P["dark"], bevel=0.006)
-    # 赤く光る狼の目
-    m.ico(0.022, (-0.06, -0.055, 0.34), P["glow"], scale=(1.4, 0.5, 0.8), smooth=False)
-    m.ico(0.022, (0.06, -0.055, 0.34), P["glow"], scale=(1.4, 0.5, 0.8), smooth=False)
-    # 曲がった4本の刃
-    for x, s in ((-0.14, 0.82), (-0.047, 1.0), (0.047, 1.0), (0.14, 0.82)):
-        pts = [(0.03, 0.38), (0.02, 0.38 + 0.16 * s), (-0.01, 0.38 + 0.32 * s), (-0.07, 0.38 + 0.46 * s),
-               (-0.16, 0.38 + 0.56 * s)]
-        m.blade(x, pts, 0.075, 0.03, P["silver"])
-        # 刃の付け根に赤いしるし
-        m.box((0.035, 0.05, 0.03), (x, 0.03, 0.40), P["red"], bevel=0.005)
-
-
 BLOCKS = [call_bell, floor_hatch, breaker, gas_valve, boiler, wiring_panel, ledger, futon, kamado, bath_stove,
           chopping_block, vegetable_patch, dust_pile, entrance_mat, laundry_pole, flower_vase, kitchen_sink,
           shoe_rack, shoji_screen]
-ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman, wolf_claw]
+ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman]
 
 
 # ============================================================ 書き出し

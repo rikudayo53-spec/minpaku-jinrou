@@ -16,7 +16,6 @@ public final class ModItems {
     public static final RoleItem CRYSTAL = register("seer_crystal", RoleItem.Kind.CRYSTAL, Rarity.RARE);
     public static final RoleItem CHARM = register("knight_charm", RoleItem.Kind.CHARM, Rarity.RARE);
     public static final RoleItem TALISMAN = register("sabotage_talisman", RoleItem.Kind.TALISMAN, Rarity.RARE);
-    public static final RoleItem CLAW = register("wolf_claw", RoleItem.Kind.CLAW, Rarity.EPIC);
 
     private ModItems() {
     }
@@ -38,7 +37,6 @@ public final class ModItems {
                     output.accept(CRYSTAL);
                     output.accept(CHARM);
                     output.accept(TALISMAN);
-                    output.accept(CLAW);
                 })
                 .build());
     }

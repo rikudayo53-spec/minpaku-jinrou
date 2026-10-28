@@ -101,13 +101,13 @@ public final class Packets {
                         boolean fakeTasks, float taskProgress, int killCooldown, int seerLeft, int knightLeft,
                         int emergencyLeft, boolean blackout, int gasTicks, int gasMax, boolean valveFixed,
                         boolean boilerFixed, int sabotageCooldown, boolean inVent, int activeType,
-                        float activeProgress, String room, boolean killBehind) implements CustomPacketPayload {
+                        float activeProgress, String room, boolean killBehind, int killRange) implements CustomPacketPayload {
         public static final Type<State> TYPE = key("state");
         public static final StreamCodec<FriendlyByteBuf, State> CODEC = CustomPacketPayload.codec(State::write, State::read);
 
         public static State lobby() {
             return new State(0, "", true, List.of(), List.of(), false, 0, 0, 0, 0, 0,
-                    false, -1, 1, false, false, 0, false, -1, 0, "", true);
+                    false, -1, 1, false, false, 0, false, -1, 0, "", true, 2);
         }
 
         private void write(FriendlyByteBuf b) {
@@ -133,13 +133,14 @@ public final class Packets {
             b.writeFloat(activeProgress);
             b.writeUtf(room);
             b.writeBoolean(killBehind);
+            b.writeVarInt(killRange);
         }
 
         private static State read(FriendlyByteBuf b) {
             return new State(b.readVarInt(), b.readUtf(), b.readBoolean(), readList(b, Mate::read),
                     readList(b, TaskInfo::read), b.readBoolean(), b.readFloat(), b.readVarInt(), b.readVarInt(),
                     b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readVarInt(), b.readBoolean(),
-                    b.readBoolean(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readFloat(), b.readUtf(), b.readBoolean());
+                    b.readBoolean(), b.readVarInt(), b.readBoolean(), b.readInt(), b.readFloat(), b.readUtf(), b.readBoolean(), b.readVarInt());
         }
 
         @Override
@@ -427,6 +428,25 @@ public final class Packets {
     }
 
     /** 投票（target = NONE ならスキップ） */
+    /** 人狼のキル（能力）。target は参加者の UUID */
+    public record KillRequest(UUID target) implements CustomPacketPayload {
+        public static final Type<KillRequest> TYPE = key("kill_request");
+        public static final StreamCodec<FriendlyByteBuf, KillRequest> CODEC = CustomPacketPayload.codec(KillRequest::write, KillRequest::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeUUID(target);
+        }
+
+        private static KillRequest read(FriendlyByteBuf b) {
+            return new KillRequest(b.readUUID());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     public record CastVote(UUID target) implements CustomPacketPayload {
         public static final Type<CastVote> TYPE = key("cast_vote");
         public static final StreamCodec<FriendlyByteBuf, CastVote> CODEC = CustomPacketPayload.codec(CastVote::write, CastVote::read);

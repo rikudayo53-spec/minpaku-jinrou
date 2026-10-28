@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.phys.BlockHitResult;
@@ -45,6 +46,8 @@ public class MinpakuClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register(GameHud::render);
         GameHud.LEDGER_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
                 new net.minecraft.client.KeyMapping("key.minpaku.ledger", org.lwjgl.glfw.GLFW.GLFW_KEY_J, "key.categories.minpaku"));
+        GameHud.KILL_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
+                new net.minecraft.client.KeyMapping("key.minpaku.kill", org.lwjgl.glfw.GLFW.GLFW_KEY_R, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
 
         ClientBridge.openSettings = () -> Minecraft.getInstance().setScreen(new SettingsScreen());
@@ -73,24 +76,11 @@ public class MinpakuClient implements ClientModInitializer {
         itemModel(com.minpaku.registry.ModItems.CRYSTAL, "seer_crystal");
         itemModel(com.minpaku.registry.ModItems.CHARM, "knight_charm");
         itemModel(com.minpaku.registry.ModItems.TALISMAN, "sabotage_talisman");
-        itemModel(com.minpaku.registry.ModItems.CLAW, "wolf_claw");
-    }
-
-    /** 鉤爪はゲーム中、人狼の画面にだけ描く（ほかの人には手ぶらに見える） */
-    private static boolean hidden(net.minecraft.world.item.ItemStack stack) {
-        if (!stack.is(com.minpaku.registry.ModItems.CLAW) || !ClientGame.inGame()) {
-            return false;
-        }
-        com.minpaku.game.Role r = ClientGame.role();
-        return r == null || !r.canKill();
     }
 
     private static void itemModel(net.minecraft.world.item.Item item, String mesh) {
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item,
                 (stack, mode, ps, buffers, light, overlay) -> {
-                    if (hidden(stack)) {
-                        return;
-                    }
                     com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(mesh);
                     if (m == null) {
                         return;
@@ -207,6 +197,13 @@ public class MinpakuClient implements ClientModInitializer {
         }
         ClientGame.tick();
         SelfTest.tick(mc);
+        // 人狼の能力：キルキーで近くの相手をキル
+        while (GameHud.KILL_KEY != null && GameHud.KILL_KEY.consumeClick()) {
+            LivingEntity target = KillTarget.find(mc);
+            if (target != null && mc.screen == null) {
+                ClientPlayNetworking.send(new Packets.KillRequest(target.getUUID()));
+            }
+        }
         if (mc.player == null || !ClientGame.inGame()) {
             return;
         }
