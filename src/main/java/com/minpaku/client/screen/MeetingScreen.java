@@ -130,9 +130,7 @@ public class MeetingScreen extends Screen {
         }
         table(g, mouseX, mouseY);
         input.visible = true;
-        for (var r : renderables) {
-            r.render(g, mouseX, mouseY, pt);
-        }
+        input.render(g, mouseX, mouseY, pt);
     }
 
     private void splash(GuiGraphics g, float t) {
