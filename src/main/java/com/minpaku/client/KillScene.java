@@ -103,7 +103,7 @@ public final class KillScene {
         MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
         PoseStack ps = new PoseStack();
         // カメラ：横から少し見下ろす
-        ps.translate(sx - 0.2f, sy - 1.05f, -5.2f);
+        ps.translate(sx - 0.95f, sy - 0.95f, -3.9f);
         ps.mulPose(Axis.XP.rotationDegrees(9));
 
         int light = LightTexture.FULL_BRIGHT;
@@ -139,7 +139,7 @@ public final class KillScene {
         drawPlayer(ps, buf, vm, mySkin, vx, vy, -90f, fall, light, ov, bright);
 
         // ---- 犯人（左から来る）
-        float kx = track(t, 0, -4.4f, 10, -1.1f, 13, -0.25f, 16.5f, 0.35f, 22, 0.9f, 24, 1.05f, 34, 1.05f, 38, 0.55f);
+        float kx = track(t, 0, -3.2f, 10, -0.9f, 13, -0.15f, 16.5f, 0.4f, 22, 1.3f, 24, 1.8f, 34, 1.8f, 38, 1.35f);
         float ky = track(t, 0, 0, 10, 0, 12.5f, 0.55f, 16.5f, 0.15f, 20, 0f, 24, 0f);
         float kTilt = track(t, 0, -8, 10, -10, 13, -30, 16.5f, -20, 22, -5, 24, 0, 34, 0, 38, 0);
         PlayerModel<?> km = model(killerSkin);
@@ -185,7 +185,7 @@ public final class KillScene {
         drawPlayer(ps, buf, km, killerSkin, kx, ky + kdy, -90f, kTilt, light, ov, bright);
 
         // 当たった位置を画面の座標にしておく（爪あと・血しぶき用）
-        Vector3f[] at = {new Vector3f(0.75f, 1.25f, 0f), new Vector3f(1.45f, 0.35f, 0f), new Vector3f(1.75f, 0.35f, 0f)};
+        Vector3f[] at = {new Vector3f(0.75f, 1.25f, 0f), new Vector3f(2.15f, 0.4f, 0f), new Vector3f(2.4f, 0.4f, 0f)};
         for (int i = 0; i < 3; i++) {
             Vector4f v = new Vector4f(at[i], 1f);
             ps.last().pose().transform(v);
