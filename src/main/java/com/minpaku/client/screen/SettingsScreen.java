@@ -294,7 +294,7 @@ public class SettingsScreen extends Screen {
         int ry = y + 64;
         Ui.sans(g, "役職の専用フィニッシャー・特別な演出（見るだけ）", x, ry, Ui.INK_SOFT, 0.75f, -1);
         String[][] list = {{"wolf", "0", "人狼"}, {"shinobi", "0", "忍び狼"}, {"kairiki", "0", "怪力狼"}, {"juro", "0", "呪狼"},
-                {"wolf", "1", "おにぎりで耐える"}, {"wolf", "2", "猫又の反撃"}, {"neko", "0", "猫又の祟り"}};
+                {"wolf", "1", "おにぎり"}, {"wolf", "2", "猫又反撃"}, {"neko", "0", "猫又祟り"}};
         int col = 4;
         int cw = (w - 12) / col;
         for (int i = 0; i < list.length; i++) {

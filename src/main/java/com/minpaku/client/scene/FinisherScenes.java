@@ -871,7 +871,7 @@ public final class FinisherScenes {
         float camera(float t, Vector3f eye, Vector3f target) {
             return shots(t, eye, target, new float[][]{
                     {0, 26, 3.4f, 1.8f, 0.2f, 3.0f, 1.6f, 0.2f, 0, 1.0f, 0, 0, 1.0f, 0, 58},
-                    {26, 40, -0.9f, 1.3f, -2.2f, -0.7f, 1.3f, -1.4f, 0, 1.2f, 0.4f, 0, 1.4f, 1.6f, 38},
+                    {26, 40, -1.5f, 1.7f, -2.9f, -1.3f, 1.6f, -2.5f, 0, 1.4f, 0.2f, 0, 1.5f, 1.6f, 40},
                     {40, 80, 2.4f, 1.0f, 2.6f, 2.0f, 1.2f, 2.4f, 0, 0.6f, 1.8f, 0, 0.8f, 1.6f, 55}});
         }
 
