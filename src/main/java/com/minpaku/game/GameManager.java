@@ -31,7 +31,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -344,7 +346,7 @@ public final class GameManager {
                 deck.add(r);
             }
         }
-        deck.sort(Comparator.comparingInt(r -> r == Role.WOLF ? 0 : 1));
+        deck.sort(Comparator.comparingInt(r -> r.canKill() ? 0 : 1));
         int limit = Math.max(1, all.size() - 1);
         for (int i = 0; i < all.size(); i++) {
             PlayerState ps = all.get(i);
@@ -352,6 +354,7 @@ public final class GameManager {
             ps.killCooldown = FIRST_KILL_COOLDOWN;
             ps.seerLeft = s.get("seer_uses");
             ps.knightLeft = s.get("knight_uses");
+            ps.itamaeLeft = s.get("itamae_uses");
             ps.emergencyLeft = s.get("emergency_uses");
         }
         // 表示の順番は人間 → ボット
@@ -445,6 +448,12 @@ public final class GameManager {
             p.getInventory().setItem(0, new ItemStack(ModItems.CHARM));
         } else if (ps.role.canSabotage()) {
             p.getInventory().setItem(0, new ItemStack(ModItems.TALISMAN));
+        } else if (ps.role == Role.DETECTIVE) {
+            p.getInventory().setItem(0, new ItemStack(ModItems.LENS));
+        } else if (ps.role == Role.OKAMI) {
+            p.getInventory().setItem(0, new ItemStack(ModItems.KEYRING));
+        } else if (ps.role == Role.ITAMAE) {
+            p.getInventory().setItem(0, new ItemStack(ModItems.ONIGIRI));
         }
     }
 
@@ -453,6 +462,13 @@ public final class GameManager {
         if (ps.role.knowsWolves()) {
             for (PlayerState o : players.values()) {
                 if (o != ps && o.role.knowsWolves()) {
+                    out.add(new Packets.Mate(o.id, o.name));
+                }
+            }
+        }
+        if (ps.role == Role.KYOYU) {
+            for (PlayerState o : players.values()) {
+                if (o != ps && o.role == Role.KYOYU) {
                     out.add(new Packets.Mate(o.id, o.name));
                 }
             }
@@ -475,8 +491,20 @@ public final class GameManager {
         if (!running()) {
             return;
         }
+        // 妖狐が生き残っていたら、妖狐の勝ち（てるてるの勝ちはそのまま）
+        if (winner == Role.Team.VILLAGE || winner == Role.Team.WOLF) {
+            for (PlayerState ps : players.values()) {
+                if (ps.role == Role.FOX && ps.alive && !ps.left) {
+                    reason = reason + "…が、妖狐 " + ps.name + " が生き残っていた";
+                    winner = Role.Team.FOX;
+                    break;
+                }
+            }
+        }
         phase = Phase.ENDED;
         endTimer = END_TICKS;
+        reopenDoors();
+        pendingBodies.clear();
         clearSabotage();
         removeBodies();
         for (BotEntity b : bots.values()) {
@@ -621,6 +649,18 @@ public final class GameManager {
     private void tickPlaying() {
         if (sabotageCooldown > 0) {
             sabotageCooldown--;
+        }
+        tickPendingBodies();
+        for (PlayerState ps : players.values()) {
+            if (ps.okamiCooldown > 0) {
+                ps.okamiCooldown--;
+            }
+        }
+        if (doorsOpenAt >= 0 && ticks >= doorsOpenAt) {
+            reopenDoors();
+        }
+        if (ticks % 20 == 0) {
+            sendRoomCounts();
         }
         for (PlayerState ps : new ArrayList<>(players.values())) {
             if (phase != Phase.PLAYING) {
@@ -861,7 +901,7 @@ public final class GameManager {
             actionBar(killer, "キルまであと " + (k.killCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
             return;
         }
-        if (k.alive && k.role.canKill() && t.alive && behindOnly() && !isBehind(killer, target)
+        if (k.alive && k.role.canKill() && t.alive && behindOnly() && k.role != Role.KAIRIKI && !isBehind(killer, target)
                 && killer.distanceTo(target) <= settings().get("kill_range") + 0.6) {
             actionBar(killer, "背後から近づかないとキルできない", ChatFormatting.GOLD);
             return;
@@ -881,24 +921,42 @@ public final class GameManager {
             return false;
         }
         double range = settings().get("kill_range") + 0.6;
-        if (killer.distanceTo(target) > range || (behindOnly() && !isBehind(killer, target))) {
+        if (killer.distanceTo(target) > range || (behindOnly() && k.role != Role.KAIRIKI && !isBehind(killer, target))) {
             return false;
         }
-        k.killCooldown = settings().get("kill_cooldown") * 20;
+        k.killCooldown = settings().get("kill_cooldown") * 20 * (k.role == Role.KAIRIKI ? 3 : 2) / 2;
         killer.swing(InteractionHand.MAIN_HAND, true);
         ServerPlayer kp = k.bot ? null : player(k.id);
-        if (t.protectedByKnight) {
-            t.protectedByKnight = false;
+        String fin = finisherOf(k);
+        // 騎士の守り・妖狐（効かない）・板前のおにぎり
+        int blocked = t.protectedByKnight ? 0 : t.role == Role.FOX ? 2 : t.onigiri ? 1 : -1;
+        if (blocked >= 0) {
+            if (blocked == 0) {
+                t.protectedByKnight = false;
+            }
+            if (blocked == 1) {
+                t.onigiri = false;
+                // 襲われた人には、フィニッシャーが途中で止まる演出
+                ServerPlayer tp = t.bot ? null : player(t.id);
+                if (tp != null) {
+                    send(tp, new Packets.KillFx(0, k.name, k.id, fin, 1));
+                }
+            }
             if (kp != null) {
-                send(kp, new Packets.KillFx(2, t.name, t.id));
+                send(kp, new Packets.KillFx(2, t.name, t.id, fin, blocked));
             }
             level.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1f, 1f);
             return true;
         }
-        kill(target, t, k);
+        boolean counter = t.role == Role.NEKOMATA;
+        kill(target, t, k, fin, counter ? 2 : 0);
         k.kills++;
         if (kp != null) {
-            send(kp, new Packets.KillFx(1, t.name, t.id));
+            send(kp, new Packets.KillFx(1, t.name, t.id, fin, 0));
+        }
+        // 猫又：犯人を道連れにする
+        if (counter && k.alive) {
+            kill(killer, k, t, "neko", 0);
         }
         // 見ていたボットは覚える
         for (PlayerState o : players.values()) {
@@ -931,13 +989,66 @@ public final class GameManager {
         return look.dot(toKiller.normalize()) < -0.25;
     }
 
-    private void kill(LivingEntity target, PlayerState t, PlayerState killer) {
+    /** その人狼のフィニッシャー（設定で「各自が選んだもの」なら本人の好み） */
+    String finisherOf(PlayerState k) {
+        if (settings().get("finisher_mode") == 2) {
+            String pref = finisherPrefs.get(k.id);
+            if (pref == null) {
+                String[] common = {"pingpong", "pillow", "fusuma", "seoi"};
+                pref = common[Math.floorMod(k.id.hashCode(), common.length)];
+            }
+            return pref;
+        }
+        return k.role.finisherId().isEmpty() ? "wolf" : k.role.finisherId();
+    }
+
+    /** プレイヤーが選んだ共通フィニッシャー（ゲームをまたいで覚える） */
+    private final Map<UUID, String> finisherPrefs = new HashMap<>();
+
+    public void setFinisherPref(ServerPlayer p, String id) {
+        if (List.of("pingpong", "pillow", "fusuma", "seoi").contains(id)) {
+            finisherPrefs.put(p.getUUID(), id);
+            actionBar(p, "フィニッシャーを選びました", ChatFormatting.GREEN);
+        }
+    }
+
+    // 忍び狼の死体（しばらくしてから出てくる）
+    private record PendingBody(UUID owner, String name, Vec3 pos, float yaw, String killerRole, int[] timer) {
+    }
+
+    private final List<PendingBody> pendingBodies = new ArrayList<>();
+
+    private void spawnBody(UUID owner, String name, Vec3 pos, float yaw, String killerRole) {
         BodyEntity body = ModEntities.BODY.create(level);
         if (body != null) {
-            body.moveTo(target.getX(), target.getY(), target.getZ(), target.getYRot(), 0);
-            body.setOwner(t.id, t.name);
+            body.moveTo(pos.x, pos.y, pos.z, yaw, 0);
+            body.setOwner(owner, name);
+            body.killerRole = killerRole;
             level.addFreshEntity(body);
             bodies.add(body);
+        }
+    }
+
+    private void tickPendingBodies() {
+        pendingBodies.removeIf(pb -> {
+            if (--pb.timer()[0] <= 0) {
+                spawnBody(pb.owner(), pb.name(), pb.pos(), pb.yaw(), pb.killerRole());
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void kill(LivingEntity target, PlayerState t, PlayerState killer) {
+        kill(target, t, killer, finisherOf(killer), 0);
+    }
+
+    private void kill(LivingEntity target, PlayerState t, PlayerState killer, String finisher, int variant) {
+        if (killer.role == Role.SHINOBI) {
+            pendingBodies.add(new PendingBody(t.id, t.name, target.position(), target.getYRot(), killer.role.id,
+                    new int[]{settings().get("shinobi_hide") * 20}));
+        } else {
+            spawnBody(t.id, t.name, target.position(), target.getYRot(), killer.role.id);
         }
         level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.2f, 0.6f);
         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.defaultBlockState()),
@@ -948,7 +1059,7 @@ public final class GameManager {
             target.discard();
         } else if (target instanceof ServerPlayer sp) {
             becomeGhost(sp, t);
-            send(sp, new Packets.KillFx(0, killer.name, killer.id));
+            send(sp, new Packets.KillFx(0, killer.name, killer.id, finisher, variant));
         }
     }
 
@@ -980,6 +1091,9 @@ public final class GameManager {
             return;
         }
         s.seerLeft--;
+        if (divineEffects(s, t)) {
+            return;
+        }
         boolean wolf = t.role.isWolf();
         seer.sendSystemMessage(Component.literal("【占い】" + t.name + " は ")
                 .append(Component.literal(wolf ? "人狼" : "人狼ではない").withStyle(wolf ? ChatFormatting.RED : ChatFormatting.GREEN))
@@ -987,6 +1101,191 @@ public final class GameManager {
         seer.playNotifySound(SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1f, 1.2f);
         send(seer, new Packets.Announce("占い結果", t.name + " は " + (wolf ? "人狼" : "人狼ではない"),
                 wolf ? 0xFF5555 : 0x55FF55, 3));
+    }
+
+    /**
+     * 占ったときの特別な効果。呪狼を占うと占い師が倒れる（true を返す）。妖狐を占うと妖狐が消える。
+     */
+    boolean divineEffects(PlayerState seer, PlayerState t) {
+        if (t.role == Role.JURO) {
+            LivingEntity se = entityOf(seer);
+            if (se != null && seer.alive) {
+                kill(se, seer, t, "juro", 0);
+                checkWin();
+            }
+            return true;
+        }
+        if (t.role == Role.FOX && t.alive) {
+            LivingEntity fe = entityOf(t);
+            if (fe != null) {
+                if (t.bot) {
+                    t.alive = false;
+                    fe.discard();
+                } else if (fe instanceof ServerPlayer fp) {
+                    becomeGhost(fp, t);
+                    send(fp, new Packets.Announce("占われた", "妖狐は占われて消えてしまった", 0xFFB300, 3));
+                }
+                level.sendParticles(ParticleTypes.FLAME, fe.getX(), fe.getY() + 1, fe.getZ(), 30, 0.3, 0.5, 0.3, 0.02);
+                checkWin();
+            }
+        }
+        return false;
+    }
+
+    /** 探偵：虫めがねで死体を調べる */
+    public void useDetective(ServerPlayer p, BodyEntity body) {
+        PlayerState ps = players.get(p.getUUID());
+        if (phase != Phase.PLAYING || ps == null || !ps.alive || ps.role != Role.DETECTIVE) {
+            return;
+        }
+        Role r = Role.byId(body.killerRole);
+        String how = switch (r.finisherId()) {
+            case "shinobi" -> "口をふさがれ、押し入れへ";
+            case "kairiki" -> "ちゃぶ台ごと投げ飛ばされた";
+            case "juro" -> "呪符と青い鬼火";
+            default -> "獣の爪あと";
+        };
+        p.playNotifySound(SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 1f, 1f);
+        send(p, new Packets.Announce("探偵の調べ", body.ownerName() + " を倒したのは「" + r.name + "」（" + how + "）",
+                r.color, 4));
+        p.sendSystemMessage(Component.literal("【探偵】" + body.ownerName() + " を倒したのは ")
+                .append(Component.literal(r.name).withStyle(ChatFormatting.RED)).append(Component.literal("（" + how + "）")));
+    }
+
+    /** 板前：おにぎりを渡す */
+    public void useItamae(ServerPlayer p, LivingEntity target) {
+        PlayerState k = players.get(p.getUUID());
+        PlayerState t = stateOf(target);
+        if (phase != Phase.PLAYING || k == null || t == null || !k.alive || !t.alive || k.role != Role.ITAMAE) {
+            return;
+        }
+        if (k.itamaeLeft <= 0) {
+            actionBar(p, "次の会議までおにぎりは作れません", ChatFormatting.GRAY);
+            return;
+        }
+        if (p.distanceTo(target) > 4) {
+            actionBar(p, "もっと近づこう", ChatFormatting.GRAY);
+            return;
+        }
+        k.itamaeLeft--;
+        t.onigiri = true;
+        p.playNotifySound(SoundEvents.GENERIC_EAT, SoundSource.PLAYERS, 1f, 1.2f);
+        actionBar(p, t.name + " におにぎりを渡しました（1回だけキルを耐える）", ChatFormatting.YELLOW);
+        ServerPlayer tp = t.bot ? null : player(t.id);
+        if (tp != null) {
+            actionBar(tp, "板前からおにぎりをもらった！", ChatFormatting.YELLOW);
+        }
+    }
+
+    // ---- 女将：ふすまを閉める
+    private record ClosedDoor(BlockPos pos, BlockState old) {
+    }
+
+    private final List<ClosedDoor> closedDoors = new ArrayList<>();
+    private int doorsOpenAt = -1;
+
+    public void useOkami(ServerPlayer p) {
+        PlayerState ps = players.get(p.getUUID());
+        if (phase != Phase.PLAYING || ps == null || !ps.alive || ps.role != Role.OKAMI) {
+            return;
+        }
+        if (ps.okamiCooldown > 0) {
+            actionBar(p, "あと " + (ps.okamiCooldown / 20 + 1) + " 秒で使えます", ChatFormatting.GRAY);
+            return;
+        }
+        BlockPos c = p.blockPosition();
+        int n = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(c.offset(-5, -1, -5), c.offset(5, 1, 5))) {
+            if (isDoorway(pos) && level.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(pos).inflate(0, 2, 0)).isEmpty()) {
+                for (int dy = 0; dy < 3; dy++) {
+                    BlockPos q = pos.above(dy).immutable();
+                    closedDoors.add(new ClosedDoor(q, level.getBlockState(q)));
+                    level.setBlock(q, Blocks.MUSHROOM_STEM.defaultBlockState(), Block.UPDATE_CLIENTS);
+                }
+                n++;
+            }
+        }
+        if (n == 0) {
+            actionBar(p, "近くに閉められるふすまがない", ChatFormatting.GRAY);
+            return;
+        }
+        ps.okamiCooldown = settings().get("okami_cooldown") * 20;
+        doorsOpenAt = ticks + 200;
+        level.playSound(null, c, SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.BLOCKS, 1.2f, 0.8f);
+        actionBar(p, "ふすまを閉めた（10秒）", ChatFormatting.YELLOW);
+    }
+
+    /** 出入り口（両わきが壁で、上がふさがった、3マスの高さのすき間）か */
+    private boolean isDoorway(BlockPos pos) {
+        for (int dy = 0; dy < 3; dy++) {
+            if (!level.getBlockState(pos.above(dy)).isAir()) {
+                return false;
+            }
+        }
+        if (level.getBlockState(pos.above(3)).isAir() || level.getBlockState(pos.below()).isAir()) {
+            return false;
+        }
+        boolean ew = !level.getBlockState(pos.east()).isAir() && !level.getBlockState(pos.west()).isAir();
+        boolean ns = !level.getBlockState(pos.north()).isAir() && !level.getBlockState(pos.south()).isAir();
+        // 片側だけ壁でも、反対側に出入り口の続きがあればよい（2〜3マス幅）
+        boolean ew2 = (!level.getBlockState(pos.east()).isAir() || isGap(pos.west()))
+                && (!level.getBlockState(pos.west()).isAir() || isGap(pos.east()));
+        boolean ns2 = (!level.getBlockState(pos.north()).isAir() || isGap(pos.south()))
+                && (!level.getBlockState(pos.south()).isAir() || isGap(pos.north()));
+        boolean wallsAroundX = !level.getBlockState(pos.north().above(3)).isAir() || !level.getBlockState(pos.south().above(3)).isAir();
+        return (ew || ns || ew2 || ns2) && wallsAroundX && thinWall(pos);
+    }
+
+    private boolean isGap(BlockPos q) {
+        return level.getBlockState(q).isAir() && !level.getBlockState(q.above(3)).isAir();
+    }
+
+    /** 壁の厚み1マスの所だけ（部屋の真ん中では閉めない） */
+    private boolean thinWall(BlockPos pos) {
+        boolean xOpen = level.getBlockState(pos.east()).isAir() && level.getBlockState(pos.west()).isAir();
+        boolean zOpen = level.getBlockState(pos.north()).isAir() && level.getBlockState(pos.south()).isAir();
+        boolean xWall = !level.getBlockState(pos.north().above(1)).isAir() || !level.getBlockState(pos.south().above(1)).isAir();
+        boolean zWall = !level.getBlockState(pos.east().above(1)).isAir() || !level.getBlockState(pos.west().above(1)).isAir();
+        return (xOpen && xWall) || (zOpen && zWall) || (!xOpen && !zOpen);
+    }
+
+    private void reopenDoors() {
+        for (ClosedDoor d : closedDoors) {
+            if (level.getBlockState(d.pos()).is(Blocks.MUSHROOM_STEM)) {
+                level.setBlock(d.pos(), d.old(), Block.UPDATE_CLIENTS);
+            }
+        }
+        if (!closedDoors.isEmpty()) {
+            level.playSound(null, closedDoors.get(0).pos(), SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 1f, 0.9f);
+        }
+        closedDoors.clear();
+        doorsOpenAt = -1;
+    }
+
+    // ---- 番頭：部屋ごとの人数
+    private void sendRoomCounts() {
+        Map<String, Integer> counts = new java.util.LinkedHashMap<>();
+        for (PlayerState ps : players.values()) {
+            if (!ps.alive || ps.left) {
+                continue;
+            }
+            LivingEntity e = entityOf(ps);
+            if (e == null) {
+                continue;
+            }
+            String room = map().roomAt(e.blockPosition());
+            if (!room.isEmpty()) {
+                counts.merge(room, 1, Integer::sum);
+            }
+        }
+        for (PlayerState ps : players.values()) {
+            if (ps.role == Role.BANTO && ps.alive && !ps.bot) {
+                ServerPlayer p = player(ps.id);
+                if (p != null) {
+                    send(p, new Packets.RoomCounts(new ArrayList<>(counts.keySet()), new ArrayList<>(counts.values())));
+                }
+            }
+        }
     }
 
     public void useKnight(ServerPlayer knight, LivingEntity target) {
@@ -1460,6 +1759,8 @@ public final class GameManager {
     private int meetingCount;
 
     private void startMeeting(int reason, PlayerState caller, @Nullable BodyEntity body) {
+        reopenDoors();
+        pendingBodies.clear();
         meetingCount++;
         usedLines.clear();
         String bodyName = body != null ? body.ownerName() : "";
@@ -1520,6 +1821,7 @@ public final class GameManager {
             ps.protectedByKnight = false;
             ps.seerLeft = s.get("seer_uses");
             ps.knightLeft = s.get("knight_uses");
+            ps.itamaeLeft = s.get("itamae_uses");
         }
 
         List<Packets.Participant> parts = participants(false);
@@ -1640,7 +1942,9 @@ public final class GameManager {
         } else {
             PlayerState e = players.get(ejected);
             name = e.name;
-            if (settings().flag("confirm_eject")) {
+            if (e.role == Role.TERU) {
+                text = name + " はてるてるだった！";
+            } else if (settings().flag("confirm_eject")) {
                 text = e.role.isWolf() ? name + " は人狼だった" : name + " は人狼ではなかった";
             } else {
                 text = name + " は追放された";
@@ -1673,6 +1977,10 @@ public final class GameManager {
                     } else {
                         e.alive = false;
                     }
+                }
+                if (e.role == Role.TERU) {
+                    endGame(Role.Team.TERU, "てるてる " + e.name + " が追放されて一人勝ち！");
+                    return;
                 }
                 boolean wolf = e.role.isWolf();
                 if (settings().flag("medium_result")) {

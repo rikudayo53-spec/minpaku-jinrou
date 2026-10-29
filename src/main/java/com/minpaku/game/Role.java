@@ -16,7 +16,9 @@ import java.util.Map;
 public final class Role {
     public enum Team {
         VILLAGE("村人陣営", 0x55FF55),
-        WOLF("人狼陣営", 0xFF5555);
+        WOLF("人狼陣営", 0xFF5555),
+        FOX("妖狐", 0xFFB300),
+        TERU("てるてる", 0xBFE6FF);
 
         public final String label;
         public final int color;
@@ -48,6 +50,43 @@ public final class Role {
             "追放された人が人狼だったかどうかが分かる。")
             .markTasks());
 
+    // ---- 人狼陣営（それぞれ専用のフィニッシャー）
+    public static final Role SHINOBI = register(new Role("shinobi", "忍び狼", Team.WOLF, 0x5C6BC0,
+            "キルした死体は、しばらく誰にも見えない（通報されにくい）。")
+            .markKill().markVent().markSabotage().markKnows().markSeenWolf().finisher("shinobi"));
+    public static final Role KAIRIKI = register(new Role("kairiki", "怪力狼", Team.WOLF, 0xD84315,
+            "正面からでもキルできる。そのかわりキルの待ち時間が長い。")
+            .markKill().markVent().markSabotage().markKnows().markSeenWolf().finisher("kairiki"));
+    public static final Role JURO = register(new Role("juro", "呪狼", Team.WOLF, 0x7E57C2,
+            "占い師に占われると、占った占い師が呪いで倒れる。")
+            .markKill().markVent().markSabotage().markKnows().markSeenWolf().finisher("juro"));
+
+    // ---- 村人陣営
+    public static final Role DETECTIVE = register(new Role("detective", "探偵", Team.VILLAGE, 0x8D6E63,
+            "虫めがねで死体を調べると、犯人の役職（倒し方）が分かる。")
+            .markTasks());
+    public static final Role NEKOMATA = register(new Role("nekomata", "猫又", Team.VILLAGE, 0xF48FB1,
+            "人狼に襲われると、犯人を道連れにする。")
+            .markTasks());
+    public static final Role OKAMI = register(new Role("okami", "女将", Team.VILLAGE, 0xEC407A,
+            "鍵束を使うと、近くのふすま（出入り口）を少しのあいだ閉められる。")
+            .markTasks());
+    public static final Role ITAMAE = register(new Role("itamae", "板前", Team.VILLAGE, 0x26A69A,
+            "おにぎりを人に渡すと、その人は1回だけ人狼のキルを耐える。")
+            .markTasks());
+    public static final Role BANTO = register(new Role("banto", "番頭", Team.VILLAGE, 0xA1887F,
+            "宿帳（J）で、どの部屋に何人いるかが分かる。")
+            .markTasks());
+    public static final Role KYOYU = register(new Role("kyoyu", "共有者", Team.VILLAGE, 0x4DB6AC,
+            "2人組。おたがいが村人だと知っている。")
+            .markTasks());
+
+    // ---- 第三陣営
+    public static final Role TERU = register(new Role("teru", "てるてる", Team.TERU, 0x81D4FA,
+            "会議で追放されたら一人勝ち。うまく疑われよう。"));
+    public static final Role FOX = register(new Role("fox", "妖狐", Team.FOX, 0xFFB300,
+            "人狼に襲われても死なない。占われると消える。最後まで生き残れば勝ち。"));
+
     public final String id;
     public final String name;
     public final Team team;
@@ -59,6 +98,7 @@ public final class Role {
     private boolean knowsWolves;
     private boolean seenAsWolf;
     private boolean realTasks;
+    private String finisher = "";
 
     private Role(String id, String name, Team team, int color, String description) {
         this.id = id;
@@ -79,6 +119,7 @@ public final class Role {
     private Role markKnows() { knowsWolves = true; return this; }
     private Role markSeenWolf() { seenAsWolf = true; return this; }
     private Role markTasks() { realTasks = true; return this; }
+    private Role finisher(String id) { finisher = id; return this; }
 
     public boolean canKill() { return canKill; }
     public boolean canVent() { return canVent; }
@@ -88,6 +129,8 @@ public final class Role {
     public boolean isWolf() { return seenAsWolf; }
     /** タスクが村のタスク進行に数えられるか */
     public boolean hasRealTasks() { return realTasks; }
+    /** キル役職の専用フィニッシャー（人狼は "wolf"）。キルできない役職は "" */
+    public String finisherId() { return !finisher.isEmpty() ? finisher : canKill ? "wolf" : ""; }
 
     public static Role byId(String id) {
         return BY_ID.getOrDefault(id, VILLAGER);

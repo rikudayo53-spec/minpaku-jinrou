@@ -1,69 +1,71 @@
 package com.minpaku.game;
 
+import com.minpaku.network.Packets;
 import com.minpaku.registry.ModItems;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import com.minpaku.network.Packets;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.commands.arguments.EntityArgument;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import com.mojang.brigadier.arguments.StringArgumentType;
 
 /**
  * /minpaku start | stop | build | key | status
- * /minpaku finisher [犯人]  … 襲われたときの演出を自分の画面で再生する（確認・撮影用）
- * /minpaku preview finisher [犯人] | eject [追放される人] [wolf|villager|hidden] | skip | task
- *   … アニメーションを自分の画面で再生する（確認・撮影用）
+ * /minpaku preview <種類> [オプション] [人]  … アニメーションを自分の画面だけで再生する（確認・撮影用）
+ *   finisher <wolf|shinobi|kairiki|juro|pingpong|pillow|fusuma|seoi|neko> [normal|guard|counter] [犯人]
+ *   eject [wolf|villager|hidden|teru] [追放される人]
+ *   skip / reveal <役職> / meeting <report|bell> / result <village|wolf|fox|teru>
+ *   kill / guard <knight|onigiri|fox> / sabotage <blackout|gas> / task（近くの家具）/ all（全部を順番に）
+ * /minpaku finisher [犯人] … 前からあるもの（preview finisher wolf と同じ）
  */
 public final class GameCommands {
     private GameCommands() {
     }
 
-    private static int finisher(ServerPlayer p, ServerPlayer killer) {
-        if (killer == null) {
-            // 犯人を指定しないときは、標準スキンの「人狼」
-            UUID fake = UUID.nameUUIDFromBytes(("minpaku-wolf-" + p.getRandom().nextInt(8)).getBytes());
-            ServerPlayNetworking.send(p, new Packets.KillFx(0, "人狼", fake));
-        } else {
-            ServerPlayNetworking.send(p, new Packets.KillFx(0, killer.getGameProfile().getName(), killer.getUUID()));
-        }
-        return 1;
+    private static final String[] FINISHERS = {"wolf", "shinobi", "kairiki", "juro", "pingpong", "pillow", "fusuma", "seoi", "neko"};
+
+    private static SuggestionProvider<CommandSourceStack> words(String... w) {
+        return (c, sb) -> {
+            for (String s : w) {
+                sb.suggest(s);
+            }
+            return sb.buildFuture();
+        };
     }
 
-    /** 追放の確認。担ぐのはほかのプレイヤー（足りなければ標準スキンの人） */
-    private static int eject(ServerPlayer p, ServerPlayer target, String result) {
-        ServerPlayer t = target == null ? p : target;
-        String name = t.getGameProfile().getName();
-        String text = switch (result) {
-            case "villager" -> name + " は人狼ではなかった";
-            case "hidden" -> name + " は追放された";
-            default -> name + " は人狼だった";
-        };
+    private static int send(ServerPlayer p, String kind, String opt, ServerPlayer other) {
+        String name = other == null ? "" : other.getGameProfile().getName();
+        UUID id = other == null ? new UUID(0, 0) : other.getUUID();
         List<UUID> carriers = new ArrayList<>();
-        if (t != p) {
-            carriers.add(p.getUUID());
-        }
         for (ServerPlayer o : p.server.getPlayerList().getPlayers()) {
-            if (o != t && o != p && carriers.size() < 4) {
+            if (o != p && carriers.size() < 4) {
                 carriers.add(o.getUUID());
             }
         }
-        int k = 0;
-        while (carriers.size() < 4) {
-            carriers.add(UUID.nameUUIDFromBytes(("minpaku-carrier-" + k++).getBytes()));
-        }
-        ServerPlayNetworking.send(p, new Packets.Preview(1, t.getUUID(), name, text, carriers));
+        ServerPlayNetworking.send(p, new Packets.PreviewAnim(kind, opt, name, id, carriers));
         return 1;
     }
 
+    /** preview <kind> <opt...>：opt を1つ選ばせる種類 */
+    private static LiteralArgumentBuilder<CommandSourceStack> simple(String kind, String def, String... opts) {
+        return Commands.literal(kind)
+                .executes(ctx -> send(ctx.getSource().getPlayerOrException(), kind, def, null))
+                .then(Commands.argument("opt", StringArgumentType.word()).suggests(words(opts))
+                        .executes(ctx -> send(ctx.getSource().getPlayerOrException(), kind, StringArgumentType.getString(ctx, "opt"), null)));
+    }
+
     public static void register() {
+        String[] roleIds = Role.all().stream().map(r -> r.id).toArray(String[]::new);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> dispatcher.register(
                 Commands.literal("minpaku")
                         .requires(src -> src.hasPermission(2))
@@ -88,50 +90,42 @@ public final class GameCommands {
                             return 1;
                         }))
                         .then(Commands.literal("finisher")
-                                .executes(ctx -> {
-                                    // 犯人を指定しないときは、標準スキンの「人狼」
-                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
-                                    UUID fake = UUID.nameUUIDFromBytes(("minpaku-wolf-" + p.getRandom().nextInt(8)).getBytes());
-                                    ServerPlayNetworking.send(p, new Packets.KillFx(0, "人狼", fake));
-                                    return 1;
-                                })
-                                .then(Commands.argument("killer", EntityArgument.player()).executes(ctx -> {
-                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
-                                    ServerPlayer k = EntityArgument.getPlayer(ctx, "killer");
-                                    ServerPlayNetworking.send(p, new Packets.KillFx(0, k.getGameProfile().getName(), k.getUUID()));
-                                    return 1;
-                                })))
+                                .executes(ctx -> send(ctx.getSource().getPlayerOrException(), "finisher", "wolf", null))
+                                .then(Commands.argument("killer", EntityArgument.player()).executes(ctx ->
+                                        send(ctx.getSource().getPlayerOrException(), "finisher", "wolf", EntityArgument.getPlayer(ctx, "killer")))))
                         .then(Commands.literal("preview")
+                                .then(Commands.literal("all").executes(ctx -> {
+                                    ctx.getSource().sendSuccess(() -> Component.literal("アニメーションを全部、順番に流します（Esc で各画面を閉じられます）")
+                                            .withStyle(ChatFormatting.AQUA), false);
+                                    return send(ctx.getSource().getPlayerOrException(), "all", "", null);
+                                }))
                                 .then(Commands.literal("finisher")
-                                        .executes(ctx -> finisher(ctx.getSource().getPlayerOrException(), null))
-                                        .then(Commands.argument("killer", EntityArgument.player()).executes(ctx ->
-                                                finisher(ctx.getSource().getPlayerOrException(), EntityArgument.getPlayer(ctx, "killer")))))
-                                .then(Commands.literal("eject")
-                                        .executes(ctx -> eject(ctx.getSource().getPlayerOrException(), null, "wolf"))
-                                        .then(Commands.argument("target", EntityArgument.player())
-                                                .executes(ctx -> eject(ctx.getSource().getPlayerOrException(),
-                                                        EntityArgument.getPlayer(ctx, "target"), "wolf"))
-                                                .then(Commands.argument("result", StringArgumentType.word())
-                                                        .suggests((c, sb) -> {
-                                                            sb.suggest("wolf");
-                                                            sb.suggest("villager");
-                                                            sb.suggest("hidden");
-                                                            return sb.buildFuture();
-                                                        })
-                                                        .executes(ctx -> eject(ctx.getSource().getPlayerOrException(),
-                                                                EntityArgument.getPlayer(ctx, "target"),
-                                                                StringArgumentType.getString(ctx, "result"))))))
+                                        .executes(ctx -> send(ctx.getSource().getPlayerOrException(), "finisher", "wolf", null))
+                                        .then(Commands.argument("id", StringArgumentType.word()).suggests(words(FINISHERS))
+                                                .executes(ctx -> send(ctx.getSource().getPlayerOrException(), "finisher",
+                                                        StringArgumentType.getString(ctx, "id"), null))
+                                                .then(Commands.argument("variant", StringArgumentType.word())
+                                                        .suggests(words("normal", "guard", "counter"))
+                                                        .executes(ctx -> send(ctx.getSource().getPlayerOrException(), "finisher",
+                                                                StringArgumentType.getString(ctx, "id") + ":" + StringArgumentType.getString(ctx, "variant"), null))
+                                                        .then(Commands.argument("killer", EntityArgument.player())
+                                                                .executes(ctx -> send(ctx.getSource().getPlayerOrException(), "finisher",
+                                                                        StringArgumentType.getString(ctx, "id") + ":"
+                                                                                + StringArgumentType.getString(ctx, "variant"),
+                                                                        EntityArgument.getPlayer(ctx, "killer")))))))
+                                .then(simple("eject", "wolf", "wolf", "villager", "hidden", "teru"))
+                                .then(Commands.literal("skip").executes(ctx -> send(ctx.getSource().getPlayerOrException(), "skip", "", null)))
+                                .then(simple("reveal", "wolf", roleIds))
+                                .then(simple("meeting", "report", "report", "bell"))
+                                .then(simple("result", "village", "village", "wolf", "fox", "teru"))
+                                .then(Commands.literal("kill").executes(ctx -> send(ctx.getSource().getPlayerOrException(), "kill", "", null)))
+                                .then(simple("guard", "knight", "knight", "onigiri", "fox"))
+                                .then(simple("sabotage", "blackout", "blackout", "gas"))
                                 .then(Commands.literal("task").executes(ctx -> {
                                     ServerPlayer p = ctx.getSource().getPlayerOrException();
                                     int n = GameManager.get(p.server).previewTasks(p);
                                     ctx.getSource().sendSuccess(() -> Component.literal(n == 0 ? "近くに家具がありません"
                                             : "近くの家具 " + n + " 個を動かします").withStyle(ChatFormatting.AQUA), false);
-                                    return 1;
-                                }))
-                                .then(Commands.literal("skip").executes(ctx -> {
-                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
-                                    ServerPlayNetworking.send(p, new Packets.Preview(2, Packets.NONE, "", "誰も追放されなかった",
-                                            List.of()));
                                     return 1;
                                 })))
                         .then(Commands.literal("status").executes(ctx -> {

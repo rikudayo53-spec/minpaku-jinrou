@@ -26,5 +26,8 @@
  "entity.minpaku.bot": "Bot",
  "key.minpaku.ledger": "Show task ledger",
  "key.categories.minpaku": "Minpaku Jinrou",
- "key.minpaku.kill": "Kill (werewolf)"
+ "key.minpaku.kill": "Kill (werewolf)",
+ "item.minpaku.detective_lens": "Detective's Lens",
+ "item.minpaku.okami_keyring": "Okami's Keyring",
+ "item.minpaku.itamae_onigiri": "Itamae's Onigiri"
 }

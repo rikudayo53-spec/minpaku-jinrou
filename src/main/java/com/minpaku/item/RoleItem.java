@@ -22,9 +22,12 @@ import java.util.List;
  *   CHARM    … 守りのお守り（騎士）: 人に使うと次の会議まで守る
  *   TALISMAN … 妨害のお札（人狼）: 右クリックで妨害メニュー
  *   KEY      … 管理人の鍵: 右クリックで設定画面
+ *   LENS     … 虫めがね（探偵）: 死体に使うと犯人の役職が分かる
+ *   KEYRING  … 鍵束（女将）: 右クリックで近くのふすまを閉める
+ *   ONIGIRI  … おにぎり（板前）: 人に使うと1回だけキルを耐える
  */
 public class RoleItem extends Item {
-    public enum Kind { CRYSTAL, CHARM, TALISMAN, KEY }
+    public enum Kind { CRYSTAL, CHARM, TALISMAN, KEY, LENS, KEYRING, ONIGIRI }
 
     private final Kind kind;
 
@@ -35,15 +38,17 @@ public class RoleItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (kind != Kind.CRYSTAL && kind != Kind.CHARM) {
+        if (kind != Kind.CRYSTAL && kind != Kind.CHARM && kind != Kind.ONIGIRI) {
             return InteractionResult.PASS;
         }
         if (player instanceof ServerPlayer sp) {
             GameManager gm = GameManager.get(sp.server);
             if (kind == Kind.CRYSTAL) {
                 gm.useSeer(sp, target);
-            } else {
+            } else if (kind == Kind.CHARM) {
                 gm.useKnight(sp, target);
+            } else {
+                gm.useItamae(sp, target);
             }
         }
         return InteractionResult.sidedSuccess(player.level().isClientSide());
@@ -57,6 +62,12 @@ public class RoleItem extends Item {
                 ClientBridge.openSettings.run();
             } else if (player instanceof ServerPlayer sp) {
                 GameManager.get(sp.server).sendSettings(sp);
+            }
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+        }
+        if (kind == Kind.KEYRING) {
+            if (player instanceof ServerPlayer sp) {
+                GameManager.get(sp.server).useOkami(sp);
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
@@ -76,6 +87,9 @@ public class RoleItem extends Item {
             case CHARM -> "人に右クリック: 次の会議までキルから守る";
             case TALISMAN -> "右クリック: 停電・ガス漏れを起こす";
             case KEY -> "右クリック: ゲームの設定・開始";
+            case LENS -> "死体に右クリック: 犯人の役職が分かる";
+            case KEYRING -> "右クリック: 近くのふすまを10秒閉める";
+            case ONIGIRI -> "人に右クリック: 1回だけキルを耐える";
         };
         tooltip.add(Component.literal(text).withStyle(ChatFormatting.GRAY));
     }

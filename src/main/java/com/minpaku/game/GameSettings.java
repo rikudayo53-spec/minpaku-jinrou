@@ -36,7 +36,7 @@ public final class GameSettings {
     }
 
     /** 設定画面のタブ（この順に並ぶ） */
-    public static final String[] GROUPS = {"マップ", "役職", "能力", "人狼", "会議", "タスク", "ボット"};
+    public static final String[] GROUPS = {"マップ", "役職", "能力", "人狼", "会議", "タスク", "ボット", "フィニッシャー"};
 
     private static final List<Def> DEFS = new ArrayList<>();
 
@@ -45,17 +45,25 @@ public final class GameSettings {
         DEFS.add(new Def("map", "建てるマップ", "マップ", Kind.CHOICE, 1, Plans.ALL.size(), 1, 3, Plans.labels()));
         // 役職の人数（Role に登録した役職ぶん自動で作る）
         for (Role role : Role.special()) {
-            int def = role == Role.WOLF ? 1 : (role == Role.MADMAN ? 0 : 1);
+            boolean basic = role == Role.WOLF || role == Role.SEER || role == Role.KNIGHT || role == Role.MEDIUM;
+            int def = basic ? 1 : 0;
             int min = role == Role.WOLF ? 1 : 0;
             int max = role == Role.WOLF ? 3 : 2;
-            DEFS.add(new Def("role." + role.id, role.name + "の人数", "役職", Kind.NUMBER, min, max, 1, def));
+            // 共有者は2人組なので 0 か 2
+            int step = role == Role.KYOYU ? 2 : 1;
+            DEFS.add(new Def("role." + role.id, role.name + "の人数", "役職", Kind.NUMBER, min, max, step, def));
         }
+        DEFS.add(new Def("itamae_uses", "板前のおにぎり（会議ごと）", "能力", Kind.NUMBER, 0, 3, 1, 1));
+        DEFS.add(new Def("okami_cooldown", "女将がふすまを閉める間隔", "能力", Kind.SECONDS, 15, 90, 5, 30));
         DEFS.add(new Def("seer_uses", "占いの回数（会議ごと）", "能力", Kind.NUMBER, 0, 5, 1, 1));
         DEFS.add(new Def("knight_uses", "騎士が守れる回数（会議ごと）", "能力", Kind.NUMBER, 0, 5, 1, 1));
         DEFS.add(new Def("medium_result", "霊媒師が追放結果を知れる", "能力", Kind.TOGGLE, 0, 1, 1, 1));
         DEFS.add(new Def("madman_vent", "狂人もベントを使える", "能力", Kind.TOGGLE, 0, 1, 1, 1));
         DEFS.add(new Def("kill_cooldown", "キルのクールダウン", "人狼", Kind.SECONDS, 10, 60, 5, 25));
         DEFS.add(new Def("kill_behind", "背後からのみキルできる", "人狼", Kind.TOGGLE, 0, 1, 1, 1));
+        DEFS.add(new Def("finisher_mode", "フィニッシャー", "人狼", Kind.CHOICE, 1, 2, 1, 1,
+                new String[]{"役職ごと（倒され方で役職が分かる）", "各自が選んだもの（役職を隠す）"}));
+        DEFS.add(new Def("shinobi_hide", "忍び狼の死体が見えない時間", "人狼", Kind.SECONDS, 5, 40, 5, 15));
         DEFS.add(new Def("kill_range", "キルできる距離（ブロック）", "人狼", Kind.NUMBER, 1, 4, 1, 2));
         DEFS.add(new Def("sabotage_cooldown", "妨害のクールダウン", "人狼", Kind.SECONDS, 10, 90, 5, 30));
         DEFS.add(new Def("gas_time", "ガス漏れの制限時間", "人狼", Kind.SECONDS, 20, 90, 5, 45));

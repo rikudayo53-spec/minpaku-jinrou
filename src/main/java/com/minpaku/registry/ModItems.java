@@ -16,6 +16,9 @@ public final class ModItems {
     public static final RoleItem CRYSTAL = register("seer_crystal", RoleItem.Kind.CRYSTAL, Rarity.RARE);
     public static final RoleItem CHARM = register("knight_charm", RoleItem.Kind.CHARM, Rarity.RARE);
     public static final RoleItem TALISMAN = register("sabotage_talisman", RoleItem.Kind.TALISMAN, Rarity.RARE);
+    public static final RoleItem LENS = register("detective_lens", RoleItem.Kind.LENS, Rarity.RARE);
+    public static final RoleItem KEYRING = register("okami_keyring", RoleItem.Kind.KEYRING, Rarity.RARE);
+    public static final RoleItem ONIGIRI = register("itamae_onigiri", RoleItem.Kind.ONIGIRI, Rarity.RARE);
 
     private ModItems() {
     }
@@ -37,6 +40,9 @@ public final class ModItems {
                     output.accept(CRYSTAL);
                     output.accept(CHARM);
                     output.accept(TALISMAN);
+                    output.accept(LENS);
+                    output.accept(KEYRING);
+                    output.accept(ONIGIRI);
                 })
                 .build());
     }

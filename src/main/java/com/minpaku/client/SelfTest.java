@@ -208,23 +208,6 @@ public final class SelfTest {
                 ClientGame.announce("停電！", "配電盤を直そう", 0xFFD54F);
             }
             case 745 -> shot(mc, "13_announce");
-            case 800 -> {
-                ClientGame.killFxKind = 0;
-                ClientGame.killFxOther = "はなこ";
-                ClientGame.killFxOtherId = UUID.fromString("00000000-0000-0000-0000-000000000005");
-                ClientGame.killFxLen = ClientGame.VICTIM_FX_LEN;
-                ClientGame.killFxTicks = ClientGame.killFxLen;
-            }
-            case 806 -> shot(mc, "15a_approach");
-            case 813 -> shot(mc, "15b_grab");
-            case 820 -> shot(mc, "15c_windup");
-            case 825 -> shot(mc, "15d_strike");
-            case 828 -> shot(mc, "15e_after");
-            case 832 -> shot(mc, "15f_kick");
-            case 837 -> shot(mc, "15g_fall");
-            case 844 -> shot(mc, "15h_banner");
-            case 851 -> shot(mc, "15i_look");
-            case 895 -> shot(mc, "15j_victim_face");
             case 1100 -> shot(mc, "14_bots_moving");
             case 1110 -> server(mc, sp -> {
                 List<BlockPos> bells = MapData.get(sp.serverLevel()).get(MarkerType.BELL);
@@ -322,7 +305,63 @@ public final class SelfTest {
             case 7000 -> shot(mc, "60_5_inside");
             case 7006 -> aerial(mc, 5);
             case 7080 -> shot(mc, "61_5_aerial");
-            case 7090 -> mc.stop();
+            case 7090 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "wolf", 0); }
+            case 7107 -> shot(mc, "70_00_wolf_0");
+            case 7130 -> shot(mc, "70_00_wolf_1");
+            case 7152 -> shot(mc, "70_00_wolf_2");
+            case 7178 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "shinobi", 0); }
+            case 7195 -> shot(mc, "70_01_shinobi_0");
+            case 7217 -> shot(mc, "70_01_shinobi_1");
+            case 7238 -> shot(mc, "70_01_shinobi_2");
+            case 7264 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "kairiki", 0); }
+            case 7281 -> shot(mc, "70_02_kairiki_0");
+            case 7304 -> shot(mc, "70_02_kairiki_1");
+            case 7326 -> shot(mc, "70_02_kairiki_2");
+            case 7352 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "juro", 0); }
+            case 7369 -> shot(mc, "70_03_juro_0");
+            case 7392 -> shot(mc, "70_03_juro_1");
+            case 7414 -> shot(mc, "70_03_juro_2");
+            case 7440 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "pingpong", 0); }
+            case 7457 -> shot(mc, "70_04_pingpong_0");
+            case 7479 -> shot(mc, "70_04_pingpong_1");
+            case 7500 -> shot(mc, "70_04_pingpong_2");
+            case 7526 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "pillow", 0); }
+            case 7542 -> shot(mc, "70_05_pillow_0");
+            case 7564 -> shot(mc, "70_05_pillow_1");
+            case 7585 -> shot(mc, "70_05_pillow_2");
+            case 7610 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "fusuma", 0); }
+            case 7626 -> shot(mc, "70_06_fusuma_0");
+            case 7647 -> shot(mc, "70_06_fusuma_1");
+            case 7667 -> shot(mc, "70_06_fusuma_2");
+            case 7692 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "seoi", 0); }
+            case 7708 -> shot(mc, "70_07_seoi_0");
+            case 7730 -> shot(mc, "70_07_seoi_1");
+            case 7751 -> shot(mc, "70_07_seoi_2");
+            case 7776 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "neko", 0); }
+            case 7791 -> shot(mc, "70_08_neko_0");
+            case 7811 -> shot(mc, "70_08_neko_1");
+            case 7830 -> shot(mc, "70_08_neko_2");
+            case 7854 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "wolf", 1); }
+            case 7879 -> shot(mc, "70_09_wolf_guard_0");
+            case 7889 -> shot(mc, "70_09_wolf_guard_1");
+            case 7902 -> shot(mc, "70_09_wolf_guard_2");
+            case 7949 -> { mc.setScreen(null); ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), "wolf", 2); }
+            case 8009 -> shot(mc, "70_10_wolf_counter_0");
+            case 8044 -> shot(mc, "70_10_wolf_counter_1");
+            case 8059 -> shot(mc, "70_10_wolf_counter_2");
+            case 8077 -> mc.setScreen(new com.minpaku.client.screen.PreviewScreen(new com.minpaku.client.scene.EjectScene.Cast(mc.player.getUUID(), "Player", "Player はてるてるだった！", List.of(UUID.nameUUIDFromBytes("c0".getBytes()), UUID.nameUUIDFromBytes("c1".getBytes()), UUID.nameUUIDFromBytes("c2".getBytes())))));
+            case 8097 -> shot(mc, "71_teru_0");
+            case 8137 -> shot(mc, "71_teru_1");
+            case 8172 -> shot(mc, "71_teru_2");
+            case 8202 -> shot(mc, "71_teru_3");
+            case 8227 -> shot(mc, "71_teru_4");
+            case 8242 -> com.minpaku.client.Previews.start("result", "fox");
+            case 8282 -> shot(mc, "72_result_fox");
+            case 8292 -> com.minpaku.client.Previews.start("reveal", "shinobi");
+            case 8372 -> shot(mc, "72_reveal_shinobi");
+            case 8382 -> { com.minpaku.client.screen.SettingsScreen.tab = 7; mc.setScreen(new com.minpaku.client.screen.SettingsScreen()); }
+            case 8392 -> shot(mc, "72_settings");
+            case 8402 -> mc.stop();
             default -> {
             }
         }

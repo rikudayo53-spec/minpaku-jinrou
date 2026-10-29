@@ -219,6 +219,12 @@ public final class Ui {
             case "騎士" -> "騎";
             case "霊媒師" -> "霊";
             case "狂人" -> "狂";
+            case "妖狐" -> "狐";
+            case "女将" -> "将";
+            case "てるてる" -> "晴";
+            case "忍び狼" -> "忍";
+            case "怪力狼" -> "怪";
+            case "呪狼" -> "呪";
             default -> roleName.isEmpty() ? "？" : roleName.substring(0, 1);
         };
     }

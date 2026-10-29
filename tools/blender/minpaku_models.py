@@ -247,6 +247,30 @@ class Model:
         ob.rotation_euler = e
         return ob
 
+    def cone_tri(self, x, y, z, size, depth, mat):
+        """丸みのある三角柱（おにぎり）。y 方向に厚み depth"""
+        bm = bmesh.new()
+        # 角を丸めた正三角形（上が頂点）
+        pts = []
+        rr = size * 0.22
+        big = size * 0.62
+        for i in range(3):
+            ca = math.radians(90 + i * 120)
+            cx = x + math.cos(ca) * (big - rr * 2)
+            cz = z + size * 0.42 + math.sin(ca) * (big - rr * 2)
+            for k in range(9):
+                a = ca - math.radians(60) + math.radians(120) * k / 8
+                pts.append((cx + math.cos(a) * rr * 1.0, cz + math.sin(a) * rr * 1.0))
+        front = [bm.verts.new((px, y - depth / 2, pz)) for px, pz in pts]
+        back = [bm.verts.new((px, y + depth / 2, pz)) for px, pz in pts]
+        bm.faces.new(front)
+        bm.faces.new(list(reversed(back)))
+        n = len(pts)
+        for i in range(n):
+            bm.faces.new((front[i], front[(i + 1) % n], back[(i + 1) % n], back[i]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        return self._obj(bm, mat, bevel=0.02, segments=2)
+
     def spike(self, base, tip, r, mat):
         """とげ（毛の房・耳・歯など）"""
         return self.seg(base, tip, r, 0.004, mat, verts=8)
@@ -589,10 +613,46 @@ def sabotage_talisman(m, P):
     m.torus(0.05, 0.008, (0, -0.06, 0.20), P["dark"], rot=(78, 0, 0), seg=16, ring=6)
 
 
+def detective_lens(m, P):
+    """探偵の虫めがね"""
+    m.torus(0.22, 0.035, (0, 0, 0.62), P["gold"], rot=(90, 0, 0), seg=32, ring=10)
+    m.cyl(0.2, 0.02, (0, -0.01, 0.62), P["glass"], rot=(90, 0, 0), verts=32, bevel=0)
+    m.cyl(0.03, 0.08, (0, 0, 0.36), P["gold"], verts=14)
+    m.cyl(0.045, 0.36, (0, 0, 0.0), P["wood_dark"], verts=14)
+    m.sphere(0.05, (0, 0, 0.0), P["gold"])
+
+
+def okami_keyring(m, P):
+    """女将の鍵束（大きな輪に古い鍵が3本と房）"""
+    m.torus(0.16, 0.022, (0, 0, 0.72), P["iron"], rot=(90, 0, 0), seg=28, ring=8)
+    for k, ang in enumerate((-35, 0, 35)):
+        a = math.radians(ang)
+        x = math.sin(a) * 0.16
+        z = 0.72 - math.cos(a) * 0.16
+        m.torus(0.045, 0.012, (x, 0, z - 0.04), P["copper"], rot=(90, 0, 0), seg=14, ring=6)
+        m.seg((x, 0, z - 0.08), (x * 2.2, 0, z - 0.5), 0.018, 0.016, P["copper"])
+        m.box((0.06, 0.02, 0.03), (x * 2.2 + 0.03, 0, z - 0.46), P["copper"], bevel=0.004)
+        m.box((0.045, 0.02, 0.03), (x * 2.2 + 0.025, 0, z - 0.38), P["copper"], bevel=0.004)
+    m.tube([(0, 0, 0.88), (0.02, 0, 0.98), (0, 0, 1.02)], 0.015, P["red"])
+    for k in range(6):
+        a = k / 6 * math.pi * 2
+        m.seg((0, 0, 1.0), (math.cos(a) * 0.05, math.sin(a) * 0.05, 1.18), 0.012, 0.01, P["red"])
+
+
+def itamae_onigiri(m, P):
+    """板前のおにぎり（三角のごはんに海苔、竹の皮）"""
+    bm_r = 0.26
+    m.box((0.62, 0.42, 0.02), (0, 0, 0.01), P["bamboo"], bevel=0.004)
+    m.cone_tri(0.0, 0.0, 0.02, 0.42, 0.22, P["white"])
+    m.box((0.24, 0.25, 0.2), (0, 0, 0.14), P["dark"], bevel=0.01)
+    for k in range(5):
+        m.ico(0.014, (R.uniform(-0.08, 0.08), -0.115, R.uniform(0.22, 0.34)), P["white"], smooth=False)
+
+
 BLOCKS = [call_bell, floor_hatch, breaker, gas_valve, boiler, wiring_panel, ledger, futon, kamado, bath_stove,
           chopping_block, vegetable_patch, dust_pile, entrance_mat, laundry_pole, flower_vase, kitchen_sink,
           shoe_rack, shoji_screen]
-ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman]
+ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman, detective_lens, okami_keyring, itamae_onigiri]
 
 
 # ============================================================ 書き出し

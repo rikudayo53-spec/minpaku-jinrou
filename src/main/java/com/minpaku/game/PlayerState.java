@@ -38,6 +38,10 @@ public class PlayerState {
     public int knightLeft;
     public int emergencyLeft;
     public boolean protectedByKnight;
+    /** 板前のおにぎりを持っている（1回だけキルを耐える） */
+    public boolean onigiri;
+    public int itamaeLeft;
+    public int okamiCooldown;
     @Nullable
     public BlockPos vent;
     public long lastClickTick;

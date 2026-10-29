@@ -145,6 +145,9 @@ public class BotBrain {
             PlayerState near = nearestOther(bot, 3.5);
             if (near != null && !known.containsKey(near.id)) {
                 ps.seerLeft--;
+                if (gm.divineEffects(ps, near)) {
+                    return;
+                }
                 boolean wolf = near.role.isWolf();
                 known.put(near.id, wolf);
                 if (wolf) {

@@ -38,6 +38,11 @@ public final class EjectScene {
         public boolean none() {
             return ejected == null || ejected.equals(new UUID(0, 0));
         }
+
+        /** てるてる（追放されて大喜び） */
+        public boolean teru() {
+            return text != null && text.contains("てるてる");
+        }
     }
 
     private EjectScene() {
@@ -183,11 +188,23 @@ public final class EjectScene {
         PlayerSkin es = ClientGame.skin(cast.ejected());
         PlayerModel<?> em = Scene3D.model(es);
         float flail = (float) Math.sin(t * 1.3f);
-        em.rightArm.xRot = -1.5f + flail * 0.8f;
-        em.leftArm.xRot = -1.5f - flail * 0.8f;
-        em.rightLeg.xRot = flail * 0.6f;
-        em.leftLeg.xRot = -flail * 0.6f;
-        em.head.xRot = -0.3f;
+        if (cast.teru()) {
+            // てるてる：大喜びで両手を上げてばんざい
+            float joy = (float) Math.sin(t * 0.9f);
+            em.rightArm.xRot = -2.9f + joy * 0.3f;
+            em.leftArm.xRot = -2.9f - joy * 0.3f;
+            em.rightArm.zRot = 0.4f;
+            em.leftArm.zRot = -0.4f;
+            em.rightLeg.xRot = joy * 0.4f;
+            em.leftLeg.xRot = -joy * 0.4f;
+            em.head.xRot = -0.6f;
+        } else {
+            em.rightArm.xRot = -1.5f + flail * 0.8f;
+            em.leftArm.xRot = -1.5f - flail * 0.8f;
+            em.rightLeg.xRot = flail * 0.6f;
+            em.leftLeg.xRot = -flail * 0.6f;
+            em.head.xRot = -0.3f;
+        }
         if (!thrown) {
             // あお向け：足が +X、頭が -X
             float ex = cx + 0.9f + swing;
@@ -205,8 +222,22 @@ public final class EjectScene {
             s.ps.translate(0, -0.9f, 0);
             s.player(em, es, 0, 0, 0, -90f, 0f, 0f);
             s.ps.popPose();
+            // てるてる：きらきらの軌跡
+            if (cast.teru()) {
+                for (int i = 1; i < 14; i++) {
+                    float tt = Math.max(0, tau - i * 0.9f);
+                    float x = 2.2f + 0.7f + 0.55f * tt;
+                    float y = 2.25f + 0.62f * tt - 0.0025f * tt * tt;
+                    float z = -0.5f - 0.08f * tt;
+                    float r = 0.12f * (1f - i / 14f);
+                    String[] col = {"yellow_concrete", "pink_concrete", "light_blue_concrete", "lime_concrete"};
+                    s.box(Scene3D.sprite("minecraft:block/" + col[i % 4]), x - r, y - r, z - r, x + r, y + r, z + r,
+                            ((int) (255 * (1f - i / 14f)) << 24) | 0xFFFFFF);
+                }
+            }
         }
         float[] star = s.toScreen(Math.min(fx, 60f), Math.min(fy, 60f), fz);
+        float[] eHead = s.toScreen(cx + 0.9f, 2.9f, -0.5f);
         float[][] heads = new float[n][];
         for (int i = 0; i < n; i++) {
             heads[i] = s.toScreen(cx + cxs[i], 2.6f, czs[i]);
@@ -236,6 +267,21 @@ public final class EjectScene {
         if (t >= 76 && t < 90) {
             Ui.text(g, Ui.serif("それーっ！！"), w / 2f, h * 0.2f, Ui.alpha(0xFFFFFFFF, 1f - (t - 76) / 14f), 3.2f, 0, true);
         }
+        // てるてるの喜びの声
+        if (cast.teru() && eHead != null) {
+            for (int k = 0; k < 2; k++) {
+                float st = t - (12 + k * 20);
+                if (st > 0 && st < 14) {
+                    float a = st < 10 ? 1f : 1f - (st - 10) / 4f;
+                    Ui.text(g, Ui.serif(k == 0 ? "やったー！" : "もっと高くー！"), eHead[0], eHead[1] - 14 - st, Ui.alpha(0xFFFFE08A, a),
+                            1.6f, 0, true);
+                }
+            }
+        }
+        if (cast.teru() && t >= 82 && t < 104) {
+            float a = t < 100 ? 1f : 1f - (t - 100) / 4f;
+            Ui.text(g, Ui.serif("計画どおり〜！"), w / 2f, h * 0.32f, Ui.alpha(0xFFFFE08A, a), 2.2f, 0, true);
+        }
         if (t >= 120 && star != null) {
             float st = t - 120;
             float pop = st < 3 ? st / 3f : st < 8 ? 1f + (8 - st) / 10f : 1f;
@@ -243,7 +289,10 @@ public final class EjectScene {
             float r = 10f * pop;
             float sx = star[0];
             float sy = star[1];
-            star(g, sx, sy, r, st * 6f, Ui.alpha(0xFFFFF6B0, a));
+            if (cast.teru()) {
+                r *= 1.8f;
+            }
+            star(g, sx, sy, r, st * 6f, Ui.alpha(cast.teru() ? 0xFFFFD54F : 0xFFFFF6B0, a));
             star(g, sx, sy, r * 0.45f, st * 6f, Ui.alpha(0xFFFFFFFF, a));
             if (st < 20) {
                 Ui.text(g, Ui.serif("キラーン☆"), sx + 18, sy - 18, Ui.alpha(0xFFFFFFFF, a), 1.6f, -1, true);
@@ -273,6 +322,7 @@ public final class EjectScene {
     /** 結果の文字（和紙の帯に1文字ずつ） */
     private static void result(GuiGraphics g, float rt, String text, int w, int h) {
         boolean wolf = text.endsWith("人狼だった");
+        boolean teru = text.contains("てるてる");
         float a = Mth.clamp(rt / 5f, 0f, 1f);
         int bandH = 44;
         int y = (int) (h * 0.62f);
@@ -280,8 +330,11 @@ public final class EjectScene {
         g.fill(0, y, w, y + 2, Ui.alpha(wolf ? 0xFFC8372D : 0xFFC9A14A, a));
         g.fill(0, y + bandH - 2, w, y + bandH, Ui.alpha(wolf ? 0xFFC8372D : 0xFFC9A14A, a));
         int shown = Mth.clamp((int) (rt / 1.6f), 0, text.length());
-        Ui.text(g, Ui.serif(text.substring(0, shown)), w / 2f, y + 12, Ui.alpha(wolf ? 0xFFFF6A5A : 0xFFFFFFFF, a), 2.2f, 0,
-                true);
+        Ui.text(g, Ui.serif(text.substring(0, shown)), w / 2f, y + 12,
+                Ui.alpha(teru ? 0xFFFFD54F : wolf ? 0xFFFF6A5A : 0xFFFFFFFF, a), 2.2f, 0, true);
+        if (teru && shown >= text.length()) {
+            Ui.text(g, Ui.sans("てるてるの一人勝ち！"), w / 2f, y + bandH + 6, Ui.alpha(0xFFFFE08A, a), 1.2f, 0, true);
+        }
     }
 
     /** 玄関まわり（廊下・土間・玄関の戸口・外の庭） */

@@ -35,7 +35,31 @@ public final class ClientGame {
     public static final int KILL_FX_LEN = 60;
     /** 襲われた側の暗転演出の長さ */
     public static final int VICTIM_FX_LEN = 140;
+    /** 襲われた側：フィニッシャーの種類と、0 = ふつう / 1 = おにぎりで耐えた / 2 = 猫又の反撃 */
+    public static String killFxFinisher = "wolf";
+    public static int killFxVariant;
+    public static com.minpaku.client.scene.FinisherScenes.Ctx killFxCtx;
+    /** フィニッシャーのあとの文字（顔・幽霊になった）にかける時間 */
+    public static final int VICTIM_TAIL = 64;
+
+    /** 襲われた演出を始める（ゲーム中・確認コマンド共通） */
+    public static void startVictimFx(String other, UUID otherId, String finisher, int variant) {
+        killFxKind = 0;
+        killFxOther = other;
+        killFxOtherId = otherId;
+        killFxFinisher = finisher;
+        killFxVariant = variant;
+        killFxCtx = new com.minpaku.client.scene.FinisherScenes.Ctx(otherId, other, variant);
+        killFxLen = com.minpaku.client.scene.FinisherScenes.total(finisher, variant) + (variant == 1 ? 40 : VICTIM_TAIL);
+        killFxTicks = killFxLen;
+    }
     public static int killFxLen = KILL_FX_LEN;
+
+    // 番頭：部屋ごとの人数
+    public static java.util.List<String> roomNames = java.util.List.of();
+    public static java.util.List<Integer> roomCounts = java.util.List.of();
+    /** 自分が選んだ共通フィニッシャー */
+    public static String myFinisher = "pingpong";
 
     // 会議中の発言
     public static final java.util.List<Packets.Talk> talk = new java.util.ArrayList<>();
@@ -92,34 +116,16 @@ public final class ClientGame {
         if (killFxTicks > 0) {
             killFxTicks--;
             if (killFxKind == 0) {
-                // 足音 → つかむ → ためる → 一撃 → 蹴り → 倒れる → 帯 → 心臓の音
                 int t = killFxLen - killFxTicks;
-                if (t == 1 || t == 4 || t == 7) {
-                    play(net.minecraft.sounds.SoundEvents.WOOD_STEP, 0.85f);
+                int end = com.minpaku.client.scene.FinisherScenes.total(killFxFinisher, killFxVariant);
+                if (t <= end) {
+                    com.minpaku.client.scene.FinisherScenes.tick(t, killFxFinisher, killFxVariant);
                 }
-                if (t == 12) {
-                    play(net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_LEATHER, 0.7f);
-                }
-                if (t == 16) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP, 0.5f);
-                }
-                if (t == 24) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT, 0.7f);
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_HURT, 0.8f);
-                    play(net.minecraft.sounds.SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, 1.4f);
-                }
-                if (t == 31) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_KNOCKBACK, 0.8f);
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_HURT, 0.7f);
-                }
-                if (t == 35) {
-                    play(net.minecraft.sounds.SoundEvents.PLAYER_BIG_FALL, 0.8f);
-                }
-                if (t == 41) {
-                    play(net.minecraft.sounds.SoundEvents.ANVIL_LAND, 0.6f);
-                }
-                if (t == 64 || t == 84) {
+                if (killFxVariant != 1 && (t == end + 8 || t == end + 26)) {
                     play(net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, 0.8f);
+                }
+                if (killFxVariant == 1 && t == end + 4) {
+                    play(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.4f);
                 }
             }
         }

@@ -132,6 +132,19 @@ public final class GameHud {
             Ui.sans(g, t.room(), x + w - 8, yy, 0xFF8D7A62, 0.8f, 1);
             yy += 11;
         }
+        // 番頭：部屋ごとの人数
+        if (ClientGame.role() == com.minpaku.game.Role.BANTO && !ClientGame.roomNames.isEmpty()) {
+            int n = ClientGame.roomNames.size();
+            int ry = y + h + 4;
+            Ui.sprite(g, "panel", x, ry, w, 20 + n * 10);
+            Ui.serif(g, "番頭の帳面（いまの人数）", x + 8, ry + 5, Ui.INK, 0.85f, -1);
+            int yy2 = ry + 17;
+            for (int i = 0; i < n; i++) {
+                Ui.sans(g, ClientGame.roomNames.get(i), x + 8, yy2, Ui.INK, 0.8f, -1);
+                Ui.sans(g, ClientGame.roomCounts.get(i) + " 人", x + w - 8, yy2, Ui.VERMILION, 0.8f, 1);
+                yy2 += 10;
+            }
+        }
     }
 
     // ------------------------------------------------------------ 上
@@ -270,106 +283,108 @@ public final class GameHud {
             Ui.text(g, Ui.serif("キル"), w / 2f, h / 2f - 50, Ui.alpha(0xFFFF4A3A, a), 3.5f, 0, false);
             Ui.text(g, Ui.sans(ClientGame.killFxOther + " を襲った"), w / 2f, h / 2f - 12, Ui.alpha(0xFFFFFFFF, a), 1.1f, 0, false);
         } else {
-            Ui.text(g, Ui.serif("守られていた"), w / 2f, h / 2f - 50, Ui.alpha(0xFFF2C94C, a), 3f, 0, false);
-            Ui.text(g, Ui.sans("騎士の守りでキルが防がれた"), w / 2f, h / 2f - 16, Ui.alpha(0xFFFFFFFF, a), 1.1f, 0, false);
+            String[] head = {"守られていた", "おにぎりで耐えた", "効かない！"};
+            String[] sub = {"騎士の守りでキルが防がれた", "板前のおにぎりで1回だけ耐えられた", "妖狐には人狼の牙が効かない"};
+            int v = Mth.clamp(ClientGame.killFxVariant, 0, 2);
+            Ui.text(g, Ui.serif(head[v]), w / 2f, h / 2f - 50, Ui.alpha(0xFFF2C94C, a), 3f, 0, false);
+            Ui.text(g, Ui.sans(sub[v]), w / 2f, h / 2f - 16, Ui.alpha(0xFFFFFFFF, a), 1.1f, 0, false);
         }
     }
 
-    /** 襲われた人の画面：犯人に倒される場面（横から・3D）→ 爪あと → 襲った人の顔 → 幽霊になった */
+    /** 襲われた人の画面：フィニッシャー（3D）→ 襲った人の顔 → 幽霊になった（おにぎりで耐えたら「助かった」） */
     private static void victimFx(GuiGraphics g, int w, int h, float pt) {
         float t = ClientGame.killFxLen - ClientGame.killFxTicks + pt;
         float end = ClientGame.killFxLen;
-        // 最後の 25 tick で明ける
-        float all = t > end - 25 ? Mth.clamp((end - t) / 25f, 0f, 1f) : 1f;
+        String fin = ClientGame.killFxFinisher;
+        int variant = ClientGame.killFxVariant;
+        int scene = com.minpaku.client.scene.FinisherScenes.total(fin, variant);
+        float all = t > end - 20 ? Mth.clamp((end - t) / 20f, 0f, 1f) : 1f;
         float cx = w / 2f;
         float cy = h / 2f;
+        if (ClientGame.killFxCtx == null) {
+            ClientGame.killFxCtx = new com.minpaku.client.scene.FinisherScenes.Ctx(ClientGame.killFxOtherId, ClientGame.killFxOther, variant);
+        }
         g.pose().pushPose();
         g.pose().translate(0, 0, 2000);
-        // 真っ暗（最初の一瞬だけ赤く光る）
-        g.fill(0, 0, w, h, Ui.alpha(0xFF000000, all));
-        // キルの場面（Apex のフィニッシャー風の3D。犯人＝襲った人のスキン、倒されるのは自分）
-        float[] hits = KillScene.HITS;
-        if (t < KillScene.END + 2) {
+        g.fill(0, 0, w, h, Ui.alpha(0xFF000000, variant == 1 ? Mth.clamp(1f - (t - scene) / 12f, 0f, 1f) * all : all));
+        float[] hits = com.minpaku.client.scene.FinisherScenes.hits(fin);
+        float[][] hitXY = null;
+        if (t < scene + 2) {
             g.pose().popPose();
-            KillScene.render(g, t, all, ClientGame.killFxOtherId);
+            float fade = Mth.clamp((scene - t) / 6f, 0f, 1f);
+            hitXY = com.minpaku.client.scene.FinisherScenes.render(g, Math.min(t, scene), all * (variant == 1 ? 1f : Math.max(0.15f, fade)),
+                    ClientGame.killFxCtx, fin);
             g.pose().pushPose();
             g.pose().translate(0, 0, 2000);
-            // 映画のような上下の黒帯と、まわりの暗がり
-            int edge = Ui.alpha(0xFF2A0000, 0.8f * all);
-            g.fillGradient(0, 0, w, h / 3, edge, 0x00000000);
-            g.fillGradient(0, h - h / 3, w, h, 0x00000000, edge);
-            g.fill(0, 0, w, h / 10, Ui.alpha(0xFF000000, all));
-            g.fill(0, h - h / 10, w, h, Ui.alpha(0xFF000000, all));
-            // 当たった瞬間に白く光る
-            for (float hit : hits) {
-                if (t > hit && t < hit + 3) {
-                    g.fill(0, 0, w, h, Ui.alpha(0xFFFFFFFF, (1f - (t - hit) / 3f) * 0.55f * all));
-                }
+            // 最後は暗転
+            if (variant != 1 && t > scene - 6) {
+                g.fill(0, 0, w, h, Ui.alpha(0xFF000000, Mth.clamp((t - scene + 6) / 6f, 0f, 1f)));
             }
             // 血しぶき（当たった瞬間に飛び散る）
-            for (int i = 0; i < hits.length; i++) {
-                float dt = t - hits[i];
-                if (dt > 0 && dt < 12) {
-                    java.util.Random rnd = new java.util.Random(31L * i + 7);
-                    for (int k = 0; k < 14; k++) {
-                        float ang = (float) (rnd.nextFloat() * Math.PI * 2);
-                        float sp = 2.5f + rnd.nextFloat() * 4f;
-                        float px = KillScene.hitX[i] + (float) Math.cos(ang) * sp * dt;
-                        float py = KillScene.hitY[i] + (float) Math.sin(ang) * sp * dt * 0.6f + 0.35f * dt * dt;
-                        float r = (1.2f + rnd.nextFloat() * 1.8f) * (1f - dt / 12f);
-                        Ui.disc(g, px, py, Math.max(0.3f, r), Ui.alpha(0xFFB3121A, all));
+            if (hitXY != null && variant != 1) {
+                for (int i = 0; i < hits.length; i++) {
+                    float dt = t - hits[i];
+                    if (dt > 0 && dt < 12 && hitXY[i] != null) {
+                        java.util.Random rnd = new java.util.Random(31L * i + 7);
+                        for (int k = 0; k < 14; k++) {
+                            float ang = (float) (rnd.nextFloat() * Math.PI * 2);
+                            float sp = 2.5f + rnd.nextFloat() * 4f;
+                            float px = hitXY[i][0] + (float) Math.cos(ang) * sp * dt;
+                            float py = hitXY[i][1] + (float) Math.sin(ang) * sp * dt * 0.6f + 0.35f * dt * dt;
+                            float r = (1.2f + rnd.nextFloat() * 1.8f) * (1f - dt / 12f);
+                            Ui.disc(g, px, py, Math.max(0.3f, r), Ui.alpha(0xFFB3121A, all));
+                        }
                     }
                 }
             }
         }
-        if (t < 4) {
+        if (t < 4 && variant != 1) {
             g.fill(0, 0, w, h, Ui.alpha(0xFFB01818, (1f - t / 4f) * 0.5f));
         }
-        // 「仕留められた」の帯（左下から斜めにすべりこむ）
-        if (t > 40 && t < KillScene.END) {
-            float in = Mth.clamp((t - 40) / 3f, 0f, 1f);
-            in = 1f - (1f - in) * (1f - in);
-            float out = Mth.clamp((KillScene.END - t) / 4f, 0f, 1f);
-            float a = out * all;
-            float bx = Mth.lerp(in, -240f, 24f);
-            float by = h * 0.68f;
-            float bw = 190f;
-            float bh = 34f;
-            Ui.quad(g, bx - 10, by, bx + bw, by, bx + bw - 10, by + bh, bx - 20, by + bh, Ui.alpha(0xFFB3121A, a));
-            Ui.quad(g, bx + bw + 4, by, bx + bw + 10, by, bx + bw, by + bh, bx + bw - 6, by + bh, Ui.alpha(0xFFFFFFFF, a));
-            Ui.text(g, Ui.sans(ClientGame.killFxOther + " のとどめ"), bx, by - 11, Ui.alpha(0xFFFFFFFF, a), 0.85f, -1, true);
-            Ui.text(g, Ui.serif("仕留められた"), bx + 2, by + 6, Ui.alpha(0xFFFFFFFF, a), 2.2f, -1, false);
+        if (variant == 1) {
+            // おにぎりで耐えた：ゲームにもどる
+            if (t > scene - 10) {
+                float a = Mth.clamp((t - scene + 10) / 8f, 0f, 1f) * all;
+                Ui.text(g, Ui.serif("助かった！"), cx, cy - 30, Ui.alpha(0xFFFFF3B0, a), 3f, 0, true);
+                Ui.text(g, Ui.sans("板前のおにぎりで、" + ClientGame.killFxOther + " の攻撃を1回だけ耐えた"), cx, cy + 6,
+                        Ui.alpha(0xFFFFFFFF, a), 1.1f, 0, true);
+            }
+            g.pose().popPose();
+            return;
         }
-        // 爪あと（当たった場所に1本ずつ。暗転後は画面の真ん中に残る）
-        for (int i = 0; i < hits.length; i++) {
-            float grow = Mth.clamp((t - hits[i]) / 2.5f, 0f, 1f);
-            float move = Mth.clamp((t - KillScene.END + 6) / 8f, 0f, 1f);
-            move = move * move * (3 - 2 * move);
-            float ox = Mth.lerp(move, KillScene.hitX[i], cx + (i - 0.5f) * 40f);
-            float oy = Mth.lerp(move, KillScene.hitY[i], cy);
-            float size = Mth.lerp(move, 0.45f, 1f);
-            float dir = i == 1 ? -1f : 1f;
-            float fade = all * (t > 90 ? Mth.clamp(1f - (t - 90) / 25f, 0.25f, 1f) : 1f);
-            Ui.slash(g, ox + 70 * dir * size, oy - 95 * size, ox - 70 * dir * size, oy + 95 * size, 16 * size, grow,
-                    Ui.alpha(0xFF8E1010, fade));
-            Ui.slash(g, ox + 70 * dir * size, oy - 95 * size, ox - 70 * dir * size, oy + 95 * size, 7 * size, grow,
-                    Ui.alpha(0xFFE0392B, fade));
+        // 爪あと（人狼・猫又のときだけ。暗転後に真ん中へ）
+        boolean claw = fin.equals("wolf") || fin.equals("neko");
+        if (claw && t > scene - 4) {
+            for (int i = 0; i < 3; i++) {
+                float grow = Mth.clamp((t - (scene - 4) - i * 3) / 2.5f, 0f, 1f);
+                float ox = cx + (i - 1) * 34f;
+                float dir = i == 1 ? -1f : 1f;
+                float fade = all * (t > scene + 30 ? Mth.clamp(1f - (t - scene - 30) / 25f, 0.25f, 1f) : 1f);
+                Ui.slash(g, ox + 70 * dir, cy - 95, ox - 70 * dir, cy + 95, 16, grow, Ui.alpha(0xFF8E1010, fade));
+                Ui.slash(g, ox + 70 * dir, cy - 95, ox - 70 * dir, cy + 95, 7, grow, Ui.alpha(0xFFE0392B, fade));
+            }
         }
         // 襲った人の顔と名前
-        if (t > 60) {
-            float a = Mth.clamp((t - 60) / 8f, 0f, 1f) * all;
+        if (t > scene + 4) {
+            float a = Mth.clamp((t - scene - 4) / 8f, 0f, 1f) * all;
             if (a > 0.05f) {
                 RenderSystem.enableBlend();
                 RenderSystem.setShaderColor(1f, 1f, 1f, a);
                 g.fill((int) cx - 19, (int) cy - 61, (int) cx + 19, (int) cy - 23, Ui.alpha(0xFFE0392B, a));
-                Ui.face(g, ClientGame.killFxOtherId, (int) cx - 17, (int) cy - 59, 34);
+                if (fin.equals("neko")) {
+                    Ui.text(g, Ui.serif("猫"), cx, cy - 54, Ui.alpha(0xFFE1B3FF, a), 2.6f, 0, false);
+                } else {
+                    Ui.face(g, ClientGame.killFxOtherId, (int) cx - 17, (int) cy - 59, 34);
+                }
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             }
-            Ui.text(g, Ui.serif(ClientGame.killFxOther), cx, cy - 12, Ui.alpha(0xFFFFFFFF, a), 1.8f, 0, false);
-            Ui.text(g, Ui.serif("に襲われた"), cx, cy + 10, Ui.alpha(0xFFE0392B, a), 1.5f, 0, false);
+            String who = fin.equals("neko") ? "猫又 " + ClientGame.killFxOther : ClientGame.killFxOther;
+            Ui.text(g, Ui.serif(who), cx, cy - 12, Ui.alpha(0xFFFFFFFF, a), 1.8f, 0, false);
+            Ui.text(g, Ui.serif(fin.equals("neko") ? "に祟られた" : fin.equals("juro") ? "に呪われた" : "に襲われた"), cx, cy + 10,
+                    Ui.alpha(0xFFE0392B, a), 1.5f, 0, false);
         }
-        if (t > 78) {
-            float a = Mth.clamp((t - 78) / 10f, 0f, 1f) * all;
+        if (t > scene + 22) {
+            float a = Mth.clamp((t - scene - 22) / 10f, 0f, 1f) * all;
             Ui.text(g, Ui.sans("あなたは幽霊になった"), cx, cy + 42, Ui.alpha(0xFFE1D5F5, a), 1.2f, 0, false);
             Ui.text(g, Ui.sans("生きている人には見えません。タスクは続けられます"), cx, cy + 58,
                     Ui.alpha(0xFFB8A9CF, a), 0.85f, 0, false);

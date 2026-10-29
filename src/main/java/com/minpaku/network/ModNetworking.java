@@ -18,6 +18,9 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(Packets.MeetingResult.TYPE, Packets.MeetingResult.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.KillFx.TYPE, Packets.KillFx.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Preview.TYPE, Packets.Preview.CODEC);
+        PayloadTypeRegistry.playS2C().register(Packets.RoomCounts.TYPE, Packets.RoomCounts.CODEC);
+        PayloadTypeRegistry.playS2C().register(Packets.PreviewAnim.TYPE, Packets.PreviewAnim.CODEC);
+        PayloadTypeRegistry.playC2S().register(Packets.SetFinisher.TYPE, Packets.SetFinisher.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.OpenTask.TYPE, Packets.OpenTask.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Announce.TYPE, Packets.Announce.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Result.TYPE, Packets.Result.CODEC);
@@ -39,6 +42,10 @@ public final class ModNetworking {
         ServerPlayNetworking.registerGlobalReceiver(Packets.Control.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
             player.server.execute(() -> GameManager.get(player.server).control(player, p.action()));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(Packets.SetFinisher.TYPE, (p, ctx) -> {
+            ServerPlayer player = ctx.player();
+            player.server.execute(() -> GameManager.get(player.server).setFinisherPref(player, p.finisher()));
         });
         ServerPlayNetworking.registerGlobalReceiver(Packets.KillRequest.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();

@@ -276,8 +276,16 @@ public final class Packets {
         }
     }
 
-    /** キルの演出。kind: 0 = 襲われた / 1 = 襲った / 2 = 守られて失敗。otherId は相手（顔を出すため） */
-    public record KillFx(int kind, String other, UUID otherId) implements CustomPacketPayload {
+    /**
+     * キルの演出。kind: 0 = 襲われた / 1 = 襲った / 2 = 守られて失敗。otherId は相手（顔を出すため）。
+     * finisher = フィニッシャーの種類。variant: 襲われた側 0 = ふつう / 1 = おにぎりで耐えた / 2 = 猫又の反撃、
+     * 守られて失敗のとき 0 = 騎士 / 1 = おにぎり / 2 = 妖狐（効かない）
+     */
+    public record KillFx(int kind, String other, UUID otherId, String finisher, int variant) implements CustomPacketPayload {
+        public KillFx(int kind, String other, UUID otherId) {
+            this(kind, other, otherId, "wolf", 0);
+        }
+
         public static final Type<KillFx> TYPE = key("kill_fx");
         public static final StreamCodec<FriendlyByteBuf, KillFx> CODEC = CustomPacketPayload.codec(KillFx::write, KillFx::read);
 
@@ -285,10 +293,12 @@ public final class Packets {
             b.writeVarInt(kind);
             b.writeUtf(other);
             b.writeUUID(otherId);
+            b.writeUtf(finisher);
+            b.writeVarInt(variant);
         }
 
         private static KillFx read(FriendlyByteBuf b) {
-            return new KillFx(b.readVarInt(), b.readUtf(), b.readUUID());
+            return new KillFx(b.readVarInt(), b.readUtf(), b.readUUID(), b.readUtf(), b.readVarInt());
         }
 
         @Override
@@ -455,6 +465,91 @@ public final class Packets {
                 list.add(b.readUUID());
             }
             return new Preview(kind, e, name, text, list);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** アニメーションの確認（/minpaku preview）。kind と opt は Previews を参照 */
+    public record PreviewAnim(String kind, String opt, String otherName, UUID otherId, List<UUID> carriers)
+            implements CustomPacketPayload {
+        public static final Type<PreviewAnim> TYPE = key("preview_anim");
+        public static final StreamCodec<FriendlyByteBuf, PreviewAnim> CODEC = CustomPacketPayload.codec(PreviewAnim::write, PreviewAnim::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeUtf(kind);
+            b.writeUtf(opt);
+            b.writeUtf(otherName);
+            b.writeUUID(otherId);
+            b.writeVarInt(carriers.size());
+            for (UUID u : carriers) {
+                b.writeUUID(u);
+            }
+        }
+
+        private static PreviewAnim read(FriendlyByteBuf b) {
+            String k = b.readUtf();
+            String o = b.readUtf();
+            String n = b.readUtf();
+            UUID id = b.readUUID();
+            int c = b.readVarInt();
+            List<UUID> list = new java.util.ArrayList<>();
+            for (int i = 0; i < c; i++) {
+                list.add(b.readUUID());
+            }
+            return new PreviewAnim(k, o, n, id, list);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** 番頭に送る：部屋ごとの人数 */
+    public record RoomCounts(List<String> rooms, List<Integer> counts) implements CustomPacketPayload {
+        public static final Type<RoomCounts> TYPE = key("room_counts");
+        public static final StreamCodec<FriendlyByteBuf, RoomCounts> CODEC = CustomPacketPayload.codec(RoomCounts::write, RoomCounts::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeVarInt(rooms.size());
+            for (int i = 0; i < rooms.size(); i++) {
+                b.writeUtf(rooms.get(i));
+                b.writeVarInt(counts.get(i));
+            }
+        }
+
+        private static RoomCounts read(FriendlyByteBuf b) {
+            int n = b.readVarInt();
+            List<String> r = new java.util.ArrayList<>();
+            List<Integer> c = new java.util.ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                r.add(b.readUtf());
+                c.add(b.readVarInt());
+            }
+            return new RoomCounts(r, c);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** 自分の共通フィニッシャーを選ぶ */
+    public record SetFinisher(String finisher) implements CustomPacketPayload {
+        public static final Type<SetFinisher> TYPE = key("set_finisher");
+        public static final StreamCodec<FriendlyByteBuf, SetFinisher> CODEC = CustomPacketPayload.codec(SetFinisher::write, SetFinisher::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeUtf(finisher);
+        }
+
+        private static SetFinisher read(FriendlyByteBuf b) {
+            return new SetFinisher(b.readUtf());
         }
 
         @Override

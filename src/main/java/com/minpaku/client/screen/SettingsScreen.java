@@ -7,6 +7,7 @@ import com.minpaku.game.MarkerType;
 import com.minpaku.game.Role;
 import com.minpaku.network.Packets;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -17,7 +18,7 @@ import java.util.List;
 
 /** 管理人の帳簿：設定をタブで切りかえて変える。ゲームの開始・中止、マップを建てるもここ */
 public class SettingsScreen extends Screen {
-    private static int tab;
+    public static int tab;
     private boolean confirmBuild;
     private int px, py, pw, ph;
 
@@ -148,6 +149,9 @@ public class SettingsScreen extends Screen {
             ry += 20;
         }
         // タブごとの補足
+        if (group.equals("フィニッシャー")) {
+            finisherTab(g, lx + 8, ry, lw - 16, ly + lh - ry - 6, mouseX, mouseY);
+        }
         if (group.equals("マップ") && s != null) {
             mapTab(g, s, lx + 8, ry, lw - 16, ly + lh - ry - 6, mouseX, mouseY);
         }
@@ -262,6 +266,58 @@ public class SettingsScreen extends Screen {
         int n = GameSettings.GROUPS.length;
         tab = Math.floorMod(tab - (int) Math.signum(dy), n);
         return true;
+    }
+
+    /** フィニッシャーのタブ：自分の共通フィニッシャーを選ぶ・全部を見られる（だれでも使える） */
+    private void finisherTab(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
+        Ui.sans(g, "自分のフィニッシャー（設定が「各自が選んだもの」のときに使われます）", x, y, Ui.INK_SOFT, 0.75f, -1);
+        String[] common = {"pingpong", "pillow", "fusuma", "seoi"};
+        int bw = (w - 12) / 4;
+        for (int i = 0; i < common.length; i++) {
+            String id = common[i];
+            int bx = x + i * (bw + 4);
+            int by = y + 12;
+            boolean on = id.equals(com.minpaku.client.ClientGame.myFinisher);
+            boolean hov = in(mouseX, mouseY, bx, by, bw, 34);
+            g.fill(bx, by, bx + bw, by + 34, on ? 0xFFC8372D : hov ? 0x40C8372D : 0x20000000);
+            String title = com.minpaku.client.scene.FinisherScenes.NAMES.get(id);
+            Ui.sans(g, title, bx + bw / 2f, by + 5, on ? 0xFFFFFFFF : Ui.INK, 0.72f, 0);
+            Ui.sans(g, on ? "選択中" : "クリックで選ぶ", bx + bw / 2f, by + 18, on ? 0xFFFFE9B8 : Ui.INK_SOFT, 0.65f, 0);
+            hits.add(new Hit(bx, by, bw, 26, () -> {
+                com.minpaku.client.ClientGame.myFinisher = id;
+                ClientPlayNetworking.send(new Packets.SetFinisher(id));
+                ClientGame.play(SoundEvents.BOOK_PAGE_TURN, 1.3f);
+            }));
+            previewButton(g, bx + bw / 2 - 18, by + 36, id, 0, mouseX, mouseY);
+        }
+        // 役職の専用フィニッシャーと、特別な版
+        int ry = y + 64;
+        Ui.sans(g, "役職の専用フィニッシャー・特別な演出（見るだけ）", x, ry, Ui.INK_SOFT, 0.75f, -1);
+        String[][] list = {{"wolf", "0", "人狼"}, {"shinobi", "0", "忍び狼"}, {"kairiki", "0", "怪力狼"}, {"juro", "0", "呪狼"},
+                {"wolf", "1", "おにぎりで耐える"}, {"wolf", "2", "猫又の反撃"}, {"neko", "0", "猫又の祟り"}};
+        int col = 4;
+        int cw = (w - 12) / col;
+        for (int i = 0; i < list.length; i++) {
+            int bx = x + (i % col) * (cw + 4);
+            int by = ry + 12 + (i / col) * 22;
+            Ui.sans(g, list[i][2], bx + 4, by + 4, Ui.INK, 0.75f, -1);
+            previewButton(g, bx + cw - 40, by, list[i][0], Integer.parseInt(list[i][1]), mouseX, mouseY);
+        }
+    }
+
+    private void previewButton(GuiGraphics g, int bx, int by, String id, int variant, int mouseX, int mouseY) {
+        boolean hov = in(mouseX, mouseY, bx, by, 36, 14);
+        Ui.sprite(g, "btn_dark", bx, by, 36, 14);
+        Ui.sans(g, "見る", bx + 18, by + 3, hov ? 0xFFFFFFFF : Ui.CREAM, 0.7f, 0);
+        hits.add(new Hit(bx, by, 36, 14, () -> {
+            onClose();
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null) {
+                // 確認用：自分が犯人役
+                com.minpaku.client.ClientGame.startVictimFx(id.equals("neko") ? "たま" : mc.player.getGameProfile().getName(),
+                        mc.player.getUUID(), id, variant);
+            }
+        }));
     }
 
     /** マップのタブ：6種類の一覧（クリックで選ぶ）と、選んだマップの間取り図 */

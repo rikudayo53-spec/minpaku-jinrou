@@ -90,6 +90,9 @@ public class MinpakuClient implements ClientModInitializer {
         itemModel(com.minpaku.registry.ModItems.CRYSTAL, "seer_crystal");
         itemModel(com.minpaku.registry.ModItems.CHARM, "knight_charm");
         itemModel(com.minpaku.registry.ModItems.TALISMAN, "sabotage_talisman");
+        itemModel(com.minpaku.registry.ModItems.LENS, "detective_lens");
+        itemModel(com.minpaku.registry.ModItems.KEYRING, "okami_keyring");
+        itemModel(com.minpaku.registry.ModItems.ONIGIRI, "itamae_onigiri");
     }
 
     private static void itemModel(net.minecraft.world.item.Item item, String mesh) {
@@ -152,12 +155,23 @@ public class MinpakuClient implements ClientModInitializer {
                 Minecraft.getInstance().setScreen(new com.minpaku.client.screen.PreviewScreen(
                         new com.minpaku.client.scene.EjectScene.Cast(p.kind() == 2 ? Packets.NONE : p.ejected(), p.name(), p.text(),
                                 p.carriers())))));
+        ClientPlayNetworking.registerGlobalReceiver(Packets.PreviewAnim.TYPE, (p, ctx) -> ctx.client().execute(() ->
+                Previews.play(p)));
+        ClientPlayNetworking.registerGlobalReceiver(Packets.RoomCounts.TYPE, (p, ctx) -> ctx.client().execute(() -> {
+            ClientGame.roomNames = p.rooms();
+            ClientGame.roomCounts = p.counts();
+        }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.KillFx.TYPE, (p, ctx) -> ctx.client().execute(() -> {
-            ClientGame.killFxKind = p.kind();
-            ClientGame.killFxOther = p.other();
-            ClientGame.killFxOtherId = p.otherId();
-            ClientGame.killFxLen = p.kind() == 0 ? ClientGame.VICTIM_FX_LEN : ClientGame.KILL_FX_LEN;
-            ClientGame.killFxTicks = ClientGame.killFxLen;
+            if (p.kind() == 0) {
+                ClientGame.startVictimFx(p.other(), p.otherId(), p.finisher(), p.variant());
+            } else {
+                ClientGame.killFxKind = p.kind();
+                ClientGame.killFxOther = p.other();
+                ClientGame.killFxOtherId = p.otherId();
+                ClientGame.killFxVariant = p.variant();
+                ClientGame.killFxLen = ClientGame.KILL_FX_LEN;
+                ClientGame.killFxTicks = ClientGame.killFxLen;
+            }
             Minecraft mc = Minecraft.getInstance();
             if (mc.screen != null && !(mc.screen instanceof MeetingScreen)) {
                 mc.setScreen(null);
@@ -213,6 +227,7 @@ public class MinpakuClient implements ClientModInitializer {
             pendingMeeting = null;
         }
         ClientGame.tick();
+        Previews.tick();
         SelfTest.tick(mc);
         // 人狼の能力：キルキーで近くの相手をキル
         while (GameHud.KILL_KEY != null && GameHud.KILL_KEY.consumeClick()) {

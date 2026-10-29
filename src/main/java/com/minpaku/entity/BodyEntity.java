@@ -59,10 +59,17 @@ public class BodyEntity extends Entity {
         return false;
     }
 
+    /** 犯人の役職（探偵が調べる。サーバーだけ） */
+    public String killerRole = "";
+
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (player instanceof ServerPlayer sp) {
-            GameManager.get(sp.server).reportBody(sp, this);
+            if (sp.getItemInHand(hand).is(com.minpaku.registry.ModItems.LENS)) {
+                GameManager.get(sp.server).useDetective(sp, this);
+            } else {
+                GameManager.get(sp.server).reportBody(sp, this);
+            }
         }
         return InteractionResult.sidedSuccess(level().isClientSide());
     }
