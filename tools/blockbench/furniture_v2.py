@@ -2428,6 +2428,20 @@ MATS.update({
 })
 
 
+def blob(m, name, cx, cz, y0, y1, r, mat, n=8, sides=8, lo=0.55, hi=0.45, group=None, bulge=None):
+    """まるいかたまり（楕円体を輪切りで重ねる）。lo/hi = 下端・上端の半径の割合（0 なら点までしぼむ）"""
+    for k in range(n):
+        ya = y0 + (y1 - y0) * k / n
+        yb = y0 + (y1 - y0) * (k + 1) / n
+        t = ((ya + yb) / 2 - y0) / (y1 - y0) * 2 - 1          # -1（下）〜 1（上）
+        f = math.sqrt(max(0.0, 1 - t * t))
+        edge = lo if t < 0 else hi
+        rr = r * (edge + (1 - edge) * f)
+        if bulge:
+            rr *= bulge(t)
+        m.cyl(name, cx, cz, ya, yb, rr, mat, sides=sides, group=group)
+
+
 def _sometsuke(draw, face, x0, y0, w, h):
     """火鉢の染付（青い唐草の帯）"""
     if face not in ("north", "south", "east", "west"):
@@ -2445,42 +2459,38 @@ def tanuki():
     m = F("tanuki", 6)
     # 台と足
     bevel(m, "base", (2, 0, 2.4), (14, 0.8, 14.4), "tanuki_d", b=0.25)
-    for x in (5.2, 10.8):
-        m.cyl("foot", x, 6.8, 0.8, 1.8, 1.5, "tanuki_b", sides=4)
+    for x in (5.4, 10.6):
+        blob(m, "foot", x, 5.4, 0.8, 2.2, 1.6, "tanuki_b", n=2, lo=0.9, hi=0.6, sides=4)
     # 胴：大きなおなか（前へ出っぱる）
-    for (ya, yb, r) in ((1.6, 3.0, 4.4), (3.0, 6.0, 5.2), (6.0, 9.0, 5.4), (9.0, 11.4, 4.8), (11.4, 13.0, 3.8)):
-        m.cyl("body", 8, 8.6, ya, yb, r, "tanuki_b", sides=6)
-    for (ya, yb, r) in ((3.0, 4.4, 3.4), (4.4, 6.0, 4.2), (6.0, 8.4, 4.5), (8.4, 9.8, 4.0), (9.8, 10.8, 3.0)):
-        m.cyl("belly", 8, 6.0, ya, yb, r, "tanuki_l", sides=6)
+    blob(m, "body", 8, 8.6, 1.4, 13.4, 5.6, "tanuki_b", n=10, lo=0.7, hi=0.55)
+    blob(m, "belly", 8, 6.2, 2.6, 11.2, 4.6, "tanuki_l", n=9, lo=0.45, hi=0.35)
     m.cube("heso", (7.5, 6.6, 1.45), (8.5, 7.6, 1.55), "tanuki_d")
     # 頭：まるい顔、白い顔の模様、つき出た鼻、大きな目、耳
-    for (ya, yb, r) in ((12.8, 13.8, 3.2), (13.8, 17.4, 3.9), (17.4, 19.0, 3.3), (19.0, 19.6, 2.4)):
-        m.cyl("head", 8, 8.4, ya, yb, r, "tanuki_b", sides=6)
-    bevel(m, "face", (5.0, 13.8, 4.4), (11.0, 17.6, 5.0), "tanuki_l", b=0.4)
-    bevel(m, "snout", (6.6, 14.2, 3.6), (9.4, 15.8, 4.6), "tanuki_l", b=0.35)
-    m.cube("nose", (7.4, 15.2, 3.4), (8.6, 16.0, 3.7), "tanuki_d")
-    for x in (5.8, 9.0):
-        bevel(m, "eye_ring", (x - 0.2, 15.8, 4.2), (x + 1.4, 17.4, 4.5), "tanuki_d", b=0.15)
-        m.cube("eye", (x + 0.3, 16.4, 4.1), (x + 0.9, 17.0, 4.2), "plate")
+    blob(m, "head", 8, 8.4, 12.6, 19.8, 4.1, "tanuki_b", n=8, lo=0.6, hi=0.5)
+    blob(m, "face", 8, 6.6, 13.6, 17.8, 2.8, "tanuki_l", n=6, lo=0.5, hi=0.5)
+    blob(m, "snout", 8, 4.4, 14.0, 16.0, 1.3, "tanuki_l", n=4, lo=0.6, hi=0.6, sides=4)
+    blob(m, "nose", 8, 3.2, 15.0, 16.0, 0.6, "tanuki_d", n=2, lo=0.7, hi=0.7, sides=4)
+    for x in (6.3, 9.7):
+        blob(m, "eye_ring", x, 4.3, 15.9, 17.5, 0.85, "tanuki_d", n=3, lo=0.6, hi=0.6, sides=4)
+        m.cube("eye", (x - 0.3, 16.4, 3.4), (x + 0.3, 17.0, 3.5), "plate")
     for x in (4.8, 10.0):
-        m.cube("ear", (x, 18.6, 7.4), (x + 1.2, 20.0, 9.0), "tanuki_b", rot=[0, 0, 15 if x < 8 else -15], pivot=[x + 0.6, 18.6, 8])
+        blob(m, "ear", x + 0.6, 8.2, 18.4, 20.2, 0.8, "tanuki_b", n=3, lo=0.8, hi=0.3, sides=4)
     # 笠：つばが広く、てっぺんがとがる
     m.cyl("kasa", 8, 8.4, 19.4, 19.9, 5.6, "tanuki_hat", sides=6)
     for (ya, yb, r) in ((19.9, 20.6, 4.0), (20.6, 21.4, 2.8), (21.4, 22.0, 1.6), (22.0, 22.4, 0.6)):
         m.cyl("kasa_top", 8, 8.4, ya, yb, r, "tanuki_hat", sides=6)
     m.cyl("kasa_himo", 8, 8.4, 19.9, 20.2, 4.1, "red", sides=6)
     # 右手（向かって左）に通い帳、左手（向かって右）に徳利
-    bevel(m, "arm", (2.0, 8.4, 6.0), (4.0, 12.6, 9.0), "tanuki_b", b=0.5)
-    bevel(m, "book", (1.4, 6.4, 5.0), (3.4, 10.6, 8.6), "tokkuri", b=0.15, decal=_text("通", size=0.5, faces=("west",)))
-    m.cube("book_tie", (1.3, 8.0, 5.0), (3.5, 8.4, 8.6), "tanuki_d")
-    bevel(m, "arm", (12.0, 8.4, 6.0), (14.0, 12.6, 9.0), "tanuki_b", b=0.5)
+    blob(m, "arm", 3.0, 7.4, 7.8, 12.8, 1.4, "tanuki_b", n=5, lo=0.7, hi=0.6, sides=4)
+    bevel(m, "book", (1.0, 6.4, 5.0), (2.8, 10.6, 8.6), "tokkuri", b=0.15, decal=_text("通", size=0.5, faces=("west",)))
+    m.cube("book_tie", (0.9, 8.0, 5.0), (2.9, 8.4, 8.6), "tanuki_d")
+    blob(m, "arm", 13.0, 7.4, 7.8, 12.8, 1.4, "tanuki_b", n=5, lo=0.7, hi=0.6, sides=4)
     for (ya, yb, r) in ((3.6, 5.0, 1.0), (5.0, 7.6, 1.5), (7.6, 9.0, 1.1), (9.0, 10.0, 0.5), (10.0, 10.4, 0.7)):
-        m.cyl("tokkuri", 14.2, 7.2, ya, yb, r, "tokkuri", sides=4)
-    m.cube("tokkuri_text", (13.0, 5.6, 6.1), (15.4, 7.2, 6.2), "tanuki_d")
-    m.cube("tokkuri_rope", (13.4, 9.6, 6.6), (15.0, 10.0, 7.8), "rope")
+        m.cyl("tokkuri", 14.8, 6.4, ya, yb, r, "tokkuri", sides=6)
+    m.cube("tokkuri_text", (14.2, 5.6, 4.85), (15.4, 7.2, 4.95), "tanuki_d")
+    m.cube("tokkuri_rope", (14.0, 9.6, 5.8), (15.6, 10.0, 7.0), "rope")
     # しっぽ
-    for k, (ya, yb, r, dz) in enumerate(((1.6, 3.2, 1.4, 14.2), (1.2, 2.6, 1.2, 15.4))):
-        m.cyl("tail", 8, dz, ya, yb, r, "tanuki_b", sides=4)
+    blob(m, "tail", 8, 14.6, 0.8, 3.6, 1.6, "tanuki_b", n=3, lo=0.7, hi=0.5, sides=4)
     return m
 
 
@@ -2494,15 +2504,13 @@ def maneki_neko():
     for (x, z) in ((1.6, 1.6), (14.0, 1.6), (1.6, 14.0), (14.0, 14.0)):
         m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.5, z + 0.4), "koban")
     # 胴：すわった形（下がふくらむ）、三毛のぶち
-    for (ya, yb, r) in ((2.0, 3.6, 4.2), (3.6, 7.0, 4.4), (7.0, 9.6, 4.0), (9.6, 11.2, 3.4)):
-        m.cyl("body", 8, 8.6, ya, yb, r, "neko", sides=6)
+    blob(m, "body", 8, 8.6, 2.0, 11.6, 4.7, "neko", n=9, lo=0.8, hi=0.55)
     m.cube("buchi", (9.6, 4.0, 11.4), (12.4, 8.4, 12.8), "neko_orange")
     m.cube("buchi", (3.8, 6.0, 9.0), (4.2, 9.2, 12.0), "neko_black")
     for x in (5.0, 9.4):
-        bevel(m, "hind", (x, 2.0, 4.6), (x + 1.6, 3.4, 7.0), "neko", b=0.4)
+        blob(m, "hind", x + 0.8, 5.4, 2.0, 3.6, 1.2, "neko", n=2, lo=0.9, hi=0.6, sides=4)
     # 頭：大きくまるい。三角の耳、目・鼻・口・ひげ
-    for (ya, yb, r) in ((10.8, 12.0, 3.4), (12.0, 16.2, 4.2), (16.2, 17.6, 3.6), (17.6, 18.2, 2.6)):
-        m.cyl("head", 8, 8.2, ya, yb, r, "neko", sides=6)
+    blob(m, "head", 8, 8.2, 10.6, 18.6, 4.5, "neko", n=8, lo=0.6, hi=0.5)
     m.cube("buchi_head", (9.6, 15.2, 4.4), (11.6, 17.6, 6.0), "neko_orange")
     for x, sgn in ((5.4, -1), (10.6, 1)):
         m.cube("ear", (x - 1.0, 17.0, 7.4), (x + 1.0, 19.4, 8.8), "neko", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
@@ -2510,7 +2518,8 @@ def maneki_neko():
     for x in (5.9, 9.1):
         m.cube("eye", (x, 14.6, 4.0), (x + 1.0, 15.1, 4.2), "neko_black")
         m.cube("eye_hi", (x + 0.2, 14.9, 3.95), (x + 0.4, 15.1, 4.0), "plate")
-    bevel(m, "muzzle", (6.4, 12.4, 3.6), (9.6, 14.0, 4.4), "neko", b=0.3)
+    blob(m, "muzzle", 7.2, 4.6, 12.2, 14.2, 1.1, "neko", n=3, lo=0.7, hi=0.7, sides=4)
+    blob(m, "muzzle", 8.8, 4.6, 12.2, 14.2, 1.1, "neko", n=3, lo=0.7, hi=0.7, sides=4)
     m.cube("nose", (7.6, 13.6, 3.5), (8.4, 14.1, 3.7), "pink_cloth")
     m.cube("mouth", (7.9, 12.8, 3.55), (8.1, 13.6, 3.62), "neko_black")
     for sgn in (-1, 1):
@@ -2526,11 +2535,11 @@ def maneki_neko():
     for (x0, x1, y0, y1) in ((5.4, 10.6, 4.4, 8.6), (5.0, 11.0, 5.0, 8.0), (5.8, 10.2, 4.0, 9.0)):
         m.cube("koban", (x0, y0, 3.6), (x1, y1, 4.2), "koban")
     m.cube("koban_face", (5.9, 4.7, 3.55), (10.1, 8.3, 3.6), "koban", decal=_text("千万両", size=0.45))
-    bevel(m, "paw_l", (3.4, 5.6, 4.0), (5.6, 8.6, 6.4), "neko", b=0.5)
+    blob(m, "paw_l", 4.4, 5.4, 5.4, 9.0, 1.4, "neko", n=4, lo=0.7, hi=0.6, sides=4)
     # 招く手（ゆっくり手まねき）：腕・まるい手・肉球
     m.group("paw", (11.5, 11, 7))
-    bevel(m, "arm", (10.4, 10.6, 6.0), (12.8, 16.4, 8.4), "neko", b=0.6, group="paw")
-    bevel(m, "hand", (10.2, 16.0, 5.6), (13.0, 18.0, 8.4), "neko", b=0.6, group="paw")
+    blob(m, "arm", 11.6, 7.2, 10.4, 16.6, 1.3, "neko", n=5, lo=0.8, hi=0.8, sides=4, group="paw")
+    blob(m, "hand", 11.6, 7.0, 15.8, 18.2, 1.6, "neko", n=4, lo=0.6, hi=0.55, sides=4, group="paw")
     m.cube("pad", (10.9, 16.4, 5.5), (12.3, 17.2, 5.65), "pink_cloth", group="paw")
     for x in (10.7, 11.45, 12.2):
         m.cube("toe", (x, 17.35, 5.5), (x + 0.45, 17.75, 5.65), "pink_cloth", group="paw")
