@@ -1324,9 +1324,250 @@ def shoe_rack():
             k += 1
     return m
 
+# ---------------------------------------------------------------- 21〜24 で使う材質
+MATS.update({
+    "shoji_wood": Mat((222, 196, 152), "wood", accent=(196, 166, 120), noise=3),
+    "shoji_paper": Mat((246, 242, 228), "paper", noise=3),
+    "kumiko": Mat((206, 178, 132), "wood", accent=(180, 150, 108), noise=3),
+    "koshi": Mat((178, 136, 88), "wood", accent=(148, 108, 64), noise=5),
+    "andon_paper": Mat((240, 230, 200), "paper", noise=3),
+    "andon_lit": Mat((255, 214, 140), "paper", accent=(255, 240, 200), glow=True),
+    "ash_r": Mat((176, 170, 160), "stone", accent=(140, 134, 126), noise=12),
+    "iron_r": Mat((54, 50, 48), "metal", noise=8),
+    "fish_skin": Mat((150, 140, 110), "stipple", accent=(110, 90, 60), noise=10),
+    "fish_belly": Mat((226, 214, 186), "stipple", noise=5),
+    "bonsai_bark": Mat((92, 70, 54), "stone", accent=(70, 52, 40), noise=12),
+    "pine_d": Mat((40, 92, 52), "stone", accent=(30, 70, 40), noise=14),
+    "pine_l": Mat((76, 132, 70), "stone", accent=(56, 108, 52), noise=14),
+    "bonsai_pot": Mat((70, 92, 120), "metal", noise=6),
+    "pebble": Mat((182, 176, 166), "stone", noise=10),
+})
+
+
+# ---------------------------------------------------------------- 21 障子
+
+def shoji_screen():
+    m = F("shoji_screen", 6)
+    # 敷居（溝つき）と鴨居、柱：障子の外側に立つので骨（screen）の外
+    bevel(m, "shikii", (-2, 0, 5.6), (18, 0.8, 10.4), "hinoki_dark", b=0.2)
+    m.cube("shikii_groove", (-2, 0.8, 7.4), (18, 0.85, 8.6), "deep_dark")
+    bevel(m, "kamoi", (-2, 32.4, 5.6), (18, 34, 10.4), "hinoki_dark", b=0.2)
+    for x in (-3.2, 17.2):
+        bevel(m, "hashira", (x, 0, 5.2), (x + 2, 34.8, 10.8), "hinoki", b=0.3)
+    m.group("screen", (8, 0, 8))
+    g = "screen"
+    # 框（かまち）：まわりの太い枠。ふちを落とす
+    bevel(m, "kamachi_l", (-1, 0.8, 6.8), (1.4, 32.4, 9.2), "shoji_wood", b=0.25, group=g)
+    bevel(m, "kamachi_r", (14.6, 0.8, 6.8), (17, 32.4, 9.2), "shoji_wood", b=0.25, group=g)
+    bevel(m, "kamachi_t", (1.4, 30.6, 6.8), (14.6, 32.4, 9.2), "shoji_wood", b=0.2, group=g)
+    bevel(m, "kamachi_b", (1.4, 0.8, 6.8), (14.6, 2.6, 9.2), "shoji_wood", b=0.2, group=g)
+    # 腰板：下の木の板（へこんだ鏡板と見切り）
+    bevel(m, "koshi_rail", (1.4, 7.4, 6.9), (14.6, 8.4, 9.1), "shoji_wood", b=0.15, group=g)
+    m.cube("koshi", (1.4, 2.6, 7.4), (14.6, 7.4, 8.6), "koshi", group=g)
+    for x in (4.6, 8, 11.4):
+        m.cube("koshi_bead", (x - 0.15, 2.6, 7.25), (x + 0.15, 7.4, 8.75), "shoji_wood", group=g)
+    # 障子紙は奥にへこみ、組子が前後に出る
+    m.cube("paper", (1.4, 8.4, 7.85), (14.6, 30.6, 8.15), "shoji_paper", group=g)
+    for x in (4.7, 8, 11.3):
+        m.cube("kumiko", (x - 0.3, 8.4, 7.2), (x + 0.3, 30.6, 8.8), "kumiko", group=g)
+    y = 12.8
+    while y < 30.4:
+        m.cube("kumiko", (1.4, y - 0.3, 7.2), (14.6, y + 0.3, 8.8), "kumiko", group=g)
+        y += 4.4
+    # 引手（手をかけるくぼみ）
+    m.cube("hikite", (14.9, 14.5, 6.75), (16.1, 16.9, 6.85), "urushi_k", group=g)
+    m.cube("hikite", (14.9, 14.5, 9.15), (16.1, 16.9, 9.25), "urushi_k", group=g)
+    # 穴と、そこに貼る桜の切り紙
+    for k, (hx, hy) in enumerate(((3, 10.6), (9.6, 15), (6.3, 21.2), (12.9, 25.6))):
+        m.group(f"hole{k}", (hx, hy, 8), g)
+        m.cube("hole", (hx - 0.9, hy - 0.9, 7.8), (hx + 0.9, hy + 0.9, 8.2), "deep_dark", group=f"hole{k}")
+        m.cube("tear", (hx - 1.2, hy - 0.4, 7.75), (hx - 0.9, hy + 0.6, 8.25), "shoji_paper", rot=[0, 0, 25], pivot=[hx, hy, 8],
+               group=f"hole{k}")
+        m.group(f"patch{k}", (hx, hy, 8), g)
+        for a in range(5):
+            m.cube("petal", (hx - 0.55, hy, 7.7), (hx + 0.55, hy + 1.5, 8.3), "pink_cloth", rot=[0, 0, a * 72],
+                   pivot=[hx, hy, 8], group=f"patch{k}")
+        m.cube("petal_c", (hx - 0.35, hy - 0.35, 7.65), (hx + 0.35, hy + 0.35, 8.35), "petal_red", group=f"patch{k}")
+    return m
+
+
+# ---------------------------------------------------------------- 22 行灯
+
+def andon():
+    m = F("andon", 6)
+    # 台：引き出しつきの箱、反った足
+    bevel(m, "base", (2.2, 1.0, 2.2), (13.8, 3.6, 13.8), "cedar_dark", b=0.3)
+    bevel(m, "drawer", (4, 1.5, 1.9), (12, 3.1, 2.3), "cedar", b=0.12)
+    m.cube("drawer_knob", (7.5, 2.0, 1.5), (8.5, 2.6, 1.9), "brass_s")
+    for (x, z) in ((2.0, 2.0), (12.6, 2.0), (2.0, 12.6), (12.6, 12.6)):
+        bevel(m, "foot", (x, 0, z), (x + 1.4, 1.2, z + 1.4), "cedar_dark", b=0.2)
+    # 柱と横木（ほぞが少し出る）
+    for (x, z) in ((3, 3), (12.1, 3), (3, 12.1), (12.1, 12.1)):
+        bevel(m, "post", (x, 3.6, z), (x + 0.9, 20.4, z + 0.9), "cedar_dark", b=0.15)
+    for y in (10, 19.4):
+        for (a, b, c, d) in ((2.8, 2.9, 13.2, 4.0), (2.8, 12.0, 13.2, 13.1), (2.9, 2.8, 4.0, 13.2), (12.0, 2.8, 13.1, 13.2)):
+            bevel(m, "rail", (a, y, b), (c, y + 0.6, d), "cedar_dark", b=0.12)
+    bevel(m, "top", (2.4, 20.4, 2.4), (13.6, 21.2, 13.6), "cedar_dark", b=0.25)
+    # 中の棚と油皿、灯心
+    bevel(m, "shelf", (3.9, 9.2, 3.9), (12.1, 9.7, 12.1), "cedar", b=0.1)
+    m.cyl("dish_stand", 8, 8, 9.7, 10.2, 1.0, "urushi_r", sides=4)
+    m.cyl("dish", 8, 8, 10.2, 10.7, 1.9, "urushi_r", sides=6)
+    m.cyl("oil", 8, 8, 10.6, 10.75, 1.5, "lacquer", sides=6)
+    m.cube("wick", (7.8, 10.7, 7.0), (8.2, 11.0, 9.4), "rope")
+    m.group("flame", (8, 11, 8))
+    m.cube("glow_flame", (7.45, 11, 7.45), (8.55, 12.8, 8.55), "glow_fire", group="flame")
+    m.cube("glow_tip", (7.7, 12.8, 7.7), (8.3, 13.9, 8.3), "glow_fire", group="flame")
+    # 和紙：桟（細い格子）を外に出し、紙は少し奥
+    m.group("paper_off", (8, 15, 8))
+    m.group("paper_on", (8, 15, 8))
+    for gname, mat in (("paper_off", "andon_paper"), ("paper_on", "andon_lit")):
+        pre = "glow_" if gname == "paper_on" else ""
+        m.cube(pre + "pn", (3.9, 10.6, 3.55), (12.1, 19.4, 3.7), mat, group=gname)
+        m.cube(pre + "ps", (3.9, 10.6, 12.3), (12.1, 19.4, 12.45), mat, group=gname)
+        m.cube(pre + "pw", (3.55, 10.6, 3.9), (3.7, 19.4, 12.1), mat, group=gname)
+        m.cube(pre + "pe", (12.3, 10.6, 3.9), (12.45, 19.4, 12.1), mat, group=gname)
+    for y in (13.0, 16.2):
+        for (a, b, c, d) in ((3.9, 3.3, 12.1, 3.55), (3.9, 12.45, 12.1, 12.7), (3.3, 3.9, 3.55, 12.1), (12.45, 3.9, 12.7, 12.1)):
+            m.cube("san", (a, y, b), (c, y + 0.3, d), "cedar_dark")
+    for x in (8,):
+        for (a, b, c, d) in ((x - 0.15, 3.3, x + 0.15, 3.55), (x - 0.15, 12.45, x + 0.15, 12.7)):
+            m.cube("san", (a, 10.6, b), (c, 19.4, d), "cedar_dark")
+        for (a, b, c, d) in ((3.3, x - 0.15, 3.55, x + 0.15), (12.45, x - 0.15, 12.7, x + 0.15)):
+            m.cube("san", (a, 10.6, b), (c, 19.4, d), "cedar_dark")
+    # 取っ手（弓なり）と金具
+    bent(m, "handle", [(8, 21.2, 3.6), (8, 23.6, 4.4), (8, 24.6, 6.4), (8, 24.8, 8), (8, 24.6, 9.6), (8, 23.6, 11.6), (8, 21.2, 12.4)],
+         0.8, "cedar_dark")
+    for z in (3.4, 12.0):
+        m.cube("fitting", (7.4, 21.2, z), (8.6, 21.6, z + 0.6), "brass_s")
+    return m
+
+
+# ---------------------------------------------------------------- 23 囲炉裏
+
+def irori():
+    from items_hires import ring
+    import random
+    rng = random.Random(23)
+    m = F("irori", 6)
+    # 炉縁（ろぶち）：ふちを落とした太い木、角は留め
+    for (a, b) in (((-6, -6), (22, -3)), ((-6, 19), (22, 22)), ((-6, -3), (-3, 19)), ((19, -3), (22, 19))):
+        bevel(m, "robuchi", (a[0], 0, a[1]), (b[0], 2.2, b[1]), "hinoki_dark", b=0.4)
+    for (x, z) in ((-6, -6), (19, -6), (-6, 19), (19, 19)):
+        m.cube("miter", (x + 0.2, 2.2, z + 0.2), (x + 2.8, 2.25, z + 2.8), "hinoki")
+    # 灰：まん中がへこみ、まわりは盛り上がる。灰ならしの筋
+    m.cube("ash", (-3, 0, -3), (19, 0.9, 19), "ash_r")
+    for (a, b) in (((-3, -3), (19, 0)), ((-3, 16), (19, 19)), ((-3, 0), (0, 16)), ((16, 0), (19, 16))):
+        m.cube("ash_mound", (a[0], 0.9, a[1]), (b[0], 1.5, b[1]), "ash_r")
+    for k in range(5):
+        m.cube("ash_line", (-2.6, 1.5, -2.4 + k * 0.6), (18.6, 1.55, -2.2 + k * 0.6), "ash_w")
+    # 炭：ごつごつした塊を積む
+    coals = ((4, 5), (8, 4), (11, 6), (6, 9), (10, 10), (5, 12), (8, 7.2))
+    for (x, z) in coals:
+        rough(m, "coal", (x, 0.9, z), (x + 2.6, 2.4, z + 2.2), "charcoal", rng, lumps=2, depth=0.2)
+    m.group("ember", (8, 2.4, 8))
+    for (x, z) in coals:
+        m.cube("glow_ember", (x + 0.3, 2.35, z + 0.3), (x + 2.3, 2.55, z + 1.9), "ember", group="ember")
+        m.cube("glow_ember", (x - 0.05, 1.2, z + 0.5), (x + 0.05, 2.0, z + 1.7), "ember", group="ember")
+    m.group("fire", (8, 2.6, 8))
+    for i, (dx, h) in enumerate(((-1.4, 4.2), (0, 5.6), (1.3, 4.0))):
+        m.cube("glow_fire", (8 + dx - 0.9, 2.4, 7.9), (8 + dx + 0.9, 2.4 + h, 8.1), "glow_fire", group="fire")
+        m.cube("glow_fire", (8 + dx - 0.1, 2.4, 6.4 + i), (8 + dx + 0.1, 2.4 + h * 0.8, 9.6 - i * 0.5), "glow_fire", group="fire")
+    # 五徳（鉄の輪と脚）
+    ring(m, "gotoku", 8, 6.2, 8, 3.1, 0.5, 0.4, "iron_r", seg=12, plane="xz")
+    for a in range(3):
+        ang = math.radians(a * 120 + 30)
+        x, z = 8 + 3.15 * math.cos(ang), 8 + 3.15 * math.sin(ang)
+        m.cube("gotoku_leg", (x - 0.25, 0.9, z - 0.25), (x + 0.25, 6.4, z + 0.25), "iron_r")
+    # 自在鉤：竹の筒、横木（魚の形）、鉤
+    m.cyl("jizai", 8, 8, 18, 40, 0.8, "bamboo", sides=4)
+    for y in (22, 28, 34):
+        m.cyl("jizai_node", 8, 8, y, y + 0.4, 0.95, "take_node", sides=4)
+    m.cube("jizai_rod", (7.7, 12.6, 7.7), (8.3, 18, 8.3), "iron_r")
+    bevel(m, "fish", (3.6, 18.6, 7.3), (11.4, 20.6, 8.7), "hinoki_dark", b=0.5)
+    m.cube("fish_tail", (2.2, 18.2, 7.5), (3.8, 21.0, 8.5), "hinoki_dark")
+    m.cube("fish_eye", (10.2, 19.8, 7.2), (10.7, 20.3, 8.8), "deep_dark")
+    m.cube("hook", (7.6, 12.0, 7.6), (8.4, 12.8, 9.0), "iron_r")
+    # 鉄瓶：まるい胴、注ぎ口、つる
+    for (ya, yb, r) in ((6.4, 7.2, 2.8), (7.2, 9.2, 3.6), (9.2, 10.4, 3.2), (10.4, 11.0, 2.4)):
+        m.cyl("tetsubin", 8, 8, ya, yb, r, "tetsubin", sides=8)
+    m.cyl("tetsubin_lid", 8, 8, 11.0, 11.4, 1.8, "iron_r", sides=6)
+    m.cube("lid_knob", (7.6, 11.4, 7.6), (8.4, 11.9, 8.4), "brass_s")
+    bent(m, "spout", [(11.2, 8.4, 8), (12.8, 9.4, 8), (13.6, 10.6, 8)], 0.8, "tetsubin")
+    bent(m, "tsuru", [(5.0, 10.8, 8), (5.4, 12.4, 8), (8, 12.9, 8), (10.6, 12.4, 8), (11.0, 10.8, 8)], 0.4, "iron_r")
+    # 串に刺した魚を灰に立てる
+    for k, (x, z) in enumerate(((0.4, 2), (0.4, 8), (0.4, 14), (15.6, 4), (15.6, 12))):
+        lean = 14 if x < 8 else -14
+        m.cube("kushi", (x - 0.15, 1.2, z - 0.15), (x + 0.15, 9, z + 0.15), "bamboo", rot=[0, 0, lean], pivot=[x, 1.2, z])
+        bevel(m, "ayu", (x - 0.55, 4.2, z - 0.35), (x + 0.55, 8.2, z + 0.35), "fish_skin", b=0.2, rot=[0, 0, lean],
+              pivot=[x, 1.2, z])
+        m.cube("ayu_belly", (x - 0.6, 4.6, z - 0.2), (x - 0.5, 7.6, z + 0.2), "fish_belly", rot=[0, 0, lean], pivot=[x, 1.2, z])
+    # 座布団（厚み・ふくらみ・房）
+    for x0 in (-13, 23):
+        bevel(m, "zabuton", (x0, 0, 3.5), (x0 + 6, 1.4, 12.5), "purple_cloth", b=0.45)
+        bevel(m, "zabuton_top", (x0 + 0.5, 1.4, 4.0), (x0 + 5.5, 1.7, 12.0), "purple_cloth", b=0.3)
+        for (x, z) in ((x0 + 0.2, 3.7), (x0 + 5.4, 3.7), (x0 + 0.2, 11.9), (x0 + 5.4, 11.9)):
+            m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.4, z + 0.4), "yellow_cloth")
+    return m
+
+
+# ---------------------------------------------------------------- 24 盆栽
+
+def bonsai():
+    from items_hires import ring
+    import random
+    rng = random.Random(24)
+    m = F("bonsai", 6)
+    # 台：脚つき、天板のふちを落とす
+    bevel(m, "stand_top", (0.5, 3.0, 2.5), (15.5, 4.0, 13.5), "wood_dark", b=0.3)
+    bevel(m, "stand_apron", (1.2, 2.2, 3.2), (14.8, 3.0, 12.8), "wood_dark", b=0.15)
+    for (x, z) in ((1.2, 3.2), (13.4, 3.2), (1.2, 11.4), (13.4, 11.4)):
+        bevel(m, "stand_leg", (x, 0, z), (x + 1.4, 2.2, z + 1.4), "wood_dark", b=0.2)
+    # 鉢：長方形、足、口のふち（中は土）
+    bevel(m, "pot", (2.6, 4.6, 4.6), (13.4, 7.6, 11.4), "bonsai_pot", b=0.3)
+    for (a, b) in (((2.3, 4.3), (13.7, 5.0)), ((2.3, 11.0), (13.7, 11.7)), ((2.3, 5.0), (3.0, 11.0)), ((13.0, 5.0), (13.7, 11.0))):
+        bevel(m, "pot_rim", (a[0], 7.6, a[1]), (b[0], 8.2, b[1]), "bonsai_pot", b=0.12)
+    for (x, z) in ((3.0, 5.0), (11.8, 5.0), (3.0, 9.8), (11.8, 9.8)):
+        m.cube("pot_foot", (x, 4.0, z), (x + 1.2, 4.6, z + 1.2), "bonsai_pot")
+    m.cube("soil", (3.0, 7.5, 5.0), (13.0, 7.9, 11.0), "soil_dark")
+    for (x, z, w) in ((3.4, 5.4, 3), (8.6, 8.2, 3.6), (5.2, 8.8, 2.4), (10.4, 5.6, 2.2)):
+        rough(m, "moss", (x, 7.9, z), (x + w, 8.5, z + 1.8), "moss", rng, lumps=2, depth=0.1)
+    rough(m, "rock", (9.6, 7.9, 6.0), (12.0, 9.4, 7.8), "pebble", rng, lumps=3, depth=0.2)
+    # 幹：根張りからくねって伸びる
+    for (x, z) in ((6.4, 7.2), (8.4, 7.4), (7.4, 8.6)):
+        m.cube("nebari", (x - 0.9, 7.9, z - 0.6), (x + 0.9, 8.6, z + 0.6), "bonsai_bark")
+    trunk = [(7.4, 8.0, 8), (7.0, 10.0, 8), (8.2, 12.2, 8), (7.2, 14.6, 8), (8.0, 17.0, 8), (7.4, 19.0, 8)]
+    for k, ((xa, ya, za), (xb, yb, zb)) in enumerate(zip(trunk, trunk[1:])):
+        bent(m, "trunk", [(xa, ya, za), (xb, yb, zb)], 1.6 - k * 0.2, "bonsai_bark")
+    bent(m, "branch_l", [(7.4, 13.8, 8), (5.0, 14.8, 7.8), (2.8, 15.6, 7.6)], 0.6, "bonsai_bark")
+    bent(m, "branch_r", [(8.0, 16.0, 8), (10.4, 17.0, 8.2), (12.4, 17.4, 8.4)], 0.6, "bonsai_bark")
+    bent(m, "branch_t", [(7.6, 18.6, 8), (6.6, 19.6, 7.8)], 0.5, "bonsai_bark")
+    # 葉の雲：濃い色の下段と明るい上段を重ねて、ふくらみを出す
+    pads = ((1.0, 15.8, 6.0, 5.4), (9.6, 17.4, 6.4, 5.2), (4.2, 19.6, 5.8, 4.8))
+    for i, (x, y, w, d) in enumerate(pads):
+        z0 = 8 - d / 2
+        rough(m, "pad", (x, y, z0), (x + w, y + 1.4, z0 + d), "pine_d", rng, lumps=3, depth=0.25)
+        rough(m, "pad_top", (x + 0.6, y + 1.4, z0 + 0.6), (x + w - 0.6, y + 2.3, z0 + d - 0.6), "pine_l", rng, lumps=3, depth=0.2)
+        # 伸びすぎた枝（はさみで切る）
+        m.group(f"wild{i}", (x + 1, y + 2.3, 8))
+        m.cube("wild", (x + 0.8, y + 2.2, 7.4), (x + 2.0, y + 2.3 + 3 + i, 8.6), "pine_l", group=f"wild{i}")
+        m.cube("wild_tip", (x + 0.6, y + 2.3 + 3 + i, 7.2), (x + 2.2, y + 3.0 + 3 + i, 8.8), "pine_d", group=f"wild{i}")
+        m.cube("wild2", (x + w - 0.6, y + 0.4, 7.4), (x + w + 2.2, y + 1.4, 8.6), "pine_l", group=f"wild{i}")
+    # 剪定ばさみ：刃2枚と、輪の持ち手
+    for gname, (y0, y1) in (("blade_a", (14.0, 14.5)), ("blade_b", (13.5, 14.0))):
+        m.group(gname, (16, 14, 8), rot=(0, 0, 20))
+        bevel(m, "blade", (12.6, y0, 7.6), (16.4, y1, 8.4), "steel_light", b=0.1, group=gname)
+        m.cube("edge", (12.2, y0 + 0.1, 7.75), (12.6, y1 - 0.1, 8.25), "steel_light", group=gname)
+    m.cube("pivot_pin", (15.7, 13.3, 7.3), (16.3, 14.9, 8.7), "brass_s")
+    ring(m, "grip", 19.6, 15.8, 8, 1.1, 0.5, 0.7, "red_cloth", seg=10)
+    ring(m, "grip", 19.6, 12.2, 8, 1.1, 0.5, 0.7, "red_cloth", seg=10)
+    m.cube("shank", (16.2, 14.4, 7.7), (18.2, 14.9, 8.3), "steel_light")
+    m.cube("shank", (16.2, 13.1, 7.7), (18.2, 13.6, 8.3), "steel_light")
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
              "WIRING": wiring_panel, "LEDGER": ledger, "FUTON": futon, "KAMADO": kamado,
              "BATH": bath_stove, "CHOPPING": chopping_block, "FIELD": vegetable_patch, "DUST": dust_pile,
-             "LAUNDRY": laundry_pole, "VASE": flower_vase, "SINK": kitchen_sink, "SHOE_RACK": shoe_rack}
+             "LAUNDRY": laundry_pole, "VASE": flower_vase, "SINK": kitchen_sink, "SHOE_RACK": shoe_rack,
+             "SHOJI": shoji_screen, "ANDON": andon, "IRORI": irori, "BONSAI": bonsai}
