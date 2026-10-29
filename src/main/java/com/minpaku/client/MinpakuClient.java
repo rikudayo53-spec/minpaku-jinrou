@@ -70,7 +70,21 @@ public class MinpakuClient implements ClientModInitializer {
     /** ブロックとアイテムの手持ち・インベントリ表示も Blender の3Dモデルで描く */
     private static void registerItemModels() {
         for (var entry : com.minpaku.registry.ModBlocks.BLOCKS.entrySet()) {
-            itemModel(entry.getValue().asItem(), entry.getKey().blockId);
+            com.minpaku.game.MarkerType type = entry.getKey();
+            net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(entry.getValue().asItem(),
+                    (stack, mode, ps, buffers, light, overlay) -> {
+                        // 家具は1ブロックより大きいので、手持ち・インベントリでは少し小さく
+                        ps.pushPose();
+                        float s = type == com.minpaku.game.MarkerType.BELL || type == com.minpaku.game.MarkerType.SHOJI
+                                || type == com.minpaku.game.MarkerType.LAUNDRY || type == com.minpaku.game.MarkerType.BREAKER
+                                || type == com.minpaku.game.MarkerType.BOILER || type == com.minpaku.game.MarkerType.WIRING ? 0.55f : 0.72f;
+                        ps.translate(0.5, 0.0, 0.5);
+                        ps.scale(s, s, s);
+                        ps.translate(-0.5, 0.0, -0.5);
+                        com.minpaku.client.model.FurnitureArt.draw(type, com.minpaku.client.model.FurnitureArt.Anim.IDLE, ps, buffers,
+                                light);
+                        ps.popPose();
+                    });
         }
         itemModel(com.minpaku.registry.ModItems.KEY, "manager_key");
         itemModel(com.minpaku.registry.ModItems.CRYSTAL, "seer_crystal");

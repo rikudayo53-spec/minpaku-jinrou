@@ -530,7 +530,70 @@ public final class GameManager {
 
     // ================================================================= 毎tick
 
+    // ---- /minpaku preview task：近くの家具を1回分動かして見せる
+    private final Map<BlockPos, Integer> previewing = new HashMap<>();
+
+    /** 近く（半径10）の家具を、タスクを1回やったように動かす。動かした数を返す */
+    public int previewTasks(ServerPlayer p) {
+        BlockPos c = p.blockPosition();
+        int n = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(c.offset(-10, -4, -10), c.offset(10, 4, 10))) {
+            if (level.getBlockEntity(pos) instanceof com.minpaku.block.MarkerBlockEntity) {
+                previewing.put(pos.immutable(), 0);
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private void tickPreview() {
+        if (previewing.isEmpty()) {
+            return;
+        }
+        List<BlockPos> done = new ArrayList<>();
+        for (Map.Entry<BlockPos, Integer> e : previewing.entrySet()) {
+            int t = e.getValue() + 1;
+            e.setValue(t);
+            BlockPos pos = e.getKey();
+            if (!(level.getBlockState(pos).getBlock() instanceof MarkerBlock mb)) {
+                done.add(pos);
+                continue;
+            }
+            MarkerType type = mb.type();
+            switch (type.use) {
+                case HOLD -> {
+                    if (t % 5 == 0) {
+                        animate(pos, 5f / Math.max(20, type.amount));
+                    }
+                    if (t >= Math.max(20, type.amount)) {
+                        done.add(pos);
+                    }
+                }
+                case CLICK -> {
+                    if (t % 12 == 0) {
+                        workFx(pos, type, 1f / type.amount);
+                    }
+                    if (t >= 12 * type.amount) {
+                        done.add(pos);
+                    }
+                }
+                default -> {
+                    // ミニゲーム・設備：開く → しばらくして完成
+                    if (t == 1) {
+                        animate(pos, type.isTask() || type == MarkerType.BREAKER ? 0.2f : 0f);
+                    }
+                    if (t == 80) {
+                        animate(pos, 1f);
+                        done.add(pos);
+                    }
+                }
+            }
+        }
+        done.forEach(previewing::remove);
+    }
+
     public void tick() {
+        tickPreview();
         if (phase == Phase.LOBBY) {
             return;
         }
@@ -642,6 +705,9 @@ public final class GameManager {
                 continue;
             }
             int prog = activeProgress.merge(e.getKey(), 1, Integer::sum);
+            if (prog % 5 == 0) {
+                animate(a.pos, 5f / a.need);
+            }
             if (prog % 10 == 0) {
                 workFx(a.pos, a.type);
             }
@@ -987,6 +1053,7 @@ public final class GameManager {
                     actionBar(p, "もう呼び鈴は使えません", ChatFormatting.GRAY);
                 } else {
                     ps.emergencyLeft--;
+                    animate(pos, 0f);
                     level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2f, 1.2f);
                     startMeeting(0, ps, null);
                 }
@@ -1007,6 +1074,7 @@ public final class GameManager {
                     return;
                 }
                 if (blackout) {
+                    animate(pos, 0.3f);
                     send(p, new Packets.OpenTask(pos, MarkerType.BREAKER.ordinal()));
                 } else {
                     actionBar(p, "配電盤に異常はない", ChatFormatting.GRAY);
@@ -1051,13 +1119,16 @@ public final class GameManager {
                 }
                 ps.lastClickTick = ticks;
                 entry.progress++;
-                workFx(pos, type);
+                workFx(pos, type, 1f / type.amount);
                 actionBar(p, type.taskName + "  " + entry.progress + " / " + type.amount, ChatFormatting.YELLOW);
                 if (entry.progress >= type.amount) {
                     completeTask(p, ps, entry);
                 }
             }
-            case WIRES, NUMBERS, HOLES -> send(p, new Packets.OpenTask(pos, type.ordinal()));
+            case WIRES, NUMBERS, HOLES -> {
+                animate(pos, 0.2f);
+                send(p, new Packets.OpenTask(pos, type.ordinal()));
+            }
             default -> {
             }
         }
@@ -1088,10 +1159,12 @@ public final class GameManager {
         }
         if (mb.type() == MarkerType.BREAKER) {
             if (blackout && ps.alive) {
+                animate(pos, 1f);
                 fixBlackout(p);
             }
             return;
         }
+        animate(pos, 1f);
         for (PlayerState.TaskEntry t : ps.tasks) {
             if (t.pos.equals(pos) && !t.done && (t.type.use == MarkerType.Use.WIRES
                     || t.type.use == MarkerType.Use.NUMBERS || t.type.use == MarkerType.Use.HOLES)) {
@@ -1117,6 +1190,18 @@ public final class GameManager {
     void botCompleteTask(PlayerState ps, PlayerState.TaskEntry t) {
         t.done = true;
         checkWin();
+    }
+
+    /** 家具を動かす（step = 進んだ割合）。タスク中の動きはまわりの全員に見える */
+    void animate(BlockPos pos, float step) {
+        if (level.getBlockEntity(pos) instanceof com.minpaku.block.MarkerBlockEntity be) {
+            be.pulse(step);
+        }
+    }
+
+    void workFx(BlockPos pos, MarkerType type, float step) {
+        animate(pos, step);
+        workFx(pos, type);
     }
 
     void workFx(BlockPos pos, MarkerType type) {
@@ -1189,6 +1274,7 @@ public final class GameManager {
     // ================================================================= ベント（人間の人狼だけ）
 
     private void enterVent(ServerPlayer p, PlayerState ps, BlockPos pos) {
+        animate(pos, 0f);
         ps.vent = pos.immutable();
         active.remove(ps.id);
         p.setGameMode(GameType.SPECTATOR);
@@ -1213,7 +1299,9 @@ public final class GameManager {
         }
         int idx = vents.indexOf(ps.vent);
         int next = Math.floorMod((idx < 0 ? 0 : idx) + (dir > 0 ? 1 : -1), vents.size());
+        animate(ps.vent, 0f);
         ps.vent = vents.get(next);
+        animate(ps.vent, 0f);
         p.teleportTo(level, ps.vent.getX() + 0.5, ps.vent.getY() + 0.1, ps.vent.getZ() + 0.5, p.getYRot(), p.getXRot());
         p.playNotifySound(SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.5f, 1.4f);
         actionBar(p, "ベント " + (next + 1) + " / " + vents.size() + "  （A/D で移動、スニークで出る）", ChatFormatting.LIGHT_PURPLE);
@@ -1225,6 +1313,7 @@ public final class GameManager {
         }
         BlockPos pos = ps.vent;
         ps.vent = null;
+        animate(pos, 0f);
         if (ps.alive) {
             p.setGameMode(GameType.ADVENTURE);
         }

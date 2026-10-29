@@ -80,6 +80,29 @@ public final class SelfTest {
         server(mc, sp -> sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5 + dx, spawn.getY() + dy, spawn.getZ() + 0.5 + dz, yaw, pitch));
     }
 
+    /** 家具の前に立って、タスクの動きを再生する */
+    private static void furniture(Minecraft mc, MarkerType type) {
+        server(mc, sp -> {
+            List<BlockPos> list = MapData.get(sp.serverLevel()).get(type);
+            if (list.isEmpty()) {
+                return;
+            }
+            BlockPos b = list.get(0);
+            var st = sp.serverLevel().getBlockState(b);
+            net.minecraft.core.Direction f = st.hasProperty(com.minpaku.block.MarkerBlock.FACING)
+                    ? st.getValue(com.minpaku.block.MarkerBlock.FACING) : net.minecraft.core.Direction.NORTH;
+            double ex = b.getX() + 0.5 + f.getStepX() * 2.4 + f.getClockWise().getStepX() * 0.8;
+            double ez = b.getZ() + 0.5 + f.getStepZ() * 2.4 + f.getClockWise().getStepZ() * 0.8;
+            double ey = b.getY() + 0.6;
+            double dx = b.getX() + 0.5 - ex;
+            double dz = b.getZ() + 0.5 - ez;
+            float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+            sp.setGameMode(GameType.SPECTATOR);
+            sp.teleportTo(sp.serverLevel(), ex, ey, ez, yaw, 28f);
+            GameManager.get(sp.server).previewTasks(sp);
+        });
+    }
+
     private static void step(Minecraft mc) {
         if (meetAt > 0) {
             int m = t - meetAt;
@@ -209,7 +232,43 @@ public final class SelfTest {
             case 5361 -> shot(mc, "41b_skip_tip");
             case 5368 -> shot(mc, "41c_skip_kakon");
             case 5410 -> shot(mc, "41d_skip_result");
-            case 5470 -> mc.stop();
+            case 5470 -> furniture(mc, MarkerType.KAMADO);
+            case 5484 -> shot(mc, "50_00_kamado_a");
+            case 5510 -> shot(mc, "50_00_kamado_b");
+            case 5530 -> furniture(mc, MarkerType.CHOPPING);
+            case 5544 -> shot(mc, "50_01_chopping_a");
+            case 5570 -> shot(mc, "50_01_chopping_b");
+            case 5590 -> furniture(mc, MarkerType.FUTON);
+            case 5604 -> shot(mc, "50_02_futon_a");
+            case 5630 -> shot(mc, "50_02_futon_b");
+            case 5650 -> furniture(mc, MarkerType.LAUNDRY);
+            case 5664 -> shot(mc, "50_03_laundry_a");
+            case 5690 -> shot(mc, "50_03_laundry_b");
+            case 5710 -> furniture(mc, MarkerType.VASE);
+            case 5724 -> shot(mc, "50_04_vase_a");
+            case 5750 -> shot(mc, "50_04_vase_b");
+            case 5770 -> furniture(mc, MarkerType.SINK);
+            case 5784 -> shot(mc, "50_05_sink_a");
+            case 5810 -> shot(mc, "50_05_sink_b");
+            case 5830 -> furniture(mc, MarkerType.FIELD);
+            case 5844 -> shot(mc, "50_06_field_a");
+            case 5870 -> shot(mc, "50_06_field_b");
+            case 5890 -> furniture(mc, MarkerType.DUST);
+            case 5904 -> shot(mc, "50_07_dust_a");
+            case 5930 -> shot(mc, "50_07_dust_b");
+            case 5950 -> furniture(mc, MarkerType.SHOE_RACK);
+            case 5964 -> shot(mc, "50_08_shoe_rack_a");
+            case 5990 -> shot(mc, "50_08_shoe_rack_b");
+            case 6010 -> furniture(mc, MarkerType.BATH);
+            case 6024 -> shot(mc, "50_09_bath_a");
+            case 6050 -> shot(mc, "50_09_bath_b");
+            case 6070 -> furniture(mc, MarkerType.BELL);
+            case 6084 -> shot(mc, "50_10_bell_a");
+            case 6110 -> shot(mc, "50_10_bell_b");
+            case 6130 -> furniture(mc, MarkerType.BOILER);
+            case 6144 -> shot(mc, "50_11_boiler_a");
+            case 6170 -> shot(mc, "50_11_boiler_b");
+            case 6190 -> mc.stop();
             default -> {
             }
         }

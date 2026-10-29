@@ -2,8 +2,7 @@ package com.minpaku.client.render;
 
 import com.minpaku.block.MarkerBlock;
 import com.minpaku.block.MarkerBlockEntity;
-import com.minpaku.client.model.MeshCache;
-import com.minpaku.client.model.StaticMesh;
+import com.minpaku.client.model.FurnitureArt;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -12,7 +11,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** 専用ブロックを Blender の3Dモデルで描く。向き（FACING）に合わせて回す */
+/** 家具（専用ブロック）を描く。向き（FACING）に合わせて回し、タスク中は動かす */
 public class MarkerRenderer implements BlockEntityRenderer<MarkerBlockEntity> {
 
     public MarkerRenderer(BlockEntityRendererProvider.Context ctx) {
@@ -27,20 +26,37 @@ public class MarkerRenderer implements BlockEntityRenderer<MarkerBlockEntity> {
         };
     }
 
+    /** ブロックエンティティの状態から、今の動き */
+    public static FurnitureArt.Anim anim(MarkerBlockEntity be, float pt) {
+        if (be.getLevel() == null) {
+            return FurnitureArt.Anim.IDLE;
+        }
+        float now = be.getLevel().getGameTime() + pt;
+        float since = now - be.lastPulse;
+        float work = be.work;
+        // しばらく誰も触っていなければ元に戻る（終わった直後は少しのあいだ完成の形を見せる）
+        if (since > 80) {
+            work = 0f;
+        }
+        return new FurnitureArt.Anim(work, Math.max(0f, since), now);
+    }
+
     @Override
     public void render(MarkerBlockEntity be, float partialTick, PoseStack ps, MultiBufferSource buffers, int light, int overlay) {
         BlockState state = be.getBlockState();
         if (!(state.getBlock() instanceof MarkerBlock block)) {
             return;
         }
-        StaticMesh mesh = MeshCache.get(block.type().blockId);
-        if (mesh == null) {
-            return;
-        }
         ps.pushPose();
         ps.translate(0.5, 0.0, 0.5);
         ps.mulPose(Axis.YP.rotationDegrees(yaw(state.getValue(MarkerBlock.FACING))));
-        mesh.render(ps, buffers, light, overlay);
+        ps.translate(-0.5, 0.0, -0.5);
+        FurnitureArt.draw(block.type(), anim(be, partialTick), ps, buffers, light);
         ps.popPose();
+    }
+
+    @Override
+    public boolean shouldRenderOffScreen(MarkerBlockEntity be) {
+        return true;
     }
 }

@@ -391,7 +391,7 @@ public class BotBrain {
             case FIX -> {
                 if (work % 15 == 0) {
                     bot.swing(InteractionHand.MAIN_HAND, true);
-                    gm.workFx(goal, fixType);
+                    gm.workFx(goal, fixType, 15f / 50f);
                 }
                 if (work >= 50) {
                     if (fixType == MarkerType.BREAKER) {
@@ -434,7 +434,9 @@ public class BotBrain {
         if (work % 14 == 0) {
             bot.swing(InteractionHand.MAIN_HAND, true);
             if (type.use != MarkerType.Use.WIRES && type.use != MarkerType.Use.NUMBERS && type.use != MarkerType.Use.HOLES) {
-                gm.workFx(currentTask.pos, type);
+                gm.workFx(currentTask.pos, type, 14f / need);
+            } else {
+                gm.animate(currentTask.pos, 14f / need);
             }
         }
         if (work >= need) {

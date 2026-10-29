@@ -19,7 +19,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 /**
  * /minpaku start | stop | build | key | status
  * /minpaku finisher [犯人]  … 襲われたときの演出を自分の画面で再生する（確認・撮影用）
- * /minpaku preview finisher [犯人] | eject [追放される人] [wolf|villager|hidden] | skip
+ * /minpaku preview finisher [犯人] | eject [追放される人] [wolf|villager|hidden] | skip | task
  *   … アニメーションを自分の画面で再生する（確認・撮影用）
  */
 public final class GameCommands {
@@ -121,6 +121,13 @@ public final class GameCommands {
                                                         .executes(ctx -> eject(ctx.getSource().getPlayerOrException(),
                                                                 EntityArgument.getPlayer(ctx, "target"),
                                                                 StringArgumentType.getString(ctx, "result"))))))
+                                .then(Commands.literal("task").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                                    int n = GameManager.get(p.server).previewTasks(p);
+                                    ctx.getSource().sendSuccess(() -> Component.literal(n == 0 ? "近くに家具がありません"
+                                            : "近くの家具 " + n + " 個を動かします").withStyle(ChatFormatting.AQUA), false);
+                                    return 1;
+                                }))
                                 .then(Commands.literal("skip").executes(ctx -> {
                                     ServerPlayer p = ctx.getSource().getPlayerOrException();
                                     ServerPlayNetworking.send(p, new Packets.Preview(2, Packets.NONE, "", "誰も追放されなかった",
