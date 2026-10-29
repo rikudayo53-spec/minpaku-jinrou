@@ -22,6 +22,9 @@ public class MarkerBlockEntity extends BlockEntity {
     public long lastPulse = -10000;
     /** 作業を始めた時刻 */
     public long started = -10000;
+    /** クライアント：画面に出している進み具合（work へなめらかに追いつく） */
+    public float shown;
+    public long shownAt;
 
     public MarkerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MARKER, pos, state);

@@ -38,7 +38,16 @@ public class MarkerRenderer implements BlockEntityRenderer<MarkerBlockEntity> {
         if (since > 80) {
             work = 0f;
         }
-        return new FurnitureArt.Anim(work, Math.max(0f, since), now);
+        // 進み具合はタスクの区切りごとに飛ぶので、画面ではなめらかに追いつかせる
+        long nano = System.nanoTime();
+        float dt = be.shownAt == 0 ? 1f : Math.min(1f, (nano - be.shownAt) / 1.0e9f);
+        be.shownAt = nano;
+        float rate = work < be.shown ? 3f : 6f;
+        be.shown += (work - be.shown) * Math.min(1f, dt * rate);
+        if (Math.abs(work - be.shown) < 0.002f) {
+            be.shown = work;
+        }
+        return new FurnitureArt.Anim(be.shown, Math.max(0f, since), now);
     }
 
     @Override
