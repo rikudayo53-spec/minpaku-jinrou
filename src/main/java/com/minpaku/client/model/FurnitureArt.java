@@ -133,13 +133,17 @@ public final class FurnitureArt {
 
     /** 家具ごとの大きさ（足もとの中心を基準に大きくする） */
     public static float size(MarkerType type) {
+        // 実物の大きさに近づける（大きいものは大きく）。1ブロック ≒ 1m、プレイヤーの背丈 ≒ 1.8m
         return switch (type) {
-            case CHOPPING, VASE -> 1.3f;
-            case DUST, SHOE_RACK, LEDGER, GAS_VALVE -> 1.2f;
-            case SINK, BREAKER, WIRING -> 1.15f;
-            case KAMADO, BATH, FUTON -> 1.1f;
-            case BONSAI, TEA, SHOGI, ANDON -> 1.2f;
-            case IRORI, WELL -> 1.15f;
+            case ZEN -> 1.6f;              // 枯山水：2.4m 四方
+            case FIELD -> 1.45f;           // 畑
+            case LAUNDRY, WELL, TOUROU -> 1.4f;   // 物干し 2.6m・井戸 2.4m・石灯籠 2.2m
+            case BELL, KAMADO -> 1.35f;    // 鐘楼 3m・かまど 2.2m
+            case BATH, FUTON, HOKORA, BYOBU -> 1.3f;
+            case BOILER, SINK -> 1.25f;
+            case CHOPPING, TEA, SHOGI, WASHTUB -> 1.2f;
+            case IRORI, MOCHI -> 1.15f;
+            case SHOJI -> 1.05f;
             default -> 1f;
         };
     }

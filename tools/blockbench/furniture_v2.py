@@ -670,6 +670,233 @@ def hokora():
     m.cyl("sakazuki", 9.0, 0.2, 6.6, 7.0, 0.8, "urushi_r", sides=4)
     return m
 
+# ---------------------------------------------------------------- 9〜12 で使う材質
+MATS.update({
+    "terminal": Mat((60, 62, 64), "polymer", noise=3),
+    "brass_s": Mat((200, 164, 70), "metal", noise=6),
+    "wire_red": Mat((196, 40, 36), "polymer", noise=3),
+    "wire_blue": Mat((40, 80, 180), "polymer", noise=3),
+    "wire_yellow": Mat((228, 190, 40), "polymer", noise=3),
+    "wire_green": Mat((60, 150, 60), "polymer", noise=3),
+    "lens_red": Mat((240, 60, 50), "plain", noise=4, glow=True),
+    "lens_green": Mat((90, 230, 90), "plain", noise=4, glow=True),
+    "lens_off": Mat((90, 40, 36), "metal", noise=4),
+    "desk": Mat((96, 62, 38), "wood", accent=(72, 44, 26), noise=6),
+    "desk_top": Mat((122, 82, 50), "wood", accent=(94, 60, 34), noise=6),
+    "book_cover": Mat((60, 70, 110), "stipple", noise=5),
+    "page": Mat((242, 236, 218), "paper", noise=3),
+    "page_edge": Mat((222, 212, 186), "paper", noise=4),
+    "suzuri": Mat((40, 40, 44), "stone", noise=5),
+    "sumi": Mat((10, 10, 12), "plain", noise=2),
+    "fude": Mat((180, 150, 90), "bamboo", accent=(150, 120, 70), noise=4),
+    "fude_tip": Mat((24, 22, 22), "stipple", noise=4),
+    "candle": Mat((244, 240, 230), "plaster", noise=3),
+    "tatami_n": Mat((176, 172, 104), "bamboo", accent=(150, 146, 84), noise=4),
+    "heri": Mat((40, 56, 46), "stipple", noise=4),
+    "shikibuton": Mat((246, 244, 238), "stipple", noise=4),
+    "kakebuton": Mat((70, 104, 160), "stipple", noise=6),
+    "kakebuton_pat": Mat((238, 232, 214), "stipple", noise=4),
+    "makura": Mat((236, 230, 214), "stipple", noise=5),
+    "shikkui": Mat((230, 222, 206), "plaster", noise=6),
+    "kamado_tile": Mat((150, 80, 52), "tile", accent=(118, 60, 38), noise=6),
+    "hagama": Mat((50, 46, 46), "metal", noise=6),
+    "hagama_old": Mat((70, 60, 54), "metal", noise=12),
+    "lid_wood": Mat((198, 162, 112), "wood", accent=(162, 124, 80), noise=4),
+    "log_bark": Mat((92, 70, 50), "stone", accent=(70, 52, 36), noise=10),
+    "log_cut": Mat((206, 170, 120), "wood", accent=(170, 130, 86), noise=4),
+})
+
+
+def _text(chars, color=(30, 30, 30, 255), size=0.55, faces=("north",)):
+    from items_hires import text_decal
+    return text_decal(chars, color=color, faces=faces, size=size, vertical=False)
+
+
+def _rings(draw, face, x0, y0, w, h):
+    """丸太の切り口（年輪）"""
+    if face not in ("east", "west", "north", "south"):
+        return
+    cx, cy = x0 + w / 2, y0 + h / 2
+    for k in range(1, 5):
+        r = min(w, h) * k / 10
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(150, 110, 70, 255))
+
+
+def wire_sag(m, name, x0, x1, y, z, mat, sag=1.2, group=None, n=4):
+    """たるんだ電線（短い線をつなぐ）"""
+    pts = []
+    for k in range(n + 1):
+        t = k / n
+        pts.append((x0 + (x1 - x0) * t, y - sag * 4 * t * (1 - t)))
+    for k in range(n):
+        (xa, ya), (xb, yb) = pts[k], pts[k + 1]
+        ln = math.hypot(xb - xa, yb - ya)
+        ang = math.degrees(math.atan2(yb - ya, xb - xa))
+        cx, cy = (xa + xb) / 2, (ya + yb) / 2
+        m.cube(name, (cx - ln / 2 - 0.05, cy - 0.35, z - 0.35), (cx + ln / 2 + 0.05, cy + 0.35, z + 0.35), mat,
+               rot=[0, 0, ang], pivot=[cx, cy, z], group=group)
+
+
+# ---------------------------------------------------------------- 9 配線盤
+
+def wiring_panel():
+    m = F("wiring_panel", 5)
+    for x in (2, 12):
+        bevel(m, "leg", (x, 0, 7), (x + 2, 4, 13), "cabinet_dark", b=0.2)
+    bevel(m, "box", (1, 4, 6), (15, 28, 14), "cabinet", b=0.4)
+    bevel(m, "box_top", (0.6, 28, 5.6), (15.4, 28.8, 14.4), "cabinet_dark", b=0.25)
+    m.cube("board", (2, 5, 6.1), (14, 27, 6.4), "panel_black")
+    cols = ["wire_red", "wire_blue", "wire_yellow", "wire_green"]
+    for i in range(4):
+        y = 9 + i * 4.5
+        # 左と右の端子台（ねじが2本ずつ浮き出る）
+        for (xa, col) in ((2.6, cols[i]), (10.4, cols[(i + 1) % 4])):
+            bevel(m, "terminal", (xa, y - 0.6, 5.3), (xa + 3.0, y + 1.6, 6.1), "terminal", b=0.15)
+            m.cube("terminal_tag", (xa + 0.3, y + 1.0, 5.15), (xa + 2.7, y + 1.5, 5.3), col)
+            for sx in (xa + 0.8, xa + 2.2):
+                m.cube("screw", (sx - 0.35, y - 0.3, 5.0), (sx + 0.35, y + 0.4, 5.3), "brass_s")
+        # つないだ電線（たるむ）
+        m.group(f"wire{i}", (8, y, 5.5))
+        wire_sag(m, "wire", 5.6, 10.4, y, 5.0, cols[i], sag=1.0 + i * 0.15, group=f"wire{i}")
+    # ランプ（縁のある丸いレンズ）
+    cylz(m, "lamp_rim", 13, 26, 5.0, 6.1, 1.4, "cabinet_dark", sides=4)
+    m.group("lamp_off", (13, 26, 5))
+    cylz(m, "lamp_lens", 13, 26, 4.6, 5.0, 1.0, "lens_off", sides=4, group="lamp_off")
+    m.group("lamp_on", (13, 26, 5))
+    cylz(m, "glow_lamp", 13, 26, 4.5, 5.0, 1.05, "lens_green", sides=4, group="lamp_on")
+    # 扉（右の辺がちょうつがい）：一段へこんだ板、通風のすき間、札、取っ手
+    m.group("door", (15, 16, 3.8))
+    m.cube("door", (1.4, 4.4, 3.6), (14.6, 27.6, 4.2), "cabinet", group="door")
+    for (a, b) in (((1, 4), (15, 5)), ((1, 27), (15, 28)), ((1, 5), (2, 27)), ((14, 5), (15, 27))):
+        bevel(m, "door_rim", (a[0], a[1], 3.1), (b[0], b[1], 4.2), "cabinet", b=0.15, group="door")
+    for k in range(5):
+        y = 6 + k * 0.9
+        m.cube("vent", (4, y, 3.3), (12, y + 0.45, 3.65), "cabinet_dark", rot=[25, 0, 0], pivot=[8, y + 0.2, 3.5], group="door")
+    bevel(m, "sign", (5.5, 18, 3.25), (10.5, 21.5, 3.6), "warn_yellow", b=0.1, group="door", decal=_bolt)
+    bevel(m, "handle", (2.0, 14, 2.5), (2.8, 18, 3.2), "iron_fit", b=0.12, group="door")
+    rivets(m, "rivet", [(1.5, 4.5), (14.5, 4.5), (1.5, 27.5), (14.5, 27.5)], 3.1, "cabinet_dark", s=0.2, group="door")
+    # 箱のふち（扉が閉まる所まで前に出す）
+    for (a, b) in (((1, 4), (2, 28)), ((14, 4), (15, 28))):
+        m.cube("box_lip", (a[0], a[1], 4.2), (b[0], b[1], 6), "cabinet")
+    return m
+
+
+# ---------------------------------------------------------------- 10 予約台帳
+
+def ledger():
+    m = F("ledger", 5)
+    # 文机：天板のふちが少し立ち上がる、脚と貫
+    bevel(m, "desk", (-2, 9, 2), (18, 10.6, 14), "desk_top", b=0.3)
+    for z in (2, 13.4):
+        bevel(m, "lip", (-2, 10.6, z), (18, 11.0, z + 0.6), "desk", b=0.1)
+    for (x, z) in ((-1.4, 2.6), (15.6, 2.6), (-1.4, 11.6), (15.6, 11.6)):
+        bevel(m, "leg", (x, 0, z), (x + 1.8, 9, z + 1.8), "desk", b=0.25)
+    bevel(m, "nuki", (-1, 2.2, 6.6), (17, 3.2, 7.4), "desk", b=0.15)
+    # 台帳：表紙の板、ページの束（段々）、しおりの紐
+    bevel(m, "cover", (1, 10.6, 3.8), (15, 11.2, 12.2), "book_cover", b=0.15)
+    for k in range(4):
+        y = 11.2 + k * 0.32
+        m.cube("pages", (1.4 + k * 0.05, y, 4.2 + k * 0.05), (7.8, y + 0.3, 11.8 - k * 0.05), "page_edge" if k % 2 else "page")
+        m.cube("pages", (8.2, y, 4.2 + k * 0.05), (14.6 - k * 0.05, y + 0.3, 11.8 - k * 0.05), "page" if k % 2 else "page_edge")
+    m.cube("spine", (7.7, 10.9, 4.0), (8.3, 12.5, 12.0), "book_cover")
+    m.cube("ribbon", (7.85, 12.4, 11.6), (8.15, 12.5, 14.4), "red_cloth")
+    m.cube("ribbon_end", (7.8, 11.0, 14.0), (8.2, 12.5, 14.3), "red_cloth")
+    m.group("flip", (8, 12.6, 8))
+    m.cube("page", (8.1, 12.5, 4.4), (14.4, 12.75, 11.6), "page", group="flip")
+    # 硯（すずり）：へこみに墨、筆置きに筆
+    bevel(m, "suzuri", (14.6, 10.6, 8.6), (17.6, 11.6, 13.4), "suzuri", b=0.2)
+    m.cube("sumi_pool", (15.0, 11.45, 11.6), (17.2, 11.55, 13.0), "sumi")
+    m.cube("sumi_stick", (15.2, 11.6, 9.0), (16.0, 12.2, 11.0), "sumi")
+    m.cube("fude_rest", (10, 10.6, 2.4), (11, 11.4, 3.2), "suzuri")
+    m.cube("fude_rest", (14, 10.6, 2.4), (15, 11.4, 3.2), "suzuri")
+    cylx(m, "fude", 11.6, 2.8, 9.4, 16.0, 0.3, "fude", sides=3)
+    cylx(m, "fude_tip", 11.6, 2.8, 8.4, 9.4, 0.36, "fude_tip", sides=3)
+    # ろうそく立てとろうそく（垂れたろう）
+    m.cyl("candle_stand", -0.2, 10.8, 10.6, 11.0, 1.2, "brass_s", sides=4)
+    m.cyl("candle_stand2", -0.2, 10.8, 11.0, 12.0, 0.4, "brass_s", sides=3)
+    m.cyl("candle", -0.2, 10.8, 12.0, 15.2, 0.65, "candle", sides=4)
+    m.cube("drip", (0.3, 13.4, 10.6), (0.6, 15.0, 10.9), "candle")
+    m.cube("wick", (-0.3, 15.2, 10.7), (-0.1, 15.6, 10.9), "sumi")
+    m.cube("glow_flame", (-0.55, 15.5, 10.45), (0.15, 16.9, 11.15), "glow_fire")
+    return m
+
+
+# ---------------------------------------------------------------- 11 布団
+
+def futon():
+    m = F("futon", 5)
+    # 畳：へり（縁）が一段高い
+    m.cube("tatami", (-2, 0, -6), (18, 0.45, 22), "tatami_n")
+    for (a, b) in (((-2, -6), (-1, 22)), ((17, -6), (18, 22))):
+        m.cube("heri", (a[0], 0, a[1]), (b[0], 0.6, b[1]), "heri")
+
+    def seg(name, z0, z1, g):
+        # 敷き布団（ふっくら：角を大きく落とす）と、掛け布団（柄と綴じ糸の玉）
+        bevel(m, name, (1, 0.45, z0), (15, 1.9, z1), "shikibuton", b=0.45, group=g)
+        bevel(m, name + "_cover", (1.4, 1.9, z0 + 0.1), (14.6, 2.6, z1 - 0.1), "kakebuton", b=0.3, group=g)
+        for x in (4.5, 8, 11.5):
+            for z in (z0 + 2, z0 + 6):
+                m.cube("tuft", (x - 0.25, 2.6, z - 0.25), (x + 0.25, 2.8, z + 0.25), "kakebuton_pat", group=g)
+        m.cube("stripe", (1.5, 2.6, z0 + 3.8), (14.5, 2.65, z0 + 4.2), "kakebuton_pat", group=g)
+    seg("far", 12, 20, None)
+    m.group("fold1", (8, 2, 12))
+    seg("mid", 4, 12, "fold1")
+    m.group("fold2", (8, 2, 4), "fold1")
+    seg("near", -4, 4, "fold2")
+    # 枕：そば殻のふくらみ（まん中が高い）とカバーの縫い目
+    m.group("pillow", (8, 2, 17))
+    bevel(m, "pillow", (4, 2.6, 15), (12, 4.4, 19.5), "makura", b=0.6, group="pillow")
+    bevel(m, "pillow_top", (5, 4.2, 15.6), (11, 4.9, 18.9), "makura", b=0.3, group="pillow")
+    m.cube("seam", (4.2, 3.4, 15.0), (11.8, 3.6, 15.05), "kakebuton", group="pillow")
+    return m
+
+
+# ---------------------------------------------------------------- 12 かまど
+
+def kamado():
+    import random
+    rng = random.Random(12)
+    m = F("kamado", 5)
+    # 本体：漆喰、角を大きく落とす、上はタイル張りのへり
+    rough(m, "base", (-4.6, 0, 1.2), (20.6, 1.2, 15.8), "granite_dark", rng, lumps=8, depth=0.15)
+    bevel(m, "body", (-4, 1.2, 2), (20, 10.6, 15.2), "shikkui", b=0.7)
+    bevel(m, "top", (-4.6, 10.4, 1.4), (20.6, 11.8, 15.6), "kamado_tile", b=0.3)
+    # たき口：石のアーチ（ごつごつ）、奥に灰と炎
+    for x in (-1.2, 10.8):
+        m.cube("mouth", (x, 1.6, 1.7), (x + 6.4, 6.6, 2.1), "soot")
+        for k, (dx0, dy0, dx1, dy1) in enumerate(((-0.8, 1.2, 0.3, 6.8), (6.1, 1.2, 7.2, 6.8))):
+            rough(m, "arch", (x + dx0, dy0, 1.3), (x + dx1, dy1, 2.2), "granite", rng, lumps=2, depth=0.1)
+        for k in range(5):   # 石を並べたアーチの上
+            xa = x - 0.8 + k * 1.6
+            bevel(m, "arch_stone", (xa, 6.6 + (0.4 if k in (1, 2, 3) else 0), 1.3), (xa + 1.55, 7.8 + (0.5 if k == 2 else 0), 2.2),
+                  "granite", b=0.2)
+        m.cube("ash", (x + 0.3, 1.4, 1.9), (x + 6.1, 2.1, 2.0), "ash_w")
+    m.group("fire", (8, 4, 1.6))
+    for x in (-1.2, 10.8):
+        m.cube("glow_fire", (x + 0.8, 1.9, 1.75), (x + 5.6, 5.6, 1.85), "glow_fire", group="fire")
+        m.cube("glow_core", (x + 1.4, 1.9, 1.6), (x + 5.0, 3.4, 1.75), "ember_g", group="fire")
+    # 羽釜：つば（羽）が張り出し、厚い木の蓋に取っ手の桟
+    m.cyl("pot", 2.5, 8.5, 11.8, 16.5, 4.4, "hagama", sides=8)
+    m.cyl("pot_bottom", 2.5, 8.5, 11.2, 11.8, 3.6, "hagama", sides=8)
+    m.cyl("brim", 2.5, 8.5, 13.8, 14.6, 5.8, "hagama_old", sides=8)
+    m.group("lid", (2.5, 16.5, 8.5))
+    m.cyl("lid", 2.5, 8.5, 16.5, 17.4, 4.2, "lid_wood", sides=8, group="lid")
+    for dz in (-1.6, 1.6):
+        bevel(m, "lid_bar", (-1.0, 17.4, 8.5 + dz - 0.4), (6.0, 18.1, 8.5 + dz + 0.4), "hinoki_dark", b=0.12, group="lid")
+    bevel(m, "knob", (1.8, 18.1, 7.0), (3.2, 18.9, 10.0), "hinoki_dark", b=0.2, group="lid")
+    # 銅の鍋（取っ手つき）
+    m.cyl("pan", 13.5, 8.5, 11.8, 15.4, 3.8, "copper_r", sides=8)
+    m.cyl("pan_rim", 13.5, 8.5, 15.0, 15.7, 4.2, "copper_r", sides=8)
+    m.cyl("pan_lid", 13.5, 8.5, 15.7, 16.2, 3.4, "lid_wood", sides=8)
+    m.cube("pan_lid_knob", (12.9, 16.2, 7.9), (14.1, 16.9, 9.1), "hinoki_dark")
+    bevel(m, "pan_handle", (17.2, 14.4, 8.1), (21.4, 15.1, 8.9), "hinoki_dark", b=0.15)
+    # 薪：樹皮の丸太と切り口の年輪
+    for k, (z, y) in enumerate(((-2.4, 0.9), (-0.4, 0.9), (-1.4, 2.6))):
+        cylx(m, "log", y, z, -3.5 + k * 0.6, 4.5 + k * 0.6, 0.9, "log_bark", sides=4)
+        m.cube("log_cut", (4.45 + k * 0.6, y - 0.8, z - 0.8), (4.6 + k * 0.6, y + 0.8, z + 0.8), "log_cut", decal=_rings)
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
-             "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora}
+             "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
+             "WIRING": wiring_panel, "LEDGER": ledger, "FUTON": futon, "KAMADO": kamado}
