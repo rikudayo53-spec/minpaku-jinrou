@@ -43,6 +43,8 @@ public class MinpakuClient implements ClientModInitializer {
         com.minpaku.client.model.HiRes.register();
         // 家具は GeckoLib（Blockbench のアニメーション）で描く
         com.minpaku.client.geo.FurnitureGeo.register();
+        // プレイヤーの体の動き（playerAnimator）
+        PlayerAnims.register();
         net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
                 com.minpaku.registry.ModBlockEntities.MARKER, com.minpaku.client.geo.FurnitureGeoRenderer::new);
         registerItemModels();

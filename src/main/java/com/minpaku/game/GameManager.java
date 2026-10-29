@@ -200,6 +200,64 @@ public final class GameManager {
         }
     }
 
+    // ================================================================ プレイヤーの体の動き（playerAnimator）
+
+    /** その人の体を動かす（みんなの画面で）。name = player_animations の名前、"stop" で止める */
+    void playerAnim(UUID who, String name) {
+        sendAll(new Packets.Info("anim", who + "|" + name));
+    }
+
+    /** 見続けるタスク中のループの動き */
+    private final Map<UUID, String> loopAnim = new HashMap<>();
+
+    private static String holdAnim(MarkerType t) {
+        return switch (t) {
+            case GAS_VALVE -> "turn_valve";
+            case FUTON, IRORI -> "kneel_work";
+            case KAMADO, BATH, SINK, TEA -> "stir";
+            case LAUNDRY -> "hang_up";
+            case ZEN -> "sweep";
+            case WASHTUB -> "scrub";
+            default -> "reach_work";
+        };
+    }
+
+    private static String clickAnim(MarkerType t) {
+        return switch (t) {
+            case CHOPPING, MOCHI -> "chop";
+            case FIELD -> "pull_up";
+            case DUST -> "sweep_once";
+            case VASE -> "pour";
+            case SHOE_RACK -> "crouch_tap";
+            case BONSAI -> "snip";
+            case WELL -> "pull_rope";
+            case SHOGI -> "tap";
+            case GOLDFISH -> "sprinkle";
+            case FURIN -> "reach_up";
+            default -> "reach_tap";
+        };
+    }
+
+    private void syncLoopAnims() {
+        java.util.Set<UUID> ids = new java.util.HashSet<>(loopAnim.keySet());
+        ids.addAll(active.keySet());
+        for (UUID id : ids) {
+            Active a = active.get(id);
+            String want = a != null ? holdAnim(a.type) : null;
+            String cur = loopAnim.get(id);
+            if (java.util.Objects.equals(want, cur)) {
+                continue;
+            }
+            if (want == null) {
+                loopAnim.remove(id);
+                playerAnim(id, "stop");
+            } else {
+                loopAnim.put(id, want);
+                playerAnim(id, want);
+            }
+        }
+    }
+
     private void sendAll(CustomPacketPayload payload) {
         for (ServerPlayer p : online()) {
             send(p, payload);
@@ -777,6 +835,7 @@ public final class GameManager {
     }
 
     private void tickActive() {
+        syncLoopAnims();
         List<UUID> finished = new ArrayList<>();
         List<UUID> cancelled = new ArrayList<>();
         for (Map.Entry<UUID, Active> e : active.entrySet()) {
@@ -1083,6 +1142,9 @@ public final class GameManager {
     }
 
     private void kill(LivingEntity target, PlayerState t, PlayerState killer, String finisher, int variant) {
+        if (killer != null && !"sheriff".equals(finisher)) {
+            playerAnim(killer.id, "kill_pounce");
+        }
         if (killer.role == Role.SHINOBI) {
             pendingBodies.add(new PendingBody(t.id, t.name, target.position(), target.getYRot(), killer.role.id,
                     new int[]{settings().get("shinobi_hide") * 20}));
@@ -1329,6 +1391,7 @@ public final class GameManager {
                 } else {
                     ps.emergencyLeft--;
                     animate(pos, 0f);
+                    playerAnim(p.getUUID(), "ring_bell");
                     level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2f, 1.2f);
                     startMeeting(0, ps, null);
                 }
@@ -1394,6 +1457,7 @@ public final class GameManager {
                 }
                 ps.lastClickTick = ticks;
                 entry.progress++;
+                playerAnim(p.getUUID(), clickAnim(type));
                 workFx(pos, type, 1f / type.amount);
                 actionBar(p, type.taskName + "  " + entry.progress + " / " + type.amount, ChatFormatting.YELLOW);
                 if (entry.progress >= type.amount) {
@@ -1557,6 +1621,7 @@ public final class GameManager {
     // ================================================================= ベント（人間の人狼だけ）
 
     private void enterVent(ServerPlayer p, PlayerState ps, BlockPos pos) {
+        playerAnim(p.getUUID(), "vent_dive");
         animate(pos, 0f);
         ps.vent = pos.immutable();
         active.remove(ps.id);
@@ -2284,6 +2349,7 @@ public final class GameManager {
         s.killCooldown = settings().get("kill_cooldown") * 20;
         sp.swing(InteractionHand.MAIN_HAND, true);
         level.playSound(null, sp.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.7f, 1.9f);
+        playerAnim(sp.getUUID(), "shoot");
         Vec3 muzzle = sp.getEyePosition().add(sp.getViewVector(1f).scale(0.8));
         level.sendParticles(ParticleTypes.SMOKE, muzzle.x, muzzle.y - 0.2, muzzle.z, 12, 0.05, 0.05, 0.05, 0.02);
         boolean ok = t.role.team == Role.Team.WOLF

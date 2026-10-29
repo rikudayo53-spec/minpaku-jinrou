@@ -1,0 +1,104 @@
+{
+ "version": 3,
+ "name": "ring_bell",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 22,
+  "stopTick": 26,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "rightArm": {
+     "pitch": -150.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "head": {
+     "pitch": -14.0
+    }
+   },
+   {
+    "tick": 7,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -150.0,
+     "yaw": 16.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -150.0,
+     "yaw": -16.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 13,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -150.0,
+     "yaw": 16.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -150.0,
+     "yaw": -16.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 22,
+    "easing": "INOUTSINE",
+    "head": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 22,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 22,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 22,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   }
+  ]
+ }
+}

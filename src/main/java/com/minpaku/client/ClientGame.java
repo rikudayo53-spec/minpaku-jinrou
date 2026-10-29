@@ -111,6 +111,7 @@ public final class ClientGame {
                     }
                 }
             }
+            case "anim" -> PlayerAnims.play(p.data());
             case "fixes" -> {
                 fixes.clear();
                 for (String part : p.data().split(";")) {

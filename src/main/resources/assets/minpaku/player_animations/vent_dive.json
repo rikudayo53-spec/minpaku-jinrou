@@ -1,0 +1,50 @@
+{
+ "version": 3,
+ "name": "vent_dive",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 10,
+  "stopTick": 14,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "torso": {
+     "pitch": 60.0
+    }
+   },
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "head": {
+     "pitch": 50.0
+    }
+   },
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "rightArm": {
+     "pitch": -170.0
+    }
+   },
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "leftArm": {
+     "pitch": -170.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 70.0
+    }
+   }
+  ]
+ }
+}

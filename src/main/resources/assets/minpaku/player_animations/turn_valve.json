@@ -1,0 +1,78 @@
+{
+ "version": 3,
+ "name": "turn_valve",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 16,
+  "stopTick": 16,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "head": {
+     "pitch": 14.0
+    }
+   },
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -76.0,
+     "roll": 18.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -74.0,
+     "roll": 18.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 8,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -76.0,
+     "roll": -18.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 8,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -74.0,
+     "roll": -18.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -76.0,
+     "roll": 18.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -74.0,
+     "roll": 18.0,
+     "bend": 20.0
+    }
+   }
+  ],
+  "isLoop": true,
+  "returnTick": 0
+ }
+}

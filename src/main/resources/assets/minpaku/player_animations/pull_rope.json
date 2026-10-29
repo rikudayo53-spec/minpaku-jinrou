@@ -1,0 +1,99 @@
+{
+ "version": 3,
+ "name": "pull_rope",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 16,
+  "stopTick": 20,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "rightArm": {
+     "pitch": -124.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "leftArm": {
+     "pitch": -110.0,
+     "bend": 20.0
+    }
+   },
+   {
+    "tick": 4,
+    "easing": "OUTQUAD",
+    "head": {
+     "pitch": -10.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTQUAD",
+    "rightArm": {
+     "pitch": -42.0,
+     "bend": 60.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTQUAD",
+    "leftArm": {
+     "pitch": -36.0,
+     "bend": 60.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTQUAD",
+    "torso": {
+     "pitch": 10.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "head": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,139 @@
+{
+ "version": 3,
+ "name": "shoot",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 26,
+  "stopTick": 30,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 3,
+    "easing": "OUTQUAD",
+    "rightArm": {
+     "pitch": -90.0,
+     "yaw": -4.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 3,
+    "easing": "OUTQUAD",
+    "leftArm": {
+     "pitch": -86.0,
+     "yaw": 34.0,
+     "bend": 24.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "OUTEXPO",
+    "rightArm": {
+     "pitch": -118.0,
+     "yaw": -4.0,
+     "bend": 10.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "OUTEXPO",
+    "leftArm": {
+     "pitch": -108.0,
+     "yaw": 34.0,
+     "bend": 30.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "OUTEXPO",
+    "head": {
+     "pitch": -8.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "OUTBACK",
+    "rightArm": {
+     "pitch": -90.0,
+     "yaw": -4.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "OUTBACK",
+    "leftArm": {
+     "pitch": -86.0,
+     "yaw": 34.0,
+     "bend": 24.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "OUTBACK",
+    "head": {
+     "pitch": 0.0
+    }
+   },
+   {
+    "tick": 18,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -88.0,
+     "yaw": -4.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 18,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -84.0,
+     "yaw": 34.0,
+     "bend": 24.0
+    }
+   },
+   {
+    "tick": 26,
+    "easing": "INOUTSINE",
+    "head": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 26,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 26,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 26,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   }
+  ]
+ }
+}

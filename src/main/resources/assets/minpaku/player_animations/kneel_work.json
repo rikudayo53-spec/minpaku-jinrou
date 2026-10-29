@@ -1,0 +1,79 @@
+{
+ "version": 3,
+ "name": "kneel_work",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 24,
+  "stopTick": 24,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 34.0
+    }
+   },
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "head": {
+     "pitch": 38.0
+    }
+   },
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -38.0,
+     "bend": 36.0
+    }
+   },
+   {
+    "tick": 0,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -50.0,
+     "bend": 36.0
+    }
+   },
+   {
+    "tick": 12,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -50.0,
+     "bend": 36.0
+    }
+   },
+   {
+    "tick": 12,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -38.0,
+     "bend": 36.0
+    }
+   },
+   {
+    "tick": 24,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -38.0,
+     "bend": 36.0
+    }
+   },
+   {
+    "tick": 24,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -50.0,
+     "bend": 36.0
+    }
+   }
+  ],
+  "isLoop": true,
+  "returnTick": 0
+ }
+}

@@ -1,0 +1,140 @@
+{
+ "version": 3,
+ "name": "kill_pounce",
+ "author": "minpaku",
+ "description": "民泊人狼",
+ "emote": {
+  "beginTick": 0,
+  "endTick": 16,
+  "stopTick": 20,
+  "degrees": true,
+  "easeBeforeKeyframe": true,
+  "moves": [
+   {
+    "tick": 3,
+    "easing": "OUTQUAD",
+    "torso": {
+     "pitch": 22.0
+    }
+   },
+   {
+    "tick": 3,
+    "easing": "OUTQUAD",
+    "head": {
+     "pitch": 10.0
+    }
+   },
+   {
+    "tick": 3,
+    "easing": "OUTQUAD",
+    "rightArm": {
+     "pitch": -172.0,
+     "roll": -12.0,
+     "bend": 30.0
+    }
+   },
+   {
+    "tick": 3,
+    "easing": "OUTQUAD",
+    "leftArm": {
+     "pitch": -168.0,
+     "roll": 12.0,
+     "bend": 30.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "INQUAD",
+    "torso": {
+     "pitch": 40.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "INQUAD",
+    "head": {
+     "pitch": 34.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "INQUAD",
+    "rightArm": {
+     "pitch": -30.0,
+     "roll": -20.0,
+     "bend": 10.0
+    }
+   },
+   {
+    "tick": 6,
+    "easing": "INQUAD",
+    "leftArm": {
+     "pitch": -34.0,
+     "roll": 20.0,
+     "bend": 10.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 30.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": -60.0,
+     "bend": 30.0
+    }
+   },
+   {
+    "tick": 10,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": -60.0,
+     "bend": 30.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "head": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "torso": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "rightArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   },
+   {
+    "tick": 16,
+    "easing": "INOUTSINE",
+    "leftArm": {
+     "pitch": 0.0,
+     "yaw": 0.0,
+     "roll": 0.0,
+     "bend": 0.0
+    }
+   }
+  ]
+ }
+}
