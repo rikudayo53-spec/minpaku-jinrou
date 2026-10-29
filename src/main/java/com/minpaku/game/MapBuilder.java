@@ -201,7 +201,9 @@ public final class MapBuilder {
     // ------------------------------------------------------------ 建てる
 
     private void run() {
-        MapData.get(level).clearAll();
+        MapData data = MapData.get(level);
+        data.clearAll();
+        clearPrevious(data);
         clearSite();
         floors();
         walls(0);
@@ -218,6 +220,31 @@ public final class MapBuilder {
         fixShapes();
         registerRooms();
         setupWorld();
+    }
+
+    /** 前に建てたマップを片づける（小さいマップに建て直したときに古い建物が残らないように） */
+    private void clearPrevious(MapData data) {
+        int[] b = data.lastBuilt;
+        if (b.length == 6) {
+            BlockState air = Blocks.AIR.defaultBlockState();
+            BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
+            for (int x = b[0]; x <= b[3]; x++) {
+                for (int z = b[2]; z <= b[5]; z++) {
+                    for (int y = b[1] + 1; y <= b[4]; y++) {
+                        BlockPos pos = new BlockPos(x, y, z);
+                        if (!level.getBlockState(pos).isAir()) {
+                            level.setBlock(pos, air, Block.UPDATE_CLIENTS);
+                        }
+                    }
+                    level.setBlock(new BlockPos(x, b[1], z), grass, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+        // 今回の範囲を覚えておく
+        BlockPos p1 = world(-4, -1, -4);
+        BlockPos p2 = world(plan.w + 4, roof + 4, plan.d + 6);
+        data.setLastBuilt(new int[]{Math.min(p1.getX(), p2.getX()), Math.min(p1.getY(), p2.getY()), Math.min(p1.getZ(), p2.getZ()),
+                Math.max(p1.getX(), p2.getX()), Math.max(p1.getY(), p2.getY()), Math.max(p1.getZ(), p2.getZ())});
     }
 
     private void clearSite() {

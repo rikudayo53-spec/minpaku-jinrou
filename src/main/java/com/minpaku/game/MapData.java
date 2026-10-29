@@ -88,6 +88,14 @@ public class MapData extends SavedData {
         return set == null ? 0 : set.size();
     }
 
+    /** 最後に建てたマップの範囲（minX, minY, minZ, maxX, maxY, maxZ）。建て直すときに片づける */
+    public int[] lastBuilt = new int[0];
+
+    public void setLastBuilt(int[] box) {
+        lastBuilt = box;
+        setDirty();
+    }
+
     public void clearAll() {
         markers.clear();
         setDirty();
@@ -114,6 +122,7 @@ public class MapData extends SavedData {
             list.add(t);
         }
         tag.put("rooms", list);
+        tag.putIntArray("lastBuilt", lastBuilt);
         return tag;
     }
 
@@ -138,6 +147,7 @@ public class MapData extends SavedData {
                 data.rooms.add(new Room(t.getString("name"), b[0], b[1], b[2], b[3], b[4], b[5]));
             }
         }
+        data.lastBuilt = tag.getIntArray("lastBuilt");
         return data;
     }
 }
