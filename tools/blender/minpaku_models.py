@@ -782,8 +782,6 @@ def itamae_onigiri(m, P):
     m.box((0.62, 0.42, 0.02), (0, 0, 0.01), P["bamboo"], bevel=0.004)
     m.cone_tri(0.0, 0.0, 0.02, 0.42, 0.22, P["white"])
     m.box((0.24, 0.25, 0.2), (0, 0, 0.14), P["dark"], bevel=0.01)
-    for k in range(5):
-        m.ico(0.014, (R.uniform(-0.08, 0.08), -0.115, R.uniform(0.22, 0.34)), P["white"], smooth=False)
 
 
 
@@ -968,6 +966,67 @@ def default_dir():
     return os.path.join(home, "minpaku_models")
 
 
+def bake_ao(parts, rays=24):
+    """影（アンビエントオクルージョン）を頂点ごとに焼き込む：まわりにふさがれている所ほど暗く。
+    結果は part["c"]（頂点ごとの明るさ 0〜1）に入れる。上から光が当たる感じも少し足す"""
+    from mathutils.bvhtree import BVHTree
+    verts, tris = [], []
+    for part in parts.values():
+        if part.get("emissive") or part.get("alpha", 1) < 0.99:
+            continue
+        pts = part["p"]
+        for i in range(0, len(pts), 9):
+            b = len(verts)
+            for j in range(3):
+                verts.append(Vector(pts[i + j * 3:i + j * 3 + 3]))
+            tris.append((b, b + 1, b + 2))
+    if not tris:
+        return
+    bvh = BVHTree.FromPolygons(verts, tris, epsilon=0.0)
+    mn = Vector((min(v.x for v in verts), min(v.y for v in verts), min(v.z for v in verts)))
+    mx = Vector((max(v.x for v in verts), max(v.y for v in verts), max(v.z for v in verts)))
+    reach = max((mx - mn).length * 0.1, 0.015)
+    rng = random.Random(3)
+    dirs = []
+    for k in range(rays):          # 半球のまんべんなく散らばった向き
+        u = (k + 0.5) / rays
+        phi = k * 2.399963
+        r = math.sqrt(u)
+        dirs.append(Vector((r * math.cos(phi), r * math.sin(phi), math.sqrt(max(0.0, 1 - u)))))
+    for part in parts.values():
+        pts, nrm = part["p"], part["n"]
+        cs = []
+        cache = {}
+        for i in range(0, len(pts), 3):
+            key = (round(pts[i], 3), round(pts[i + 1], 3), round(pts[i + 2], 3), round(nrm[i], 1), round(nrm[i + 1], 1), round(nrm[i + 2], 1))
+            if key in cache:
+                cs.append(cache[key])
+                continue
+            if part.get("emissive"):
+                cache[key] = 1.0
+                cs.append(1.0)
+                continue
+            p = Vector(pts[i:i + 3])
+            n = Vector(nrm[i:i + 3]).normalized()
+            # n を Z とする座標系
+            t = n.orthogonal().normalized()
+            b = n.cross(t)
+            hit = 0.0
+            origin = p + n * 0.002
+            for d in dirs:
+                w = t * d.x + b * d.y + n * d.z
+                loc, _, _, dist = bvh.ray_cast(origin, w, reach)
+                if loc is not None:
+                    hit += 1.0 - (dist / reach) * 0.6
+            ao = 1.0 - (hit / len(dirs)) * 0.7
+            sky = 0.86 + 0.14 * max(0.0, n.y)          # 上向きの面ほど明るい（マイクラ座標は Y が上）
+            v = round(max(0.45, min(1.0, ao * sky)), 2)
+            cache[key] = v
+            cs.append(v)
+        part["c"] = cs
+    _ = rng
+
+
 def export_all(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     dg = bpy.context.evaluated_depsgraph_get()
@@ -1003,7 +1062,8 @@ def export_all(out_dir):
                     part["p"].extend([round(-v.x, 4), round(v.z, 4), round(v.y, 4)])
                     part["n"].extend([round(-n.x, 3), round(n.z, 3), round(n.y, 3)])
             ev.to_mesh_clear()
-        out = {"format": 2, "parts": list(parts.values())}
+        bake_ao(parts)
+        out = {"format": 3, "parts": list(parts.values())}
         path = os.path.join(out_dir, coll["mp_name"] + ".json")
         with open(path, "w", encoding="utf-8") as fp:
             json.dump(out, fp, separators=(",", ":"))

@@ -495,6 +495,14 @@ public class SettingsScreen extends Screen {
             }
         }
         int listEnd = ly0 + ((all.size() + 1) / 2) * (rowH + 3);
+        // 祠の悪神（祠がある大きいマップで使う）：起きない／ときどき／かならず
+        for (GameSettings.Def d : GameSettings.defs()) {
+            if (d.id().equals("evil_god")) {
+                row(g, d, x, listEnd + 4, listW, mouseX, mouseY);
+                Ui.fitSans(g, "※ 祠があるマップ（大旅館）だけ", x + 2, listEnd + 24, listW, Ui.INK_SOFT, 0.65f, -1);
+                listEnd += 36;
+            }
+        }
         // 間取り図
         com.minpaku.game.MapPlan p = com.minpaku.game.Plans.byIndex(sel);
         int mx = x + listW + 10;

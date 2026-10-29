@@ -49,7 +49,7 @@ jobs:
 
   selftest:
     needs: build
-    if: contains(github.event.head_commit.message, '[test]') || contains(github.event.head_commit.message, '[ui]') || contains(github.event.head_commit.message, '[fin]') || github.event_name == 'workflow_dispatch'
+    if: contains(github.event.head_commit.message, '[test]') || contains(github.event.head_commit.message, '[ui]') || contains(github.event.head_commit.message, '[fin]') || contains(github.event.head_commit.message, '[item]') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +68,7 @@ jobs:
           MODE=1
           echo "${{ github.event.head_commit.message }}" | grep -q "\[ui\]" && MODE=ui
           echo "${{ github.event.head_commit.message }}" | grep -q "\[fin\]" && MODE=fin
+          echo "${{ github.event.head_commit.message }}" | grep -q "\[item\]" && MODE=item
           (sleep 150; echo stop) | timeout 300 ./gradlew runServer --console=plain > server.log 2>&1
           mkdir -p run/saves
           # 仮想画面のソフト描画がまれに固まるので、画面が1枚も撮れずに止まったらやり直す（最大3回）
@@ -76,7 +77,7 @@ jobs:
             MINPAKU_SELFTEST=$MODE timeout 600 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient --console=plain --args="--quickPlaySingleplayer selftest" > client.log 2>&1
             code=$?
             echo "client exit $code (try $try)" >> client.log
-            ls run/screenshots/selftest_30_result.png > /dev/null 2>&1 && break
+            ls run/screenshots/selftest_*.png > /dev/null 2>&1 && break
           done
           mkdir -p /tmp/out
           cp server.log client.log /tmp/out/

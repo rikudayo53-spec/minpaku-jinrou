@@ -23,7 +23,8 @@ import java.util.List;
 public final class StaticMesh {
     public static final ResourceLocation WHITE = MinpakuJinrou.id("textures/misc/white.png");
 
-    private record Part(int r, int g, int b, int a, boolean emissive, float[] pos, float[] nrm) {
+    /** shade = 頂点ごとの明るさ（Blender で焼き込んだ影）。なければ null */
+    private record Part(int r, int g, int b, int a, boolean emissive, float[] pos, float[] nrm, float[] shade) {
     }
 
     private final List<Part> solid = new ArrayList<>();
@@ -43,8 +44,12 @@ public final class StaticMesh {
             if (pos.length != nrm.length || pos.length % 9 != 0) {
                 continue;
             }
+            float[] shade = p.has("c") ? floats(GsonHelper.getAsJsonArray(p, "c")) : null;
+            if (shade != null && shade.length * 3 != pos.length) {
+                shade = null;
+            }
             Part part = new Part(to255(c.get(0).getAsFloat()), to255(c.get(1).getAsFloat()), to255(c.get(2).getAsFloat()),
-                    to255(alpha), GsonHelper.getAsBoolean(p, "emissive", false), pos, nrm);
+                    to255(alpha), GsonHelper.getAsBoolean(p, "emissive", false), pos, nrm, shade);
             (alpha < 0.99f ? mesh.translucent : mesh.solid).add(part);
         }
         return mesh;
@@ -73,17 +78,12 @@ public final class StaticMesh {
         tint[1] = tg;
         tint[2] = tb;
         PoseStack.Pose pose = ps.last();
-        if (!solid.isEmpty()) {
-            VertexConsumer vc = buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE));
-            for (Part p : solid) {
-                emit(vc, pose, p, p.emissive ? LightTexture.FULL_BRIGHT : light, overlay);
-            }
+        // バッファはパーツごとに取りに行く（2つ同時に持つと、先の方が閉じられて落ちることがある）
+        for (Part p : solid) {
+            emit(buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE)), pose, p, p.emissive ? LightTexture.FULL_BRIGHT : light, overlay);
         }
-        if (!translucent.isEmpty()) {
-            VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucent(WHITE));
-            for (Part p : translucent) {
-                emit(vc, pose, p, p.emissive ? LightTexture.FULL_BRIGHT : light, overlay);
-            }
+        for (Part p : translucent) {
+            emit(buffers.getBuffer(RenderType.entityTranslucent(WHITE)), pose, p, p.emissive ? LightTexture.FULL_BRIGHT : light, overlay);
         }
     }
 
@@ -103,9 +103,10 @@ public final class StaticMesh {
 
     private static void vertex(VertexConsumer vc, PoseStack.Pose pose, Part p, float[] pos, float[] n, int k,
                                int light, int overlay) {
+        float sh = p.shade != null ? p.shade[k / 3] : 1f;
         vc.addVertex(pose, pos[k], pos[k + 1], pos[k + 2])
-                .setColor(p.emissive ? p.r : (int) (p.r * tint[0]), p.emissive ? p.g : (int) (p.g * tint[1]),
-                        p.emissive ? p.b : (int) (p.b * tint[2]), p.a)
+                .setColor(p.emissive ? p.r : (int) (p.r * tint[0] * sh), p.emissive ? p.g : (int) (p.g * tint[1] * sh),
+                        p.emissive ? p.b : (int) (p.b * tint[2] * sh), p.a)
                 .setUv(0.5f, 0.5f)
                 .setOverlay(overlay)
                 .setLight(light)

@@ -72,7 +72,7 @@ public final class SelfTest {
         }
         t++;
         try {
-            if (MODE.equals("ui")) {
+            if (MODE.equals("ui") || MODE.equals("item")) {
                 stepUi(mc);
                 return;
             }
@@ -92,7 +92,8 @@ public final class SelfTest {
 
     // ---------------------------------------------------------------- 短いテスト
 
-    private static final net.minecraft.world.item.Item[] ITEMS = {com.minpaku.registry.ModItems.KEY,
+    private static final net.minecraft.world.item.Item[] ITEMS = {com.minpaku.registry.ModItems.GUN,
+            com.minpaku.registry.ModItems.HANDBELL, com.minpaku.registry.ModItems.KEY,
             com.minpaku.registry.ModItems.CRYSTAL, com.minpaku.registry.ModItems.CHARM, com.minpaku.registry.ModItems.TALISMAN,
             com.minpaku.registry.ModItems.LENS, com.minpaku.registry.ModItems.KEYRING, com.minpaku.registry.ModItems.ONIGIRI};
 
@@ -106,7 +107,7 @@ public final class SelfTest {
                 GameManager.get(sp.server).sendSettings(sp);
             });
         }
-        int n = com.minpaku.game.GameSettings.GROUPS.length;
+        int n = MODE.equals("item") ? 0 : com.minpaku.game.GameSettings.GROUPS.length;
         if (t >= 120 && t < 120 + n * 20) {
             int i = (t - 120) / 20;
             int k = (t - 120) % 20;
@@ -123,9 +124,9 @@ public final class SelfTest {
             }
         }
         int t2 = 120 + n * 20 + 10;
-        if (t >= t2 && t < t2 + ITEMS.length * 20) {
-            int i = (t - t2) / 20;
-            int k = (t - t2) % 20;
+        if (t >= t2 && t < t2 + ITEMS.length * 40) {
+            int i = (t - t2) / 40;
+            int k = (t - t2) % 40;
             if (k == 0) {
                 net.minecraft.world.item.Item item = ITEMS[i];
                 server(mc, sp -> {
@@ -139,8 +140,24 @@ public final class SelfTest {
             if (k == 12) {
                 shot(mc, "81_item_" + i);
             }
+            // 三人称（前から・後ろから）でも持ち方を見る
+            if (k == 14) {
+                mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT);
+            }
+            if (k == 22) {
+                shot(mc, "81_item_" + i + "_front");
+            }
+            if (k == 24) {
+                mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+            }
+            if (k == 32) {
+                shot(mc, "81_item_" + i + "_back");
+            }
+            if (k == 34) {
+                mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+            }
         }
-        if (t == t2 + ITEMS.length * 20 + 10) {
+        if (t == t2 + ITEMS.length * 40 + 10) {
             mc.stop();
         }
     }

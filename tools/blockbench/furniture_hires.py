@@ -40,8 +40,31 @@ MATS.update({
 })
 
 
+MATS.update({
+    "cedar": Mat((168, 120, 74), "wood", accent=(130, 88, 52), noise=6),
+    "cedar_dark": Mat((92, 62, 40), "wood", accent=(66, 44, 28), noise=6),
+    "plaster_w": Mat((224, 214, 196), "plaster", noise=6),
+    "clay_r": Mat((178, 112, 76), "plaster", noise=8),
+    "cast_iron": Mat((48, 46, 48), "metal", noise=6),
+    "cast_iron_old": Mat((70, 62, 58), "metal", noise=12),
+    "copper_r": Mat((186, 104, 64), "metal", noise=8),
+    "stone_r": Mat((128, 126, 120), "stone", noise=8),
+    "washi": Mat((236, 226, 200), "paper", noise=4),
+    "washi_lit": Mat((255, 206, 130), "paper", noise=4, glow=True),
+    "urushi": Mat((30, 22, 20), "metal", noise=4),
+    "urushi_red": Mat((140, 28, 24), "metal", noise=5),
+    "felt_red": Mat((164, 36, 34), "plain", noise=6),
+    "bamboo_r": Mat((196, 180, 120), "bamboo", accent=(160, 142, 86), noise=5),
+    "matcha_r": Mat((110, 160, 56), "stipple", noise=6),
+    "foam_r": Mat((172, 210, 104), "stipple", noise=8),
+    "wood_lid": Mat((196, 158, 108), "wood", accent=(160, 120, 76), noise=5),
+    "charcoal_r": Mat((30, 28, 28), "stone", noise=6),
+})
+
+
 def F(name):
-    return HiRes(name, density=3, mc=True)
+    # リアル寄り：1ピクセルに 5×5 テクセル、なめらかな模様＋焼き込んだ陰
+    return HiRes(name, density=5, real=True)
 
 
 def legs4(m, x0, z0, x1, z1, h, mat, t=1.5, g=None):
@@ -77,10 +100,10 @@ def call_bell():
     m.cube("roof2", (-3, 31.5, 4), (19, 33, 11), "tile")
     m.group("bell", (8, 27, 7.5))
     m.cube("chain", (7.5, 23, 7), (8.5, 27, 8), "iron_black", group="bell")
-    m.cube("top", (5.5, 23, 5), (10.5, 24.5, 10), "copper_old", group="bell")
-    m.cube("body", (4, 13, 3.5), (12, 23, 11.5), "copper_old", group="bell")
-    m.cube("band", (3.8, 17, 3.3), (12.2, 18, 11.7), "copper", group="bell")
-    m.cube("lip", (3, 12, 2.5), (13, 14, 12.5), "copper", group="bell")
+    m.cyl("top", 8, 7.5, 23, 24.5, 2.6, "copper_old", sides=4, group="bell")
+    m.cyl("body", 8, 7.5, 14, 23, 4.2, "copper_old", sides=6, group="bell")
+    m.cyl("band", 8, 7.5, 17, 18, 4.45, "copper", sides=6, group="bell")
+    m.cyl("lip", 8, 7.5, 12, 14, 5.1, "copper", sides=6, group="bell")
     m.group("striker", (8, 27, 7.5))
     m.cube("rope", (7.7, 18, -2), (8.3, 27, -1.4), "rope", group="striker")
     m.cube("log", (6, 16, -6), (10, 18, 0), "wood", group="striker")
@@ -138,13 +161,11 @@ def gas_valve():
 def boiler():
     m = F("boiler")
     m.group("body", (8, 0, 8))
-    m.cube("tank", (2, 0, 2), (14, 26, 14), "steel_light", group="body")
-    m.cube("tank_x", (1, 2, 3), (15, 24, 13), "steel_light", group="body")
-    m.cube("tank_z", (3, 2, 1), (13, 24, 15), "steel_light", group="body")
-    m.cube("band1", (1, 8, 1), (15, 9, 15), "copper", group="body")
-    m.cube("band2", (1, 18, 1), (15, 19, 15), "copper", group="body")
-    m.cube("cap", (4, 26, 4), (12, 28, 12), "steel", group="body")
-    m.cube("chimney", (6, 28, 6), (10, 34, 10), "iron_black", group="body")
+    m.cyl("tank", 8, 8, 0, 26, 7, "steel_light", sides=6, group="body")
+    m.cyl("band1", 8, 8, 8, 9, 7.3, "copper", sides=6, group="body")
+    m.cyl("band2", 8, 8, 18, 19, 7.3, "copper", sides=6, group="body")
+    m.cyl("cap", 8, 8, 26, 28, 4.5, "steel", sides=6, group="body")
+    m.cyl("chimney", 8, 8, 28, 34, 2.2, "iron_black", sides=4, group="body")
     m.cube("window", (5, 2, 0.6), (11, 6, 1), "black", group="body")
     m.group("fire", (8, 4, 0.5), "body")
     m.cube("glow_fire", (5.5, 2.3, 0.4), (10.5, 5.7, 0.6), "glow_fire", group="fire")
@@ -163,9 +184,9 @@ def meeting_table():
     m.cube("hearth", (3, 8, 3), (13, 9, 13), "iron_black")
     m.cube("glow_coal", (4.5, 8.6, 4.5), (11.5, 9.3, 11.5), "ember")
     for (x, z) in ((-8, -8), (20, -8), (-8, 20), (20, 20), (6, -9), (6, 21), (-9, 6), (21, 6)):
-        m.cube("cup", (x, 8, z), (x + 2.5, 10.5, z + 2.5), "white")
-        m.cube("tea", (x + 0.4, 10.2, z + 0.4), (x + 2.1, 10.4, z + 2.1), "matcha")
-    m.cube("pot", (14, 8, 14), (19, 12, 19), "copper")
+        m.cyl("cup", x + 1.25, z + 1.25, 8, 10.5, 1.3, "white", sides=4)
+        m.cyl("tea", x + 1.25, z + 1.25, 10.2, 10.55, 1.0, "matcha", sides=4)
+    m.cyl("pot", 16.5, 16.5, 8, 12, 2.6, "copper_r", sides=6)
     m.cube("spout", (18.5, 10, 16), (21, 10.8, 17), "copper")
     return m
 
@@ -286,25 +307,38 @@ def futon():
 
 def kamado():
     m = F("kamado")
-    m.cube("body", (-4, 0, 2), (20, 11, 15), "plaster")
-    m.cube("base", (-4.4, 0, 1.6), (20.4, 1.4, 15.4), "clay")
-    m.cube("top", (-4.4, 10.6, 1.6), (20.4, 12, 15.4), "clay")
-    for x in (-1, 11):
-        m.cube("mouth", (x, 2, 1.7), (x + 6, 7, 2.1), "charcoal")
-        m.cube("arch", (x - 0.4, 7, 1.5), (x + 6.4, 7.8, 2.1), "stone_dark")
+    # 漆喰の本体（角を面取り）
+    m.cube("body", (-4, 0.8, 2.4), (20, 10.6, 15), "plaster_w")
+    m.cube("body_cham", (-3.6, 0.8, 2), (19.6, 10.6, 15.2), "plaster_w")
+    m.cube("base", (-4.6, 0, 1.4), (20.6, 1.2, 15.6), "stone_r")
+    m.cube("top", (-4.6, 10.4, 1.4), (20.6, 11.8, 15.6), "clay_r")
+    m.cube("top_lip", (-4.9, 11.4, 1.1), (20.9, 12, 15.9), "clay_r")
+    for x in (-1.2, 10.8):
+        m.cube("mouth", (x, 1.6, 1.85), (x + 6.4, 6.6, 2.1), "charcoal_r")
+        m.cube("arch", (x - 0.6, 6.6, 1.6), (x + 7.0, 7.6, 2.1), "stone_r")
+        m.cube("arch_l", (x - 0.6, 1.2, 1.6), (x + 0.2, 6.6, 2.1), "stone_r")
+        m.cube("arch_r", (x + 6.2, 1.2, 1.6), (x + 7.0, 6.6, 2.1), "stone_r")
+        m.cube("ash", (x + 0.3, 1.4, 1.95), (x + 6.1, 2.0, 2.05), "ash")
     m.group("fire", (8, 4, 1.6))
-    for x in (-1, 11):
-        m.cube("glow_fire", (x + 0.6, 2.2, 1.5), (x + 5.4, 6.4, 1.7), "glow_fire", group="fire")
-    m.cube("pot", (-2, 12, 4), (7, 17, 13), "iron_black")
-    m.cube("brim", (-3, 14, 3), (8, 15, 14), "iron_black")
-    m.group("lid", (2.5, 17, 8.5))
-    m.cube("lid", (-1.5, 17, 4.5), (6.5, 18, 12.5), "wood", group="lid")
-    m.cube("knob", (1.5, 18, 7.5), (3.5, 19.3, 9.5), "wood_dark", group="lid")
-    m.cube("pan", (10, 12, 5), (17, 16, 12), "copper")
-    m.cube("pan_rim", (9.5, 15, 4.5), (17.5, 16, 12.5), "copper")
-    m.cube("pan_lid", (10.5, 16, 5.5), (16.5, 16.8, 11.5), "wood")
-    m.cube("log1", (-3, 0, -3), (5, 2, -1), "wood_dark")
-    m.cube("log2", (0, 2, -3), (7, 3.8, -1.2), "wood")
+    for x in (-1.2, 10.8):
+        m.cube("glow_fire", (x + 0.8, 1.9, 1.75), (x + 5.6, 5.6, 1.9), "glow_fire", group="fire")
+        m.cube("glow_core", (x + 2.2, 1.9, 1.7), (x + 4.2, 4.0, 1.8), "ember", group="fire")
+    # 羽釜（丸く）
+    m.cyl("pot", 2.5, 8.5, 12, 16.5, 4.6, "cast_iron", sides=6)
+    m.cyl("brim", 2.5, 8.5, 14, 14.9, 5.8, "cast_iron_old", sides=6)
+    m.group("lid", (2.5, 16.5, 8.5))
+    m.cyl("lid", 2.5, 8.5, 16.5, 17.3, 4.3, "wood_lid", sides=6, group="lid")
+    m.cube("knob", (0.2, 17.3, 8.0), (4.8, 18.4, 9.0), "cedar_dark", group="lid")
+    # 銅の鍋
+    m.cyl("pan", 13.5, 8.5, 12, 15.4, 3.8, "copper_r", sides=6)
+    m.cyl("pan_rim", 13.5, 8.5, 15.0, 15.6, 4.2, "copper_r", sides=4)
+    m.cyl("pan_lid", 13.5, 8.5, 15.6, 16.2, 3.4, "wood_lid", sides=4)
+    m.cube("pan_handle", (17.2, 14.4, 8.1), (21, 15, 8.9), "cedar_dark")
+    # 薪
+    m.cyl("log1", 1, -2, 0, 2, 1.1, "cedar_dark", sides=4)
+    for k, (x, z) in enumerate(((-3, -2.5), (0.5, -1.8))):
+        m.cube("log", (x, 0, z), (x + 7.5, 1.6, z + 1.6), "cedar" if k else "cedar_dark", rot=[0, 8 - k * 14, 0])
+    m.cube("log_top", (-1, 1.6, -2.4), (6, 3.0, -1.0), "cedar", rot=[0, -6, 0])
     return m
 
 
@@ -325,14 +359,14 @@ def bath_stove():
     m.group("fire", (8, 2.5, -4.3))
     m.cube("glow_fire", (6.3, 1.2, -4.4), (9.7, 3.8, -4.2), "glow_fire", group="fire")
     m.cube("chimney", (17, 0, 10), (20, 20, 13), "iron_black")
-    m.cube("pail", (19, 0, 1), (23, 4, 5), "wood")
+    m.cyl("pail", 21, 3, 0, 4, 2.1, "wood", sides=4)
     m.cube("ladle", (20.5, 4, 2.5), (21.5, 7, 3.5), "bamboo")
     return m
 
 
 def chopping_block():
     m = F("chopping_block")
-    m.cube("stump", (2, 0, 2), (14, 8, 14), "wood")
+    m.cyl("stump", 8, 8, 0, 8, 6.2, "wood", sides=6)
     m.group("half_l", (5, 8, 8))
     m.cube("log", (5, 8, 5), (8, 16, 11), "wood_light", group="half_l")
     m.group("half_r", (11, 8, 8))
@@ -403,10 +437,10 @@ def flower_vase():
     m = F("flower_vase")
     m.cube("stand", (1, 0, 1), (15, 3, 15), "wood_dark")
     m.cube("stand_top", (0, 3, 0), (16, 4, 16), "wood_dark")
-    m.cube("vase", (5, 4, 5), (11, 12, 11), "sky_cloth")
-    m.cube("belly", (4.5, 6, 4.5), (11.5, 10, 11.5), "sky_cloth")
-    m.cube("neck", (6, 12, 6), (10, 15, 10), "sky_cloth")
-    m.cube("lip", (5.5, 15, 5.5), (10.5, 16, 10.5), "white")
+    m.cyl("vase", 8, 8, 4, 12, 3.0, "sky_cloth", sides=6)
+    m.cyl("belly", 8, 8, 6, 10, 3.6, "sky_cloth", sides=6)
+    m.cyl("neck", 8, 8, 12, 15, 1.9, "sky_cloth", sides=4)
+    m.cyl("lip", 8, 8, 15, 16, 2.5, "white", sides=4)
     m.group("flowers", (8, 15, 8))
     heads = ("pink_cloth", "red_cloth", "yellow_cloth")
     for i, (x, z) in enumerate(((7.2, 7.2), (8.6, 8.4), (7.6, 9.2))):
@@ -454,7 +488,7 @@ def shoe_rack():
     m.cube("bottom", (0, 0, 4), (16, 1, 15), "wood")
     m.cube("shelf", (1, 10.5, 4.5), (15, 11.5, 15), "wood")
     m.cube("divider", (7.5, 1, 4.5), (8.5, 21, 15), "wood")
-    m.cube("pot", (11, 22.5, 8), (14, 26, 11), "sky_cloth")
+    m.cyl("pot", 12.5, 9.5, 22.5, 26, 1.7, "sky_cloth", sides=4)
     m.cube("plant", (10.5, 26, 7.5), (14.5, 29, 11.5), "leaf")
     m.cube("cloth", (2, 22.5, 7), (7, 23, 12), "red_cloth")
     pairs = (("wood_light", "red_cloth"), ("white", "blue_cloth"), ("wood_dark", "wood_dark"), ("pink_cloth", "white"))
@@ -475,21 +509,32 @@ def shoe_rack():
 
 def andon():
     m = F("andon")
-    m.cube("base", (3, 0, 3), (13, 1.5, 13), "wood_dark")
-    for (x, z) in ((3, 3), (12, 3), (3, 12), (12, 12)):
-        m.cube("post", (x, 1.5, z), (x + 1, 20, z + 1), "wood_dark")
-    m.cube("top", (3, 19.5, 3), (13, 20.5, 13), "wood_dark")
-    m.cube("shelf", (3, 9, 3), (13, 9.6, 13), "wood_dark")
-    m.cube("dish", (6.5, 9.6, 6.5), (9.5, 10.3, 9.5), "iron_black")
-    m.group("flame", (8, 10.3, 8))
-    m.cube("glow_flame", (7.3, 10.3, 7.3), (8.7, 13.5, 8.7), "glow_fire", group="flame")
+    m.cube("base", (2.6, 0, 2.6), (13.4, 1.0, 13.4), "cedar_dark")
+    m.cube("base_top", (3, 1.0, 3), (13, 1.6, 13), "cedar_dark")
+    for (x, z) in ((3, 3), (12.1, 3), (3, 12.1), (12.1, 12.1)):
+        m.cube("post", (x, 1.6, z), (x + 0.9, 20, z + 0.9), "cedar_dark")
+    for y in (10, 14.6, 19.2):
+        for (a, b, c, d) in ((3, 3, 13, 3.9), (3, 12.1, 13, 13), (3, 3, 3.9, 13), (12.1, 3, 13, 13)):
+            m.cube("rail", (a, y, b), (c, y + 0.5, d), "cedar_dark")
+    m.cube("top", (2.7, 19.6, 2.7), (13.3, 20.4, 13.3), "cedar_dark")
+    m.cube("shelf", (3.6, 9, 3.6), (12.4, 9.5, 12.4), "cedar")
+    m.cyl("dish", 8, 8, 9.5, 10.1, 1.8, "urushi_red", sides=4)
+    m.cube("oil", (6.6, 9.9, 6.6), (9.4, 10.15, 9.4), "lacquer")
+    m.cube("wick", (7.8, 10.1, 7.8), (8.2, 10.6, 8.2), "rope")
+    m.group("flame", (8, 10.4, 8))
+    m.cube("glow_flame", (7.4, 10.4, 7.4), (8.6, 12.4, 8.6), "glow_fire", group="flame")
+    m.cube("glow_tip", (7.7, 12.4, 7.7), (8.3, 13.4, 8.3), "glow_fire", group="flame")
     m.group("paper_off", (8, 15, 8))
-    m.cube("paper", (4, 10, 3.8), (12, 19.5, 12.2), "paper", group="paper_off")
     m.group("paper_on", (8, 15, 8))
-    m.cube("glow_paper", (4, 10, 3.8), (12, 19.5, 12.2), "paper_lit", group="paper_on")
-    m.cube("handle_l", (7.5, 20.5, 3.5), (8.5, 24, 4.5), "wood_dark")
-    m.cube("handle_r", (7.5, 20.5, 11.5), (8.5, 24, 12.5), "wood_dark")
-    m.cube("handle_t", (7.5, 23.5, 3.5), (8.5, 24.5, 12.5), "wood_dark")
+    for gname, mat in (("paper_off", "washi"), ("paper_on", "washi_lit")):
+        pre = "glow_" if gname == "paper_on" else ""
+        m.cube(pre + "pn", (3.9, 10.5, 3.6), (12.1, 19.2, 3.75), mat, group=gname)
+        m.cube(pre + "ps", (3.9, 10.5, 12.25), (12.1, 19.2, 12.4), mat, group=gname)
+        m.cube(pre + "pw", (3.6, 10.5, 3.9), (3.75, 19.2, 12.1), mat, group=gname)
+        m.cube(pre + "pe", (12.25, 10.5, 3.9), (12.4, 19.2, 12.1), mat, group=gname)
+    m.cube("handle_l", (7.6, 20.4, 3.4), (8.4, 23.6, 4.2), "cedar_dark")
+    m.cube("handle_r", (7.6, 20.4, 11.8), (8.4, 23.6, 12.6), "cedar_dark")
+    m.cube("handle_t", (7.5, 23.4, 3.3), (8.5, 24.3, 12.7), "cedar_dark")
     return m
 
 
@@ -510,8 +555,8 @@ def irori():
     m.cube("glow_fire2", (7.9, 2.6, 5), (8.1, 7.5, 9.5), "glow_fire", group="fire")
     m.cube("hook", (7.4, 12, 7.4), (8.6, 36, 8.6), "bamboo")
     m.cube("fish", (4, 16, 7.5), (12, 18, 8.5), "wood")
-    m.cube("kettle", (4.5, 6, 4.5), (11.5, 11, 11.5), "iron_black")
-    m.cube("kettle_top", (5.5, 11, 5.5), (10.5, 12, 10.5), "iron_black")
+    m.cyl("kettle", 8, 8, 6, 11, 3.6, "cast_iron", sides=6)
+    m.cyl("kettle_top", 8, 8, 11, 12, 2.6, "cast_iron_old", sides=4)
     m.cube("kettle_spout", (11.5, 8, 7.5), (14, 9, 8.5), "iron_black")
     m.cube("cushion_w", (-12, 0, 4), (-7, 1.2, 12), "purple_cloth")
     m.cube("cushion_e", (23, 0, 4), (28, 1.2, 12), "purple_cloth")
@@ -542,20 +587,33 @@ def bonsai():
 
 def tea_set():
     m = F("tea_set")
-    m.cube("mat", (-4, 0, -2), (20, 0.6, 18), "red_cloth")
-    m.cube("brazier", (-2, 0.6, 9), (6, 6, 17), "iron_black")
-    m.cube("kama", (-1, 6, 10), (5, 10, 16), "copper")
-    m.cube("kama_lid", (0, 10, 11), (4, 11, 15), "copper_old")
-    m.cube("bowl", (8, 0.6, 2), (15, 5, 9), "lacquer")
-    m.cube("bowl_rim", (7.5, 3, 1.5), (15.5, 5.2, 9.5), "lacquer")
-    m.cube("tea", (8.5, 3.5, 2.5), (14.5, 4.6, 8.5), "matcha")
-    m.group("foam", (11.5, 4.6, 5.5))
-    m.cube("foam", (8.6, 4.6, 2.6), (14.4, 5.2, 8.4), "foam", group="foam")
+    m.cube("mat", (-4, 0, -2), (20, 0.4, 18), "felt_red")
+    m.cube("mat_edge", (-4.2, 0, -2.2), (20.2, 0.3, 18.2), "felt_red")
+    # 風炉と釜
+    m.cyl("brazier", 2, 13, 0.4, 5.6, 3.9, "cast_iron_old", sides=6)
+    m.cyl("brazier_rim", 2, 13, 5.2, 6.0, 4.3, "cast_iron", sides=6)
+    m.cyl("kama", 2, 13, 6, 10, 3.4, "cast_iron", sides=6)
+    m.cyl("kama_lid", 2, 13, 10, 10.6, 2.3, "copper_r", sides=4)
+    m.cube("kama_knob", (1.5, 10.6, 12.5), (2.5, 11.3, 13.5), "copper_r")
+    for z in (9.4, 16.1):
+        m.cube("ear", (1.4, 8.4, z), (2.6, 9.6, z + 0.5), "cast_iron_old")
+    # 茶碗（丸く、内側に抹茶）
+    m.cyl("bowl_foot", 11.5, 5.5, 0.4, 1.2, 1.8, "urushi", sides=4)
+    m.cyl("bowl", 11.5, 5.5, 1.2, 4.4, 3.4, "urushi", sides=6)
+    m.cyl("bowl_rim", 11.5, 5.5, 3.8, 4.8, 3.7, "urushi", sides=6)
+    m.cyl("tea", 11.5, 5.5, 3.9, 4.75, 3.2, "matcha_r", sides=6)
+    m.group("foam", (11.5, 4.75, 5.5))
+    m.cyl("foam", 11.5, 5.5, 4.75, 5.05, 3.1, "foam_r", sides=6, group="foam")
+    # 茶筅
     m.group("whisk", (11.5, 5, 5.5))
-    m.cube("tines", (10.7, 4, 4.7), (12.3, 7, 6.3), "bamboo", group="whisk")
-    m.cube("handle", (11.2, 7, 5.2), (11.8, 12, 5.8), "bamboo", group="whisk")
-    m.cube("caddy", (16, 0.6, 3), (19, 4, 6), "lacquer")
-    m.cube("scoop", (15, 0.6, 9), (20, 1, 9.6), "bamboo")
+    m.cyl("tines", 11.5, 5.5, 4.2, 6.8, 0.9, "bamboo_r", sides=4, group="whisk")
+    m.cyl("tines_top", 11.5, 5.5, 6.8, 7.4, 0.6, "bamboo_r", sides=4, group="whisk")
+    m.cyl("handle", 11.5, 5.5, 7.4, 12, 0.35, "bamboo_r", sides=4, group="whisk")
+    # 棗と茶杓
+    m.cyl("caddy", 17.5, 4.5, 0.4, 3.6, 1.6, "urushi", sides=6)
+    m.cyl("caddy_lid", 17.5, 4.5, 3.6, 4.2, 1.65, "urushi", sides=6)
+    m.cube("scoop", (14.5, 0.4, 9.2), (20, 0.75, 9.8), "bamboo_r", rot=[0, -10, 0])
+    m.cube("scoop_tip", (14.2, 0.4, 9.1), (15, 0.95, 9.9), "bamboo_r", rot=[0, -10, 0])
     return m
 
 
@@ -578,7 +636,7 @@ def well():
     m.cube("pulley", (7, 21, 7), (9, 24, 9), "iron_black")
     m.group("bucket", (8, 8, 8))
     m.cube("rope", (7.8, 10, 7.8), (8.2, 21, 8.2), "rope", group="bucket")
-    m.cube("bucket", (6, 6, 6), (10, 10, 10), "wood", group="bucket")
+    m.cyl("bucket", 8, 8, 6, 10, 2.1, "wood", sides=4, group="bucket")
     m.cube("tub", (18, 0, -6), (26, 4, 2), "wood")
     m.group("tubwater", (22, 0.5, -2))
     m.cube("glass_water", (18.5, 0.5, -5.5), (25.5, 3.6, 1.5), "water", group="tubwater")

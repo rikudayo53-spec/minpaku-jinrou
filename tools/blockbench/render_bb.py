@@ -45,6 +45,23 @@ if MESH:
             pf.append((base, base + 1, base + 2))
         me = bpy.data.meshes.new(f"p{k}")
         me.from_pydata(pv, [], pf)
+        if part.get("c"):
+            # 焼き込んだ影（頂点ごとの明るさ）を色にかける
+            ca = me.color_attributes.new("ao", 'FLOAT_COLOR', 'CORNER')
+            for poly in me.polygons:
+                for li in poly.loop_indices:
+                    vi = me.loops[li].vertex_index
+                    c = part["c"][vi]
+                    ca.data[li].color = (c, c, c, 1)
+            at = pm.node_tree.nodes.new("ShaderNodeAttribute")
+            at.attribute_name = "ao"
+            mul = pm.node_tree.nodes.new("ShaderNodeMix")
+            mul.data_type = 'RGBA'
+            mul.blend_type = 'MULTIPLY'
+            mul.inputs[0].default_value = 1.0
+            mul.inputs[6].default_value = tuple(part["color"]) + (1,)
+            pm.node_tree.links.new(at.outputs["Color"], mul.inputs[7])
+            pm.node_tree.links.new(mul.outputs[2], b.inputs["Base Color"])
         me.materials.append(pm)
         for poly in me.polygons:
             poly.use_smooth = True
