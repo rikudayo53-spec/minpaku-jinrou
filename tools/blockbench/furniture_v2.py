@@ -391,4 +391,285 @@ def breaker():
     return m
 
 
-OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker}
+
+# ---------------------------------------------------------------- 5〜8 で使う材質
+MATS.update({
+    "gas_pipe": Mat((222, 182, 52), "metal", noise=6),
+    "gas_pipe_dark": Mat((172, 136, 34), "metal", noise=6),
+    "valve_red": Mat((182, 36, 30), "metal", noise=5),
+    "concrete": Mat((150, 148, 140), "stone", noise=10),
+    "boiler_steel": Mat((176, 180, 178), "metal", noise=6),
+    "boiler_dark": Mat((84, 88, 86), "metal", noise=6),
+    "soot": Mat((40, 36, 34), "stone", noise=6),
+    "grate": Mat((30, 28, 28), "metal", noise=4),
+    "urushi_k": Mat((26, 20, 18), "metal", noise=4),
+    "urushi_r": Mat((128, 26, 22), "metal", noise=5),
+    "ash_w": Mat((178, 172, 164), "plaster", noise=10),
+    "coal": Mat((36, 30, 28), "stone", noise=6),
+    "ember_g": Mat((230, 90, 30), "ember", accent=(255, 190, 80), glow=True),
+    "tetsubin": Mat((44, 42, 44), "metal", noise=8),
+    "yunomi": Mat((222, 214, 196), "plaster", noise=6),
+    "yunomi_glaze": Mat((96, 120, 110), "metal", noise=6),
+    "matcha_c": Mat((116, 150, 60), "stipple", noise=6),
+    "moss": Mat((86, 118, 54), "stone", accent=(64, 98, 40), noise=12),
+    "old_wood": Mat((112, 92, 70), "wood", accent=(86, 68, 50), noise=8),
+    "old_wood_dark": Mat((70, 56, 44), "wood", accent=(52, 40, 30), noise=8),
+    "shide": Mat((246, 244, 236), "paper", noise=3),
+    "glow_evil": Mat((150, 60, 230), "fire", accent=(230, 180, 255), glow=True),
+    "sake_white": Mat((236, 232, 222), "plaster", noise=4),
+})
+
+
+def _gauge_face(draw, face, x0, y0, w, h):
+    if face != "north":
+        return
+    draw.ellipse([x0, y0, x0 + w - 1, y0 + h - 1], fill=(238, 236, 226, 255), outline=(30, 30, 30, 255))
+    cx, cy, r = x0 + w / 2, y0 + h / 2, w * 0.42
+    for k in range(9):
+        a = math.radians(135 + k * 270 / 8)
+        draw.line([(cx + math.cos(a) * r * 0.78, cy + math.sin(a) * r * 0.78), (cx + math.cos(a) * r, cy + math.sin(a) * r)],
+                  fill=(30, 30, 30, 255))
+    a = math.radians(135 + 270 * 0.8)
+    draw.arc([cx - r, cy - r, cx + r, cy + r], math.degrees(a), 405, fill=(200, 40, 30, 255), width=2)
+
+
+def _gas_tag(draw, face, x0, y0, w, h):
+    if face != "north":
+        return
+    from items_hires import text_decal
+    text_decal("ガス", color=(30, 30, 30, 255), faces=("north",), size=0.55, vertical=False)(draw, face, x0, y0, w, h)
+
+
+def _lattice(draw, face, x0, y0, w, h):
+    """格子戸のすき間の奥（暗く）"""
+    if face != "north":
+        return
+
+
+def flange(m, name, axis, c, r, t, mat, bolts=6, group=None):
+    """管のつなぎ目のフランジ（輪＋ボルトの頭）。axis = "x" / "y" / "z"、c = 中心"""
+    x, y, z = c
+    if axis == "y":
+        m.cyl(name, x, z, y - t / 2, y + t / 2, r, mat, sides=6, group=group)
+        for k in range(bolts):
+            a = 2 * math.pi * k / bolts
+            bx, bz = x + math.cos(a) * r * 0.78, z + math.sin(a) * r * 0.78
+            m.cube(name + "_bolt", (bx - 0.22, y + t / 2, bz - 0.22), (bx + 0.22, y + t / 2 + 0.3, bz + 0.22), "iron_fit", group=group)
+    elif axis == "x":
+        cylx(m, name, y, z, x - t / 2, x + t / 2, r, mat, sides=6, group=group)
+        for k in range(bolts):
+            a = 2 * math.pi * k / bolts
+            by, bz = y + math.cos(a) * r * 0.78, z + math.sin(a) * r * 0.78
+            m.cube(name + "_bolt", (x + t / 2, by - 0.22, bz - 0.22), (x + t / 2 + 0.3, by + 0.22, bz + 0.22), "iron_fit", group=group)
+    else:
+        cylz(m, name, x, y, z - t / 2, z + t / 2, r, mat, sides=6, group=group)
+        for k in range(bolts):
+            a = 2 * math.pi * k / bolts
+            bx, by = x + math.cos(a) * r * 0.78, y + math.sin(a) * r * 0.78
+            m.cube(name + "_bolt", (bx - 0.22, by - 0.22, z - t / 2 - 0.3), (bx + 0.22, by + 0.22, z - t / 2), "iron_fit", group=group)
+
+
+# ---------------------------------------------------------------- 5 ガスの元栓
+
+def gas_valve():
+    import random
+    from items_hires import ring
+    rng = random.Random(5)
+    m = F("gas_valve", 6)
+    rough(m, "pad", (2, 0, 6), (14, 1.2, 16), "concrete", rng, lumps=6, depth=0.15)
+    # 立ち上がりの管（黄色いガス管）とフランジ
+    m.cyl("riser", 8, 11, 1.2, 16, 1.6, "gas_pipe", sides=6)
+    flange(m, "flange", "y", (8, 2.0, 11), 2.4, 0.6, "gas_pipe_dark")
+    flange(m, "flange", "y", (8, 12.0, 11), 2.3, 0.6, "gas_pipe_dark")
+    # 横に走る管（左右へ）と、エルボ
+    cylx(m, "pipe", 18, 11, -4, 20, 1.4, "gas_pipe", sides=6)
+    flange(m, "flange", "x", (1.0, 18, 11), 2.1, 0.6, "gas_pipe_dark")
+    flange(m, "flange", "x", (15.0, 18, 11), 2.1, 0.6, "gas_pipe_dark")
+    # 弁の本体（ふくらんだ胴）とボンネット、手前へ出る軸
+    bevel(m, "valve_body", (5, 15, 8), (11, 21, 14), "gas_pipe_dark", b=0.6)
+    m.cyl("bonnet", 8, 11, 21, 23, 1.8, "gas_pipe_dark", sides=6)
+    cylz(m, "stem", 8, 18, 3.6, 8, 0.45, "iron_fit", sides=3)
+    m.cube("packing_nut", (7.0, 17.0, 6.6), (9.0, 19.0, 8.0), "iron_fit")
+    # 圧力計（縁が出っぱる）
+    m.cyl("gauge_stem", 8, 11, 23, 24.4, 0.4, "iron_fit", sides=3)
+    cylz(m, "gauge_case", 8, 26, 9.6, 11.4, 2.0, "boiler_dark", sides=6)
+    m.cube("gauge_face", (6.4, 24.4, 9.45), (9.6, 27.6, 9.6), "switch_white", decal=_gauge_face)
+    # 札
+    bevel(m, "tag", (11.2, 12.0, 8.6), (14.2, 14.2, 8.9), "warn_yellow", b=0.1, decal=_gas_tag)
+    m.cube("tag_wire", (12.6, 14.2, 8.7), (12.8, 15.8, 8.8), "iron_fit")
+    # ハンドル（赤い輪に4本のスポーク）：回る部分
+    m.group("wheel", (8, 18, 4))
+    ring(m, "rim", 8, 18, 4, 4.4, 0.8, 0.9, "valve_red", seg=20, group="wheel")
+    for k in range(4):
+        a = 45 + k * 90
+        m.cube("spoke", (7.65, 18, 3.75), (8.35, 22.0, 4.25), "valve_red", rot=[0, 0, a], pivot=[8, 18, 4], group="wheel")
+    cylz(m, "hub", 8, 18, 3.2, 4.8, 0.9, "valve_red", sides=4, group="wheel")
+    m.cube("hub_nut", (7.4, 17.4, 2.9), (8.6, 18.6, 3.2), "iron_fit", group="wheel")
+    return m
+
+
+# ---------------------------------------------------------------- 6 ボイラー
+
+def boiler():
+    import random
+    rng = random.Random(6)
+    m = F("boiler", 5)
+    rough(m, "pad", (0, 0, 0.5), (16, 1.0, 15.5), "concrete", rng, lumps=6, depth=0.12)
+    m.group("body", (8, 0, 8))
+    for (x, z) in ((2.5, 2.5), (12, 2.5), (2.5, 12), (12, 12)):
+        bevel(m, "foot", (x, 1, z), (x + 1.5, 3, z + 1.5), "boiler_dark", b=0.2, group="body")
+    m.cyl("tank", 8, 8, 3, 27, 6.6, "boiler_steel", sides=8, group="body")
+    for y in (3.2, 9.5, 16.5, 23.5, 26.6):
+        m.cyl("band", 8, 8, y, y + 0.7, 6.9, "boiler_dark", sides=8, group="body")
+        for k in range(16):    # 帯のリベット
+            a = 2 * math.pi * k / 16
+            x, z = 8 + math.cos(a) * 6.95, 8 + math.sin(a) * 6.95
+            m.cube("rivet", (x - 0.18, y + 0.2, z - 0.18), (x + 0.18, y + 0.5, z + 0.18), "iron_fit", group="body")
+    m.cyl("dome", 8, 8, 27, 28.4, 5.2, "boiler_steel", sides=8, group="body")
+    m.cyl("dome2", 8, 8, 28.4, 29.2, 3.6, "boiler_dark", sides=8, group="body")
+    # 煙突と雨よけの笠
+    m.cyl("chimney", 8, 8, 29.2, 35, 1.6, "boiler_dark", sides=6, group="body")
+    m.cyl("chimney_cap", 8, 8, 35, 35.5, 2.6, "boiler_dark", sides=6, group="body")
+    m.cyl("chimney_top", 8, 8, 35.5, 36.6, 0.9, "boiler_dark", sides=4, group="body")
+    # 安全弁と配管
+    m.cyl("safety", 12, 9, 27.6, 30.4, 0.7, "gas_pipe_dark", sides=4, group="body")
+    m.cyl("safety_top", 12, 9, 30.4, 31.0, 1.0, "valve_red", sides=4, group="body")
+    cylx(m, "pipe_out", 22, 9, 14.6, 19, 0.9, "boiler_dark", sides=4, group="body")
+    flange(m, "flange", "x", (15.2, 22, 9), 1.5, 0.5, "boiler_dark", bolts=4, group="body")
+    # たき口：厚い扉の枠、のぞき窓に火床の格子、奥で火が燃える
+    bevel(m, "firebox", (3.6, 3.4, 0.6), (12.4, 8.6, 2.2), "boiler_dark", b=0.3, group="body")
+    m.cube("firebox_in", (4.8, 4.4, 0.45), (11.2, 7.6, 0.6), "soot", group="body")
+    m.group("fire", (8, 4, 0.5), "body")
+    m.cube("glow_fire", (5.0, 4.5, 0.62), (11.0, 7.4, 0.7), "glow_fire", group="fire")
+    m.cube("glow_coal", (5.0, 4.4, 0.6), (11.0, 5.2, 1.4), "ember_g", group="fire")
+    for k in range(6):
+        x = 5.2 + k * 1.1
+        m.cube("grate", (x, 4.4, 0.3), (x + 0.35, 7.6, 0.45), "grate", group="body")
+    bevel(m, "fire_door_hinge", (12.4, 4.0, 0.4), (13.2, 8.0, 1.4), "iron_fit", b=0.1, group="body")
+    # 圧力計（縁と針）
+    cylz(m, "dial_case", 8, 17, 0.6, 1.6, 3.2, "boiler_dark", sides=6, group="body")
+    m.cube("dial", (5.4, 14.4, 0.45), (10.6, 19.6, 0.6), "switch_white", decal=_gauge_face, group="body")
+    m.group("needle", (8, 17, 0), "body")
+    m.cube("needle", (7.75, 17, 0.2), (8.25, 19.4, 0.45), "lever_red", group="needle")
+    m.cube("needle_cap", (7.6, 16.6, 0.1), (8.4, 17.4, 0.45), "iron_fit", group="needle")
+    # 水面計（ガラス管）
+    m.cube("glass_gauge", (12.4, 11, 1.4), (13.0, 15, 2.0), "glass_bowl", group="body")
+    m.cube("gauge_cap", (12.2, 10.6, 1.2), (13.2, 11, 2.2), "iron_fit", group="body")
+    m.cube("gauge_cap", (12.2, 15, 1.2), (13.2, 15.4, 2.2), "iron_fit", group="body")
+    return m
+
+
+# ---------------------------------------------------------------- 7 会議の座卓
+
+def meeting_table():
+    m = F("meeting_table", 4)
+    # 天板：黒漆、ふちは朱で一段高く、角を落とす
+    bevel(m, "top", (-12, 6, -12), (28, 7.8, 28), "urushi_k", b=0.4)
+    for (a, b) in (((-12, -12), (28, -11)), ((-12, 27), (28, 28)), ((-12, -11), (-11, 27)), ((27, -11), (28, 27))):
+        bevel(m, "rim", (a[0], 7.8, a[1]), (b[0], 8.3, b[1]), "urushi_r", b=0.15)
+    bevel(m, "apron", (-11.2, 4.8, -11.2), (27.2, 6.0, 27.2), "urushi_k", b=0.2)
+    # 脚：外にふくらむ猫脚
+    for (x, z) in ((-10.5, -10.5), (24.5, -10.5), (-10.5, 24.5), (24.5, 24.5)):
+        bevel(m, "leg", (x, 1.2, z), (x + 2.2, 4.8, z + 2.2), "urushi_k", b=0.3)
+        bevel(m, "leg_foot", (x - 0.4, 0, z - 0.4), (x + 2.6, 1.2, z + 2.6), "urushi_k", b=0.3)
+    # まん中の炉：銅の縁、灰、炭、五徳に鉄瓶
+    bevel(m, "hearth", (2.5, 7.8, 2.5), (13.5, 8.6, 13.5), "copper_r", b=0.25)
+    m.cube("ash", (3.4, 8.0, 3.4), (12.6, 8.7, 12.6), "ash_w")
+    for (x, z) in ((5, 5), (8.6, 4.6), (10.4, 8.4), (5.6, 9.8), (8, 7.4)):
+        bevel(m, "coal", (x, 8.7, z), (x + 1.8, 9.6, z + 1.4), "coal", b=0.2)
+        m.cube("glow_coal", (x + 0.3, 9.5, z + 0.2), (x + 1.5, 9.7, z + 1.2), "ember_g")
+    for k in range(3):
+        a = math.radians(90 + k * 120)
+        x, z = 8 + math.cos(a) * 3.2, 8 + math.sin(a) * 3.2
+        m.cube("gotoku", (x - 0.25, 8.7, z - 0.25), (x + 0.25, 11.2, z + 0.25), "tetsubin")
+    m.cyl("tetsubin", 8, 8, 11.2, 14.4, 3.0, "tetsubin", sides=8)
+    m.cyl("tetsubin_lid", 8, 8, 14.4, 15.0, 1.8, "tetsubin", sides=6)
+    m.cube("lid_knob", (7.5, 15.0, 7.5), (8.5, 15.8, 8.5), "copper_r")
+    m.cube("spout", (10.6, 12.6, 7.4), (13.4, 13.4, 8.6), "tetsubin", rot=[0, 0, 25], pivot=[10.6, 12.6, 8])
+    for x in (5.2, 10.8):
+        m.cube("handle", (x - 0.25, 14.4, 7.75), (x + 0.25, 17.4, 8.25), "tetsubin")
+    m.cube("handle_top", (5.2, 17.0, 7.75), (10.8, 17.5, 8.25), "tetsubin")
+    # 湯のみ（茶托にのせて）8人ぶん
+    for (x, z) in ((-8, -8), (20, -8), (-8, 20), (20, 20), (6.75, -9), (6.75, 21.5), (-9.5, 6.75), (21.5, 6.75)):
+        m.cyl("saucer", x + 1.25, z + 1.25, 7.8, 8.3, 2.0, "urushi_r", sides=6)
+        m.cyl("yunomi", x + 1.25, z + 1.25, 8.3, 11.0, 1.3, "yunomi", sides=6)
+        m.cyl("glaze", x + 1.25, z + 1.25, 9.9, 11.0, 1.35, "yunomi_glaze", sides=6)
+        m.cyl("tea", x + 1.25, z + 1.25, 10.7, 10.95, 1.05, "matcha_c", sides=6)
+    # 急須（湯気が出る所）
+    m.cyl("pot", 16.5, 16.5, 7.8, 11.6, 2.4, "copper_r", sides=8)
+    m.cyl("pot_lid", 16.5, 16.5, 11.6, 12.2, 1.6, "copper_r", sides=6)
+    m.cube("pot_spout", (18.6, 9.2, 16.0), (21.0, 10.0, 17.0), "copper_r", rot=[0, 0, 20], pivot=[18.6, 9.2, 16.5])
+    m.cube("pot_handle", (16.0, 9.0, 12.2), (17.0, 10.0, 14.4), "old_wood_dark")
+    return m
+
+
+# ---------------------------------------------------------------- 8 祠
+
+def hokora():
+    import random
+    rng = random.Random(8)
+    m = F("hokora", 5)
+    # 苔むした石の基壇（2段）と石段
+    rough(m, "base", (-2, 0, -2), (18, 3.6, 18), "granite_dark", rng, lumps=12, depth=0.3)
+    rough(m, "base2", (0, 3.6, 0), (16, 5.8, 16), "granite", rng, lumps=8, depth=0.25)
+    for k in range(10):
+        x, z = rng.uniform(-1.6, 16.6), rng.uniform(-1.6, 16.6)
+        m.cube("moss", (x, 3.55, z), (x + rng.uniform(1, 2.5), 3.9, z + rng.uniform(1, 2)), "moss")
+    bevel(m, "stair", (5, 0, -3.6), (11, 1.6, -2), "granite", b=0.2)
+    bevel(m, "stair", (5.5, 1.6, -2.6), (10.5, 3.2, -1.2), "granite", b=0.2)
+    # 社（やしろ）：古い木の箱、柱、縁
+    m.group("shrine", (2, 6, 8))
+    bevel(m, "floor", (1, 5.8, 1.6), (15, 6.6, 15), "old_wood_dark", b=0.15, group="shrine")
+    boards(m, "wall", 2.4, 13.6, 3.6, 14, 6.6, 17.6, 6, "old_wood", rng, along="z", gap=0.12, group="shrine")
+    for x in (1.6, 13.4):
+        bevel(m, "pillar", (x, 6.6, 2.4), (x + 1.4, 18.4, 3.8), "old_wood_dark", b=0.2, group="shrine")
+        bevel(m, "pillar", (x, 6.6, 13.2), (x + 1.4, 18.4, 14.6), "old_wood_dark", b=0.2, group="shrine")
+    bevel(m, "lintel", (1.2, 17.0, 2.2), (14.8, 18.4, 4.0), "old_wood_dark", b=0.2, group="shrine")
+    # 中の暗がりと、封じられた悪神の光
+    m.cube("inside", (3.0, 6.6, 3.7), (13.0, 16.8, 4.0), "deep_dark", group="shrine")
+    m.group("evil", (8, 11, 3.2), "shrine")
+    m.cube("glow_inside", (4, 7, 3.6), (12, 16, 3.8), "glow_evil", group="evil")
+    m.cube("glow_eyes", (6.2, 12.4, 3.4), (7.4, 13.0, 3.6), "glow_red", group="evil")
+    m.cube("glow_eyes", (8.6, 12.4, 3.4), (9.8, 13.0, 3.6), "glow_red", group="evil")
+    # 格子の扉（左右に開く）：枠と縦横の格子
+    for side, (x0, x1, pivx) in (("door_l", (3.0, 8.0, 3.0)), ("door_r", (8.0, 13.0, 13.0))):
+        m.group(side, (pivx, 8, 2.8), "shrine")
+        for (a, b) in (((x0, 7.0), (x1, 7.6)), ((x0, 16.2), (x1, 16.8)), ((x0, 7.6), (x0 + 0.6, 16.2)), ((x1 - 0.6, 7.6), (x1, 16.2))):
+            m.cube("door_frame", (a[0], a[1], 2.6), (b[0], b[1], 3.3), "old_wood_dark", group=side)
+        for k in range(1, 4):
+            x = x0 + (x1 - x0) * k / 4
+            m.cube("koshi", (x - 0.2, 7.6, 2.75), (x + 0.2, 16.2, 3.15), "old_wood", group=side)
+        for k in range(1, 6):
+            y = 7.6 + 8.6 * k / 6
+            m.cube("koshi", (x0 + 0.6, y - 0.18, 2.8), (x1 - 0.6, y + 0.18, 3.1), "old_wood", group=side)
+    # 屋根：板の上に瓦の列、棟と千木・鰹木
+    m.group("roof", (8, 19, 8), "shrine")
+    bevel(m, "roof_board", (-0.6, 18.4, 0.4), (16.6, 19.0, 15.8), "old_wood_dark", b=0.15, group="roof")
+    for k, (z0, z1, y) in enumerate(((0.2, 16.0, 19.0), (1.4, 14.8, 19.9), (2.8, 13.4, 20.8), (4.4, 11.8, 21.6))):
+        kawara_row(m, "kawara", -1.0 + k * 0.5, 17.0 - k * 0.5, z0, z1, y, "kawara", pitch=1.6, group="roof")
+    bevel(m, "ridge", (-0.4, 22.4, 6.6), (16.4, 23.4, 9.2), "kawara", b=0.25, group="roof")
+    for x in (2.5, 6.5, 10.5):
+        cylx(m, "katsuogi", 23.9, 7.9, x, x + 2.8, 0.6, "old_wood_dark", sides=4, group="roof")
+    for x, a in ((0.2, 20), (15.0, -20)):
+        m.cube("chigi", (x, 22.4, 7.4), (x + 0.8, 26.0, 8.4), "old_wood_dark", rot=[0, 0, a], pivot=[x + 0.4, 22.4, 7.9], group="roof")
+    # しめ縄としで（紙垂）：太いねじれた縄、ジグザグの白い紙
+    m.group("rope", (1, 16.5, 2), "shrine")
+    for k in range(8):
+        x = 1.0 + k * 1.75
+        m.cube("shimenawa", (x, 16.0 + (k % 2) * 0.12, 1.5), (x + 1.75, 17.1 - (k % 2) * 0.12, 2.5), "shimenawa",
+               rot=[0, 0, (k % 2) * 14 - 7], pivot=[x + 0.88, 16.5, 2], group="rope")
+    for x in (4, 8, 12):
+        for k in range(4):
+            dx = 0.5 if k % 2 else -0.5
+            m.cube("shide", (x + dx - 0.6, 15.6 - k * 0.9, 1.8), (x + dx + 0.6, 16.0 - k * 0.9 + 0.1, 1.95), "shide", group="rope")
+    # お供え：三方に盃と白い徳利
+    bevel(m, "sanbo", (5.4, 5.8, -1.2), (10.6, 6.6, 1.6), "hinoki", b=0.15)
+    m.cube("sanbo_leg", (6.0, 5.8, -0.6), (10.0, 6.0, 1.0), "hinoki")
+    m.cyl("tokkuri", 6.6, 0.2, 6.6, 8.4, 0.7, "sake_white", sides=4)
+    m.cyl("tokkuri_neck", 6.6, 0.2, 8.4, 9.0, 0.35, "sake_white", sides=4)
+    m.cyl("sakazuki", 9.0, 0.2, 6.6, 7.0, 0.8, "urushi_r", sides=4)
+    return m
+
+
+OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
+             "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora}
