@@ -1797,6 +1797,226 @@ def kakejiku():
     flower(m, "petal", 13.6, 12.7, 12.0, "plate", None, r=0.9)
     return m
 
+# ---------------------------------------------------------------- 29〜32 で使う材質
+MATS.update({
+    "post_red": Mat((196, 34, 30), "metal", accent=(160, 22, 20), noise=6),
+    "post_red_d": Mat((150, 24, 22), "metal", noise=6),
+    "post_plate": Mat((240, 238, 230), "plain", noise=2),
+    "glass_rim": Mat((170, 210, 240), "plain", noise=2, alpha=90),
+    "fish_fin": Mat((250, 170, 110), "paper", noise=4, alpha=200),
+    "pebble_w": Mat((222, 218, 206), "stone", noise=8),
+    "pebble_b": Mat((90, 100, 110), "stone", noise=8),
+    "weed": Mat((70, 150, 70), "plain", noise=6),
+    "can_y": Mat((240, 196, 60), "metal", noise=5),
+    "kiri_box": Mat((228, 208, 172), "wood", accent=(206, 184, 146), noise=3),
+    "keyaki": Mat((170, 112, 60), "wood", accent=(140, 86, 42), noise=6),
+    "keyaki_d": Mat((120, 76, 40), "wood", accent=(96, 58, 30), noise=6),
+    "mochi_s": Mat((248, 246, 240), "plaster", noise=3),
+})
+
+
+# ---------------------------------------------------------------- 29 郵便受け（丸型ポスト）
+
+def mailbox():
+    import random
+    rng = random.Random(29)
+    m = F("mailbox", 6)
+    # 台座：石
+    rough(m, "base", (3, 0, 3.5), (13, 1.4, 13.5), "granite", rng, lumps=4, depth=0.2)
+    # 胴：丸い筒（赤）、上は丸屋根、ひさし
+    m.cyl("body_foot", 8, 8.5, 1.4, 2.4, 4.6, "post_red_d", sides=8)
+    m.cyl("body", 8, 8.5, 2.4, 20.6, 4.2, "post_red", sides=8)
+    for y in (6.0, 17.2):
+        m.cyl("band", 8, 8.5, y, y + 0.4, 4.35, "post_red_d", sides=8)
+    m.cyl("eave", 8, 8.5, 20.6, 21.4, 4.9, "post_red_d", sides=8)
+    for (ya, yb, r) in ((21.4, 22.4, 4.4), (22.4, 23.2, 3.6), (23.2, 23.8, 2.6), (23.8, 24.2, 1.4)):
+        m.cyl("dome", 8, 8.5, ya, yb, r, "post_red", sides=8)
+    # 投函口とふた（lid）、表示板、取り出し口と鍵
+    m.cube("slot_frame", (4.6, 18.6, 4.0), (11.4, 20.2, 4.4), "post_red_d")
+    m.cube("slot", (5.0, 19.0, 3.95), (11.0, 19.8, 4.05), "deep_dark")
+    m.group("lid", (8, 21, 4.8))
+    bevel(m, "lid", (4.2, 20.2, 3.5), (11.8, 21.2, 4.1), "post_red", b=0.15, group="lid")
+    bevel(m, "plate", (5.2, 13.6, 4.0), (10.8, 16.8, 4.3), "post_plate", b=0.1, decal=_text("郵便", size=0.5))
+    bevel(m, "door", (5.4, 4.6, 4.0), (10.6, 11.6, 4.35), "post_red", b=0.12)
+    m.cube("keyhole", (9.2, 7.6, 3.8), (9.8, 8.6, 4.05), "brass_s")
+    m.cube("emblem", (7.2, 22.0, 4.0), (8.8, 22.8, 4.3), "post_plate")
+    # 仕分けた手紙：てっぺんの取り出し口からのぞく
+    m.cube("top_slot", (5.6, 24.15, 7.6), (10.4, 24.25, 9.4), "deep_dark")
+    for k in range(4):
+        m.group(f"sorted{k}", (5 + k * 2, 22, 9))
+        x = 5.8 + k * 1.15
+        m.cube("letter", (x, 22.6, 7.8), (x + 0.3, 26.0 + (k % 2) * 0.6, 9.2), ("letter", "letter_pink", "letter_blue", "letter")[k],
+               rot=[0, 0, (k - 1.5) * 4], pivot=[x, 23, 8.5], group=f"sorted{k}")
+    # 仕分ける前の手紙の山：脚つきの小机の上
+    bevel(m, "stand", (16, 9, 5), (23, 10, 11.5), "hinoki", b=0.2)
+    for (x, z) in ((16.4, 5.4), (21.8, 5.4), (16.4, 10.3), (21.8, 10.3)):
+        bevel(m, "stand_leg", (x, 0, z), (x + 0.8, 9, z + 0.8), "hinoki_dark", b=0.12)
+    m.cube("stand_nuki", (16.8, 3, 5.6), (22.2, 3.6, 6.0), "hinoki_dark")
+    for k in range(4):
+        m.group(f"pile{k}", (19, 10 + k * 0.5, 8))
+        bevel(m, "letter", (17, 10 + k * 0.5, 6.5 + (k % 2) * 0.6), (21.5, 10.4 + k * 0.5, 9.5 + (k % 2) * 0.6),
+              ("letter", "letter_pink", "letter_blue", "letter")[k], b=0.08, group=f"pile{k}", rot=(0, (k - 1.5) * 8, 0),
+              pivot=(19, 10, 8))
+        m.cube("stamp", (20.4, 10.42 + k * 0.5, 6.8 + (k % 2) * 0.6), (21.1, 10.45 + k * 0.5, 7.5 + (k % 2) * 0.6), "red",
+               group=f"pile{k}", rot=(0, (k - 1.5) * 8, 0), pivot=(19, 10, 8))
+    return m
+
+
+# ---------------------------------------------------------------- 30 金魚鉢
+
+def goldfish_bowl():
+    from items_hires import ring
+    import random
+    rng = random.Random(30)
+    m = F("goldfish_bowl", 6)
+    # 台：漆塗りの小卓（脚・ふちを落とした天板）
+    bevel(m, "stand_top", (1.2, 5.6, 1.2), (14.8, 7, 14.8), "urushi_k", b=0.35)
+    bevel(m, "stand_apron", (2, 4.6, 2), (14, 5.6, 14), "urushi_k", b=0.15)
+    for (x, z) in ((2, 2), (12.6, 2), (2, 12.6), (12.6, 12.6)):
+        bevel(m, "stand_leg", (x, 0, z), (x + 1.4, 4.6, z + 1.4), "urushi_k", b=0.2)
+        m.cube("stand_foot", (x - 0.2, 0, z - 0.2), (x + 1.6, 0.4, z + 1.6), "gold")
+    # 金魚：胴（ふちを落とす）・背びれ・尾びれ（ふたまた）・目（両側）
+    for k in range(2):
+        g = m.group(f"fish{k}", (8, 9.5 + k * 1.6, 8))
+        r = 2.4 if k == 0 else 1.6
+        y = 9.5 + k * 1.6
+        x = 8 + r
+        bevel(m, "fish", (x - 0.55, y - 0.65, 6.9), (x + 0.55, y + 0.65, 9.0), "goldfish", b=0.25, group=g)
+        m.cube("dorsal", (x - 0.06, y + 0.6, 7.6), (x + 0.06, y + 1.2, 8.6), "fish_fin", group=g)
+        for sgn in (-1, 1):
+            m.cube("tail", (x - 0.06, y - 0.2, 9.0), (x + 0.06, y + 1.0, 10.6), "goldfish_tail", rot=[sgn * 22, 0, 0],
+                   pivot=[x, y, 9.0], group=g)
+            m.cube("pectoral", (x + sgn * 0.55 - 0.05, y - 0.6, 7.6), (x + sgn * 0.55 + 0.05, y - 0.1, 8.4), "fish_fin", group=g)
+            m.cube("eye", (x + sgn * 0.56 - 0.06, y + 0.1, 7.2), (x + sgn * 0.56 + 0.06, y + 0.45, 7.55), "deep_dark", group=g)
+    # 水とガラス（重ならない形。前の版と同じ透け方）
+    R = 4.6
+    n = 14
+    for k in range(n):
+        x0 = -R + 2 * R * k / n
+        x1 = -R + 2 * R * (k + 1) / n
+        xc = max(abs(x0), abs(x1))
+        half = math.sqrt(max(0.0, R * R - xc * xc))
+        if half > 0.1:
+            skip = (("west",) if k > 0 else ()) + (("east",) if k < n - 1 else ())
+            m.cube("glass_water", (8 + x0, 7.4, 8 - half), (8 + x1, 13.2, 8 + half), "water_clear", skip=skip)
+    for (y0, y1, r) in ((7, 8, 3.8), (8, 10, 5.1), (10, 12.6, 5.4), (12.6, 14, 4.8), (14, 14.8, 3.8)):
+        ring(m, "glass_bowl", 8, (y0 + y1) / 2, 8, r, 0.12, y1 - y0, "glass_bowl", seg=18, plane="xz")
+    # 口のひだ（波うつ縁）
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        x, z = 8 + 4.2 * math.cos(a), 8 + 4.2 * math.sin(a)
+        m.cube("glass_frill", (x - 0.9, 14.8, z - 0.1), (x + 0.9, 15.4 + (k % 2) * 0.4, z + 0.1), "glass_rim",
+               rot=[0, -math.degrees(a) + 90, 0], pivot=[x, 14.8, z])
+    # 底：色の違う小石、水草（くねる）
+    for k in range(14):
+        a = rng.uniform(0, 2 * math.pi)
+        rr = rng.uniform(0, 3.0)
+        x, z = 8 + rr * math.cos(a), 8 + rr * math.sin(a)
+        mt = ("pebble_w", "pebble_b", "rock")[k % 3]
+        m.cube("pebble", (x - 0.45, 7.1, z - 0.4), (x + 0.45, 7.7, z + 0.4), mt, rot=[0, rng.uniform(0, 90), 0], pivot=[x, 7.1, z])
+    for (bx, bz, h) in ((5.8, 9.4, 4.6), (6.6, 9.9, 3.6), (10.2, 6.4, 3.0)):
+        bent(m, "weed", [(bx, 7.4, bz), (bx + 0.4, 7.4 + h * 0.35, bz), (bx - 0.2, 7.4 + h * 0.7, bz), (bx + 0.3, 7.4 + h, bz)],
+             0.35, "weed")
+    # えさ（上から落ちる）
+    m.group("food", (8, 16, 8))
+    for k in range(5):
+        m.cube("food", (7 + (k % 3) * 0.8, 15.5 + (k // 3) * 0.7, 7.3 + (k % 2) * 1.0),
+               (7.4 + (k % 3) * 0.8, 15.9 + (k // 3) * 0.7, 7.7 + (k % 2) * 1.0), "food", group="food")
+    # えさの缶（ふち・ふた・ラベル）
+    m.cyl("can", 15.6, 4.4, 7, 10.4, 1.5, "can_y", sides=6)
+    m.cyl("can_lid", 15.6, 4.4, 10.4, 10.9, 1.6, "steel_light", sides=6)
+    m.cube("can_label", (14.1, 8.0, 2.85), (17.1, 9.6, 2.95), "goldfish")
+    return m
+
+
+# ---------------------------------------------------------------- 31 風鈴
+
+def wind_chime():
+    from items_hires import ring
+    m = F("wind_chime", 6)
+    # 軒：柱・桁・垂木の出
+    for x in (-0.4, 14.4):
+        bevel(m, "post", (x, 0, 12.8), (x + 2, 26, 15.2), "hinoki_dark", b=0.3)
+    bevel(m, "keta", (-1.4, 24, 12), (17.4, 26, 16), "hinoki_dark", b=0.3)
+    for x in range(-1, 18, 3):
+        m.cube("taruki", (x, 26, 10.4), (x + 0.9, 26.8, 16.4), "hinoki")
+    m.cube("noji", (-1.8, 26.8, 10.0), (17.8, 27.3, 16.6), "hinoki_dark")
+    m.cube("hook", (7.6, 21.5, 13.6), (8.4, 24, 14.4), "iron_black")
+    ring(m, "hook_eye", 8, 21.6, 14, 0.5, 0.2, 0.3, "iron_black", seg=8)
+    # 吊るした風鈴：ガラスのお椀（中が空）、絵付け、舌、短冊
+    m.group("hung", (8, 21.5, 14))
+    m.cube("string", (7.9, 17.4, 13.9), (8.1, 21.5, 14.1), "plate", group="hung")
+    m.cyl("glass_top", 8, 14, 17.0, 17.6, 0.9, "glass_chime", sides=6, group="hung")
+    for (y0, y1, r) in ((16.2, 17.0, 1.5), (15.0, 16.2, 1.9), (14.2, 15.0, 2.1)):
+        ring(m, "glass_bell", 8, (y0 + y1) / 2, 14, r, 0.18, y1 - y0, "glass_chime", seg=14, plane="xz", group="hung")
+    ring(m, "glass_lip", 8, 14.25, 14, 2.15, 0.3, 0.2, "glass_chime", seg=14, plane="xz", group="hung")
+    for k in range(3):
+        a = math.radians(200 + k * 50)
+        x, z = 8 + 2.0 * math.cos(a), 14 + 2.0 * math.sin(a)
+        m.cube("paint", (x - 0.35, 14.8, z - 0.05), (x + 0.35, 15.6, z + 0.05), ("chime_paint", "goldfish", "chime_paint")[k],
+               rot=[0, -math.degrees(a) + 90, 0], pivot=[x, 15.2, z], group="hung")
+    m.cube("zetsu", (7.6, 14.0, 13.6), (8.4, 14.6, 14.4), "glass_chime", group="hung")
+    m.cube("ito", (7.95, 9.4, 13.95), (8.05, 17.0, 14.05), "plate", group="hung")
+    bevel(m, "tanzaku", (7, 5.0, 13.92), (9, 9.4, 14.08), "tanzaku", b=0.05, group="hung", decal=_text("涼", size=0.6))
+    # 箱の中の風鈴：桐箱（ふたは横に立てかけ）、緩衝の紙
+    bevel(m, "shelf", (1, 0, 3), (15, 3.6, 9), "hinoki", b=0.25)
+    for (a, b) in (((3.6, 3.6), (11.4, 4.0)), ((3.6, 8.0), (11.4, 8.4)), ((3.6, 4.0), (4.0, 8.0)), ((11.0, 4.0), (11.4, 8.0))):
+        m.cube("box_wall", (a[0], 3.6, a[1]), (b[0], 6.6, b[1]), "kiri_box")
+    m.cube("box_floor", (4.0, 3.6, 4.0), (11.0, 4.0, 8.0), "kiri_box")
+    m.cube("paper", (4.0, 4.0, 4.0), (11.0, 4.4, 8.0), "paper")
+    bevel(m, "box_lid", (12.0, 3.6, 3.6), (12.4, 8.4, 9.0), "kiri_box", b=0.08, rot=[0, 0, -10], pivot=[12.2, 3.6, 6])
+    m.cube("himo", (12.45, 3.6, 6.1), (12.55, 8.0, 6.5), "red", rot=[0, 0, -10], pivot=[12.2, 3.6, 6])
+    m.group("boxed", (7.5, 7, 6))
+    for (y0, y1, r) in ((5.4, 6.0, 1.4), (6.0, 6.8, 1.6), (6.8, 7.4, 1.2)):
+        m.cyl("glass_bell", 7.5, 6, y0, y1, r, "glass_chime", sides=6, group="boxed")
+    m.cube("tanzaku", (8.6, 4.4, 4.5), (10.6, 4.6, 7.0), "tanzaku", group="boxed")
+    return m
+
+
+# ---------------------------------------------------------------- 32 臼と杵
+
+def mochi_mortar():
+    from items_hires import ring
+    m = F("mochi_mortar", 6)
+    # 臼：けやき。上下が広く、まん中がくびれる。上はくぼむ
+    prof = [(0, 0.8, 6.2), (0.8, 2.4, 6.0), (2.4, 4.4, 5.5), (4.4, 6.4, 5.4), (6.4, 8.2, 5.7), (8.2, 9.4, 6.2)]
+    for (ya, yb, r) in prof:
+        m.cyl("usu", 8, 8, ya, yb, r, "keyaki", sides=8)
+    for y in (1.6, 8.6):
+        m.cyl("usu_band", 8, 8, y, y + 0.3, 6.35 if y > 5 else 6.15, "keyaki_d", sides=8)
+    ring(m, "usu_rim", 8, 9.8, 8, 5.4, 1.6, 0.8, "keyaki", seg=16, plane="xz")
+    m.cyl("usu_hollow", 8, 8, 9.2, 9.5, 4.6, "keyaki_d", sides=8)
+    for (x, z) in ((2.4, 8), (13.6, 8)):
+        m.cube("te", (x - 0.6, 4.6, z - 1.2), (x + 0.6, 5.4, z + 1.2), "keyaki_d")
+    # もち：やわらかい山（輪切りを重ね、少しはみだす）
+    m.group("mochi", (8, 10, 8))
+    for (ya, yb, r) in ((9.5, 10.4, 4.0), (10.4, 11.2, 3.7), (11.2, 11.8, 3.1), (11.8, 12.3, 2.2)):
+        m.cyl("mochi", 8, 8, ya, yb, r, "mochi_s", sides=8, group="mochi")
+    m.cube("mochi_fold", (6.0, 11.6, 6.4), (9.6, 12.0, 8.0), "mochi_s", rot=[0, 30, 0], pivot=[8, 11.8, 8], group="mochi")
+    # 杵：手前に立てかけ、つくときに振り下ろす（頭は縦の筒、柄は横）
+    m.group("kine", (8, 12, 18), rot=(-35, 0, 0))
+    cylz(m, "handle", 8, 12.6, 10, 22.4, 0.65, "hinoki", group="kine")
+    m.cube("handle_grip", (7.25, 11.85, 20.4), (8.75, 13.35, 22.4), "rope", group="kine")
+    for (ya, yb, r) in ((10.2, 10.8, 2.2), (10.8, 16.0, 2.5), (16.0, 16.6, 2.2)):
+        m.cyl("head", 8, 10, ya, yb, r, "keyaki_d", sides=8, group="kine")
+    for y in (11.2, 15.4):
+        m.cyl("head_band", 8, 10, y, y + 0.35, 2.6, "iron_black", sides=8, group="kine")
+    # 手水の桶（たが・水）とひしゃく
+    ring(m, "oke", 19.5, 2.6, 4.5, 2.6, 0.4, 5.2, "oke", seg=14, plane="xz")
+    m.cyl("oke_floor", 19.5, 4.5, 0, 0.5, 2.6, "oke", sides=8)
+    for y in (1.0, 4.2):
+        ring(m, "taga", 19.5, y, 4.5, 2.85, 0.2, 0.5, "hoop_copper", seg=14, plane="xz")
+    m.cyl("glass_water", 19.5, 4.5, 0.5, 4.4, 2.35, "water", sides=8)
+    m.cyl("hishaku_cup", 18.6, 3.8, 3.8, 5.0, 0.9, "hinoki", sides=6)
+    bent(m, "hishaku_handle", [(18.6, 4.8, 4.6), (18.0, 6.8, 7.8), (17.6, 8.2, 10.4)], 0.35, "hinoki")
+    # 取り粉の板ともち
+    bevel(m, "board", (15, 0, 10), (23, 0.7, 16), "hinoki", b=0.15)
+    m.cube("kona", (15.4, 0.7, 10.4), (22.6, 0.75, 15.6), "plaster_w")
+    for (x, z) in ((16.4, 11.2), (19.0, 11.4), (21.0, 13.2), (17.4, 13.8)):
+        m.cyl("maru", x + 0.8, z + 0.8, 0.75, 1.5, 0.95, "mochi_s", sides=6)
+        m.cyl("maru_top", x + 0.8, z + 0.8, 1.5, 1.8, 0.6, "mochi_s", sides=4)
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
@@ -1804,4 +2024,5 @@ OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BRE
              "BATH": bath_stove, "CHOPPING": chopping_block, "FIELD": vegetable_patch, "DUST": dust_pile,
              "LAUNDRY": laundry_pole, "VASE": flower_vase, "SINK": kitchen_sink, "SHOE_RACK": shoe_rack,
              "SHOJI": shoji_screen, "ANDON": andon, "IRORI": irori, "BONSAI": bonsai,
-             "TEA": tea_set, "WELL": well, "SHOGI": shogi_board, "KAKEJIKU": kakejiku}
+             "TEA": tea_set, "WELL": well, "SHOGI": shogi_board, "KAKEJIKU": kakejiku,
+             "MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar}
