@@ -214,7 +214,7 @@ public class SettingsScreen extends Screen {
             g.fill(lx + lw - 6, ly + 3, lx + lw - 3, ly + lh - 3, 0x30000000);
             g.fill(lx + lw - 6, barY, lx + lw - 3, barY + barH, 0xC08D6E4A);
             if (scroll < maxScroll) {
-                Ui.sans(g, "▼ スクロール", lx + lw - 10, ly + lh - 11, 0xFF8D7A62, 0.6f, 1);
+                Ui.sans(g, "▼ ホイールでスクロール", lx + lw - 4, ly + lh + 2, 0xFF8D7A62, 0.6f, 1);
             }
         }
 
