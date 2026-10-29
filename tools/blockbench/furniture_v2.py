@@ -1802,8 +1802,11 @@ MATS.update({
     "post_red": Mat((196, 34, 30), "metal", accent=(160, 22, 20), noise=6),
     "post_red_d": Mat((150, 24, 22), "metal", noise=6),
     "post_plate": Mat((240, 238, 230), "plain", noise=2),
-    "glass_rim": Mat((170, 210, 240), "plain", noise=2, alpha=90),
+    "glass_rim": Mat((190, 225, 250), "plain", noise=1, alpha=60),
+    "glass_clear": Mat((235, 248, 255), "plain", noise=1, alpha=20),
+    "water_thin": Mat((170, 215, 245), "plain", noise=1, alpha=30),
     "fish_fin": Mat((250, 170, 110), "paper", noise=4, alpha=200),
+    "goldfish_b": Mat((255, 96, 24), "metal", accent=(255, 180, 60), noise=6),
     "pebble_w": Mat((222, 218, 206), "stone", noise=8),
     "pebble_b": Mat((90, 100, 110), "stone", noise=8),
     "weed": Mat((70, 150, 70), "plain", noise=6),
@@ -1881,32 +1884,41 @@ def goldfish_bowl():
         r = 2.4 if k == 0 else 1.6
         y = 9.5 + k * 1.6
         x = 8 + r
-        bevel(m, "fish", (x - 0.55, y - 0.65, 6.9), (x + 0.55, y + 0.65, 9.0), "goldfish", b=0.25, group=g)
+        bevel(m, "fish", (x - 0.7, y - 0.8, 6.6), (x + 0.7, y + 0.8, 9.0), "goldfish_b", b=0.3, group=g)
+        m.cube("fish_head", (x - 0.55, y - 0.6, 6.2), (x + 0.55, y + 0.6, 6.7), "goldfish_b", group=g)
         m.cube("dorsal", (x - 0.06, y + 0.6, 7.6), (x + 0.06, y + 1.2, 8.6), "fish_fin", group=g)
         for sgn in (-1, 1):
             m.cube("tail", (x - 0.06, y - 0.2, 9.0), (x + 0.06, y + 1.0, 10.6), "goldfish_tail", rot=[sgn * 22, 0, 0],
                    pivot=[x, y, 9.0], group=g)
             m.cube("pectoral", (x + sgn * 0.55 - 0.05, y - 0.6, 7.6), (x + sgn * 0.55 + 0.05, y - 0.1, 8.4), "fish_fin", group=g)
             m.cube("eye", (x + sgn * 0.56 - 0.06, y + 0.1, 7.2), (x + sgn * 0.56 + 0.06, y + 0.45, 7.55), "deep_dark", group=g)
-    # 水とガラス（重ならない形。前の版と同じ透け方）
+    # 水とガラス：中の金魚がはっきり見えるよう、うすく・重ねずに作る
+    #  水：上から見て丸くなる帯。帯のあいだと、前後の面は描かず、上の水面と横の面だけ
     R = 4.6
-    n = 14
+    n = 10
     for k in range(n):
         x0 = -R + 2 * R * k / n
         x1 = -R + 2 * R * (k + 1) / n
         xc = max(abs(x0), abs(x1))
         half = math.sqrt(max(0.0, R * R - xc * xc))
         if half > 0.1:
-            skip = (("west",) if k > 0 else ()) + (("east",) if k < n - 1 else ())
-            m.cube("glass_water", (8 + x0, 7.4, 8 - half), (8 + x1, 13.2, 8 + half), "water_clear", skip=skip)
+            skip = ("north", "south", "down") + (("west",) if k > 0 else ()) + (("east",) if k < n - 1 else ())
+            m.cube("glass_water", (8 + x0, 7.4, 8 - half), (8 + x1, 13.2, 8 + half), "water_thin", skip=skip)
+    #  ガラス：外側の面だけの板をぐるっと並べる（内側の面・板どうしの重なりなし）
+    seg = 20
     for (y0, y1, r) in ((7, 8, 3.8), (8, 10, 5.1), (10, 12.6, 5.4), (12.6, 14, 4.8), (14, 14.8, 3.8)):
-        ring(m, "glass_bowl", 8, (y0 + y1) / 2, 8, r, 0.12, y1 - y0, "glass_bowl", seg=18, plane="xz")
+        ln = 2 * r * math.tan(math.pi / seg)
+        for k in range(seg):
+            a = 2 * math.pi * k / seg
+            x, z = 8 + r * math.cos(a), 8 + r * math.sin(a)
+            m.cube("glass_bowl", (x - 0.03, y0, z - ln / 2), (x + 0.03, y1, z + ln / 2), "glass_clear",
+                   rot=[0, -math.degrees(a), 0], pivot=[x, y0, z], skip=("west", "north", "south", "up", "down"))
     # 口のひだ（波うつ縁）
     for k in range(12):
         a = 2 * math.pi * k / 12
-        x, z = 8 + 4.2 * math.cos(a), 8 + 4.2 * math.sin(a)
-        m.cube("glass_frill", (x - 0.9, 14.8, z - 0.1), (x + 0.9, 15.4 + (k % 2) * 0.4, z + 0.1), "glass_rim",
-               rot=[0, -math.degrees(a) + 90, 0], pivot=[x, 14.8, z])
+        x, z = 8 + 4.0 * math.cos(a), 8 + 4.0 * math.sin(a)
+        m.cube("glass_frill", (x - 1.1, 14.8, z - 0.03), (x + 1.1, 15.3 + (k % 2) * 0.4, z + 0.03), "glass_rim",
+               rot=[0, -math.degrees(a) + 90, 0], pivot=[x, 14.8, z], skip=("north",))
     # 底：色の違う小石、水草（くねる）
     for k in range(14):
         a = rng.uniform(0, 2 * math.pi)
