@@ -149,13 +149,114 @@ def paint(img, x0, y0, w, h, mat, face, rng, along="u", mc=False):
             px[x0 + i, y0 + j] = (r, g, b, mat.alpha)
 
 
+def _vnoise(rng_seed, i, j, scale):
+    """なめらかなノイズ（値ノイズ）"""
+    def h(a, b):
+        n = (a * 374761393 + b * 668265263 + rng_seed * 2246822519) & 0xFFFFFFFF
+        n = ((n ^ (n >> 13)) * 1274126177) & 0xFFFFFFFF
+        return ((n ^ (n >> 16)) & 0xFFFF) / 65535.0
+    x, y = i / scale, j / scale
+    x0, y0 = int(math.floor(x)), int(math.floor(y))
+    fx, fy = x - x0, y - y0
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    a = h(x0, y0) + (h(x0 + 1, y0) - h(x0, y0)) * fx
+    b = h(x0, y0 + 1) + (h(x0 + 1, y0 + 1) - h(x0, y0 + 1)) * fx
+    return a + (b - a) * fy
+
+
+def paint_real(img, x0, y0, w, h, mat, face, rng, along="u", seed=1):
+    """リアル寄りの塗り：なめらかな模様＋焼き込んだ陰（下ほど暗い）＋ふちの光と影＋すみの汚れ"""
+    px = img.load()
+    base = mat.base
+    k = mat.kind
+    side = face in ("north", "south", "east", "west")
+    for j in range(h):
+        for i in range(w):
+            u = i / max(1, w - 1)
+            v = j / max(1, h - 1)
+            n1 = _vnoise(seed, i, j, 6.0) - 0.5
+            n2 = _vnoise(seed + 7, i, j, 2.0) - 0.5
+            c = base
+            if k == "wood":
+                t = (j if along == "u" else i)
+                s_ = (i if along == "u" else j)
+                warp = _vnoise(seed + 3, s_, t, 14.0) * 6.0
+                ring = math.sin((t + warp) * 0.9)
+                c = mix(base, mat.accent, 0.3 + 0.28 * ring + 0.25 * n1)
+                if abs(math.sin((t + warp * 2) * 0.35)) > 0.985:
+                    c = shade(c, 0.8)          # 濃い木目の線
+                # 節（まれに）
+                kn = _vnoise(seed + 11, i, j, 9.0)
+                if kn > 0.86:
+                    c = mix(c, shade(mat.accent, 0.6), (kn - 0.86) * 5)
+            elif k == "bamboo":
+                t = i if along == "v" else j
+                ring = (t % 30) < 2
+                c = shade(mat.accent, 0.9) if ring else mix(base, mat.accent, 0.2 + 0.25 * n1)
+                c = shade(c, 1.0 + 0.12 * math.sin(u * math.pi))
+            elif k == "metal":
+                brushed = _vnoise(seed + 5, i, j * 8, 3.0) - 0.5
+                c = shade(base, 1.12 - 0.26 * v + 0.12 * brushed)
+                c = mix(c, (255, 255, 255), max(0.0, 0.22 - abs(v - 0.22) * 3))
+                if mat.noise >= 10:    # 古い金属は錆やくもり
+                    c = mix(c, shade(base, 0.7), max(0.0, n1) * 0.6)
+            elif k == "polymer":
+                c = shade(base, 1.06 - 0.12 * v + 0.05 * n2)
+            elif k == "stipple":
+                c = shade(base, 0.86 + 0.28 * _vnoise(seed + 2, i, j, 1.2))
+            elif k == "stone":
+                cell = _vnoise(seed + 9, i, j, 7.0)
+                c = shade(base, 0.84 + 0.3 * cell)
+                crack = abs(_vnoise(seed + 4, i, j, 10.0) - 0.5) < 0.02
+                if crack:
+                    c = shade(base, 0.62)
+                if mat.accent != shade(base, 0.7) and _vnoise(seed + 13, i, j, 4.0) > 0.68:
+                    c = mix(c, mat.accent, 0.7)
+            elif k == "plaster":
+                c = shade(base, 0.97 + 0.08 * n1 + 0.03 * n2)
+                if side:  # 下の方に煤や汚れ
+                    c = mix(c, shade(base, 0.62), max(0.0, v - 0.65) * 1.2 * (0.6 + n1))
+            elif k == "paper":
+                c = shade(base, 0.97 + 0.035 * math.sin(i * 1.7 + j * 0.3) + 0.04 * n1)
+            elif k == "fire":
+                flick = _vnoise(seed + 1, i, j, 3.0)
+                c = mix(base, mat.accent, max(0.0, 1.0 - v * 1.2) * (0.6 + 0.5 * flick))
+                c = mix(c, (255, 255, 230), max(0.0, 0.6 - abs(u - 0.5) * 2 - v) * 0.8)
+            elif k == "ember":
+                c = mix(shade(base, 0.6), mat.accent, _vnoise(seed + 6, i, j, 2.5) ** 1.5 * 1.3)
+            elif k == "water":
+                c = mix(base, mat.accent, 0.3 + 0.4 * _vnoise(seed + 8, i, j, 5.0))
+            elif k == "rope":
+                c = mix(base, mat.accent, 0.5 + 0.5 * math.sin((i + j) * 1.0 + n1 * 2))
+            elif k == "tile":
+                c = shade(mat.accent, 0.9) if (j % 8 == 0) else shade(base, 0.92 + 0.12 * n1 + 0.05 * ((i // 10) % 2))
+            else:
+                c = shade(base, 1.0 + 0.06 * n1)
+            # 焼き込んだ陰：側面は下ほど暗く、上面は少し明るく、底は暗く
+            if side:
+                c = shade(c, 1.04 - 0.16 * v)
+            elif face == "up":
+                c = shade(c, 1.06)
+            else:
+                c = shade(c, 0.7)
+            if not mat.glow:
+                c = tuple(clamp(a + (n2 * mat.noise * 0.5)) for a in c[:3])
+            # ふち：上と左は光、下と右は影（面取りしたように見える）
+            if j == 0 or i == 0:
+                c = mix(c, (255, 255, 255), 0.12) if not mat.glow else c
+            elif j == h - 1 or i == w - 1:
+                c = shade(c, 0.8)
+            px[x0 + i, y0 + j] = (clamp(c[0]), clamp(c[1]), clamp(c[2]), mat.alpha)
+
+
 # ------------------------------------------------------------------ モデル
 
 FACES = ["north", "east", "south", "west", "up", "down"]
 
 
 class HiRes:
-    def __init__(self, name, density=8, seed=7, mc=False):
+    def __init__(self, name, density=8, seed=7, mc=False, real=False):
+        self.real = real
         self.name = name
         self.D = density
         self.cubes = []          # dict(name, frm, to, mat, rot, pivot, decals, group)
@@ -163,6 +264,17 @@ class HiRes:
         self.group_order = []
         self.rng = random.Random(seed)
         self.mc = mc
+
+    def cyl(self, name, cx, cz, y0, y1, r, mat, sides=4, group=None, rx=None):
+        """丸いもの（つぼ・鍋・柱など）。細長い板を sides 枚、向きを変えて重ねる → 正 2×sides 角形（4 なら八角形）"""
+        half_w = r * math.tan(math.radians(90.0 / sides))
+        for k in range(sides):
+            ang = k * (180.0 / sides)
+            if ang > 90:
+                ang -= 180
+            e = k * 0.015   # 上面が重なってちらつかないように少しずらす
+            self.cube(name, (cx - r, y0 + e, cz - half_w), (cx + r, y1 - e, cz + half_w), mat,
+                      rot=[0, ang, 0] if ang else None, pivot=[cx, y0, cz], group=group)
 
     def group(self, name, origin=(0, 0, 0), parent=None):
         self.groups[name] = (list(origin), parent)
@@ -222,7 +334,10 @@ class HiRes:
             x0, y0 = pos[(ci, f)]
             mat = MATS[c["mat"]] if isinstance(c["mat"], str) else c["mat"]
             along = c["along"] or ("u" if f in ("north", "south", "up", "down") else "u")
-            paint(img, x0, y0, w, h, mat, f, self.rng, along, self.mc)
+            if self.real:
+                paint_real(img, x0, y0, w, h, mat, f, self.rng, along, seed=ci * 31 + FACES.index(f) * 7 + 1)
+            else:
+                paint(img, x0, y0, w, h, mat, f, self.rng, along, self.mc)
             if c["decal"]:
                 c["decal"](draw, f, x0, y0, w, h)
         self.atlas = img

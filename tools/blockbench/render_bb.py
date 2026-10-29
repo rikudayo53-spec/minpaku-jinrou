@@ -167,7 +167,7 @@ for k, yaw in enumerate(yaws):
     cam.location = center + Vector((math.sin(a) * math.cos(p), -math.cos(a) * math.cos(p), math.sin(p))) * dist
     direction = center - cam.location
     cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
-    fp = os.path.join(tempfile.gettempdir(), f"bbrender_{k}.png")
+    fp = os.path.join(tempfile.gettempdir(), f"bbrender_{os.getpid()}_{k}.png")
     scene.render.filepath = fp
     bpy.ops.render.render(write_still=True)
     tiles.append(Image.open(fp).convert("RGB"))
