@@ -36,11 +36,11 @@ MATS.update({
 })
 
 
-def I(name, d=10):
+def I(name, d=24):
     return HiRes(name, density=d, real=True)
 
 
-def ring(m, name, cx, cy, cz, r, thick, depth, mat, seg=10, plane="xy", group=None):
+def ring(m, name, cx, cy, cz, r, thick, depth, mat, seg=20, plane="xy", group=None):
     """輪（短い板を円に並べる）。plane = "xy"（正面から見て丸）/ "xz"（上から見て丸）"""
     ln = 2 * (r + thick / 2) * math.tan(math.pi / seg) + thick * 0.15
     for k in range(seg):
@@ -76,7 +76,7 @@ def text_decal(chars, color=(70, 44, 24, 255), faces=("north", "south"), size=0.
 # ---------------------------------------------------------------- 管理人の鍵（名札「民泊」）
 def manager_key():
     m = I("manager_key")
-    ring(m, "bow", 0, 12.5, 0, 2.0, 0.9, 0.9, "gold_i", seg=12)
+    ring(m, "bow", 0, 12.5, 0, 2.0, 0.9, 0.9, "gold_i", seg=24)
     m.cube("collar", (-0.9, 9.6, -0.55), (0.9, 10.3, 0.55), "gold_dark_i")
     m.cube("shaft", (-0.5, 2.4, -0.45), (0.5, 10.4, 0.45), "gold_i")
     m.cube("tip", (-0.6, 2.0, -0.5), (0.6, 2.6, 0.5), "gold_dark_i")
@@ -94,19 +94,25 @@ def manager_key():
 # ---------------------------------------------------------------- 占い師の水晶玉
 def seer_crystal():
     m = I("seer_crystal")
-    m.cyl("base", 0, 0, 0, 0.8, 3.8, "gold_i", sides=6)
-    m.cyl("base2", 0, 0, 0.8, 1.6, 3.2, "gold_dark_i", sides=6)
-    m.cyl("stem", 0, 0, 1.6, 2.4, 2.2, "gold_i", sides=6)
+    m.cyl("base", 0, 0, 0, 0.8, 3.8, "gold_i", sides=12)
+    m.cyl("base2", 0, 0, 0.8, 1.6, 3.2, "gold_dark_i", sides=12)
+    m.cyl("stem", 0, 0, 1.6, 2.4, 2.2, "gold_i", sides=12)
     for k in range(4):           # 4本の爪で玉を支える
         a = math.radians(45 + k * 90)
         x, z = math.cos(a) * 2.3, math.sin(a) * 2.3
         m.cube("claw", (x - 0.35, 2.0, z - 0.35), (x + 0.35, 4.6, z + 0.35), "gold_i")
-    m.cyl("cushion", 0, 0, 2.3, 3.1, 2.6, "purple_i", sides=6)
+    m.cyl("cushion", 0, 0, 2.3, 3.1, 2.6, "purple_i", sides=12)
     # 中で光る芯と、まわりのガラス（段を重ねて丸く）
-    m.cyl("glow_core", 0, 0, 4.9, 7.3, 1.2, "glow_core", sides=4)
+    m.cyl("glow_core", 0, 0, 4.9, 7.3, 1.2, "glow_core", sides=8)
     m.cube("glow_core2", (-0.7, 5.4, -0.7), (0.7, 6.8, 0.7), "glow_core", rot=[45, 0, 45], pivot=[0, 6.1, 0])
-    for (y0, y1, r) in ((3.1, 3.8, 2.0), (3.8, 4.8, 3.1), (4.8, 6.4, 3.6), (6.4, 7.6, 3.2), (7.6, 8.5, 2.3), (8.5, 9.0, 1.2)):
-        m.cyl("glass_ball", 0, 0, y0, y1, r, "glass_blue", sides=6)
+    # ガラス玉：薄い輪切りを重ねて丸く（中心 y=6.0、半径 3.6）
+    n = 16
+    for k in range(n):
+        y0 = 3.0 + 6.0 * k / n
+        y1 = 3.0 + 6.0 * (k + 1) / n
+        yc = (y0 + y1) / 2 - 6.0
+        r = math.sqrt(max(0.05, 3.6 ** 2 * (1 - (yc / 3.0) ** 2)))
+        m.cyl("glass_ball", 0, 0, y0, y1, max(0.6, r), "glass_blue", sides=12)
     return m
 
 
@@ -120,7 +126,7 @@ def knight_charm():
     m.cube("label", (-1.1, 2.4, -0.85), (1.1, 7.6, -0.75), "washi_i", decal=text_decal("御守", faces=("north",)))
     # 白いひもの結び目と輪
     m.cube("knot", (-0.6, 10.4, -0.6), (0.6, 11.3, 0.6), "white_cord")
-    ring(m, "loop", 0, 12.4, 0, 1.1, 0.45, 0.45, "white_cord", seg=8)
+    ring(m, "loop", 0, 12.4, 0, 1.1, 0.45, 0.45, "white_cord", seg=16)
     return m
 
 
@@ -152,27 +158,34 @@ def sabotage_talisman():
 # ---------------------------------------------------------------- 探偵の虫めがね
 def detective_lens():
     m = I("detective_lens")
-    ring(m, "rim", 0, 10.0, 0, 3.4, 0.8, 0.9, "brass_i", seg=14)
-    for (rr, d) in ((3.0, 0.3), (2.0, 0.32), (1.0, 0.34)):
-        m.cube("glass_lens", (-rr, 10.0 - rr * 0.95, -d / 2), (rr, 10.0 + rr * 0.95, d / 2), "glass_lens")
-        m.cube("glass_lens", (-rr * 0.95, 10.0 - rr, -d / 2), (rr * 0.95, 10.0 + rr, d / 2), "glass_lens")
+    ring(m, "rim", 0, 10.0, 0, 3.4, 0.8, 0.9, "brass_i", seg=28)
+    # レンズ：枠の内側（半径 3.0）にぴったり収まる円。細い横の帯を並べて丸くする（枠からはみ出さない）
+    R = 3.0
+    n = 24
+    for k in range(n):
+        y0 = -R + 2 * R * k / n
+        y1 = -R + 2 * R * (k + 1) / n
+        yc = max(abs(y0), abs(y1))
+        half = math.sqrt(max(0.0, R * R - yc * yc))
+        if half > 0.05:
+            m.cube("glass_lens", (-half, 10.0 + y0, -0.15), (half, 10.0 + y1, 0.15), "glass_lens")
     m.cube("shine", (-2.0, 11.2, -0.2), (-1.4, 12.4, -0.16), "washi_i")
     m.cube("neck", (-0.55, 5.6, -0.55), (0.55, 6.8, 0.55), "brass_i")
-    m.cyl("ferrule", 0, 0, 4.8, 5.8, 0.75, "brass_i", sides=4)
-    m.cyl("handle", 0, 0, 0.0, 4.8, 0.7, "wood_dark_i", sides=4)
-    m.cyl("end", 0, 0, -0.4, 0.2, 0.85, "brass_i", sides=4)
+    m.cyl("ferrule", 0, 0, 4.8, 5.8, 0.75, "brass_i", sides=8)
+    m.cyl("handle", 0, 0, 0.0, 4.8, 0.7, "wood_dark_i", sides=8)
+    m.cyl("end", 0, 0, -0.4, 0.2, 0.85, "brass_i", sides=8)
     return m
 
 
 # ---------------------------------------------------------------- 女将の鍵束
 def okami_keyring():
     m = I("okami_keyring")
-    ring(m, "ring", 0, 11.5, 0, 2.6, 0.5, 0.5, "iron_i", seg=14)
+    ring(m, "ring", 0, 11.5, 0, 2.6, 0.5, 0.5, "iron_i", seg=28)
     for k, ang in enumerate((-35, 0, 35)):
         a = math.radians(ang)
         x = math.sin(a) * 2.6
         y = 11.5 - math.cos(a) * 2.6
-        ring(m, "bow", x, y - 0.9, 0, 0.7, 0.3, 0.3, "copper_i", seg=8)
+        ring(m, "bow", x, y - 0.9, 0, 0.7, 0.3, 0.3, "copper_i", seg=16)
         m.cube("shaft", (x - 0.25, y - 7.6, -0.25), (x + 0.25, y - 1.6, 0.25), "copper_i",
                rot=[0, 0, ang * 0.6], pivot=[x, y - 1.6, 0])
         m.cube("bit", (x + 0.25, y - 7.4, -0.22), (x + 1.2, y - 6.6, 0.22), "copper_i", rot=[0, 0, ang * 0.6], pivot=[x, y - 1.6, 0])
@@ -204,13 +217,19 @@ def itamae_onigiri():
 # ---------------------------------------------------------------- ナイスボタナーの呼び鈴
 def buttoner_bell():
     m = I("buttoner_bell")
-    m.cyl("base", 0, 0, 0, 0.9, 3.8, "wood_dark_i", sides=6)
-    m.cyl("felt", 0, 0, 0.9, 1.2, 3.4, "red_i", sides=6)
-    for (y0, y1, r) in ((1.2, 1.6, 3.2), (1.6, 2.6, 3.0), (2.6, 3.5, 2.5), (3.5, 4.1, 1.8), (4.1, 4.4, 1.0)):
-        m.cyl("dome", 0, 0, y0, y1, r, "brass_i", sides=6)
-    m.cyl("ring", 0, 0, 1.4, 1.7, 3.3, "gold_i", sides=6)
-    m.cyl("stem", 0, 0, 4.4, 5.1, 0.35, "iron_i", sides=4)
-    m.cyl("button", 0, 0, 5.1, 5.8, 0.75, "red_i", sides=4)
+    m.cyl("base", 0, 0, 0, 0.9, 3.8, "wood_dark_i", sides=12)
+    m.cyl("felt", 0, 0, 0.9, 1.2, 3.4, "red_i", sides=12)
+    # 鐘の丸い屋根：なめらかな輪切り
+    n = 12
+    for k in range(n):
+        y0 = 1.2 + 3.2 * k / n
+        y1 = 1.2 + 3.2 * (k + 1) / n
+        f = (y0 + y1) / 2 - 1.2
+        r = 3.2 * math.sqrt(max(0.02, 1 - (f / 3.3) ** 2))
+        m.cyl("dome", 0, 0, y0, y1, r, "brass_i", sides=12)
+    m.cyl("ring", 0, 0, 1.4, 1.7, 3.3, "gold_i", sides=12)
+    m.cyl("stem", 0, 0, 4.4, 5.1, 0.35, "iron_i", sides=8)
+    m.cyl("button", 0, 0, 5.1, 5.8, 0.75, "red_i", sides=8)
     return m
 
 

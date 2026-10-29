@@ -710,8 +710,8 @@ MATS.update({
     "letter_pink": Mat((246, 214, 222), "paper", noise=4),
     "letter_blue": Mat((214, 230, 246), "paper", noise=4),
     "red_post": Mat((176, 38, 30), "metal", noise=5),
-    "glass_bowl": Mat((210, 236, 255), "water", accent=(240, 250, 255), alpha=90),
-    "water_clear": Mat((120, 180, 230), "water", accent=(170, 215, 250), alpha=150),
+    "glass_bowl": Mat((225, 242, 255), "plain", noise=1, alpha=38),
+    "water_clear": Mat((150, 200, 240), "plain", noise=2, alpha=60),
     "goldfish": Mat((236, 92, 30), "metal", noise=6),
     "goldfish_tail": Mat((246, 150, 90), "paper", noise=4, alpha=210),
     "food": Mat((150, 96, 50), "stipple", noise=8),
@@ -767,9 +767,23 @@ def goldfish_bowl():
         m.cube("fish", (8 + r - 0.5, y - 0.6, 7.0), (8 + r + 0.5, y + 0.6, 9.0), "goldfish", group=g)
         m.cube("tail", (8 + r - 0.05, y - 0.8, 9.0), (8 + r + 0.05, y + 0.8, 10.4), "goldfish_tail", group=g)
         m.cube("eye", (8 + r - 0.55, y + 0.1, 7.2), (8 + r + 0.55, y + 0.4, 7.5), "black", group=g)
-    m.cyl("glass_water", 8, 8, 7.4, 13.2, 4.6, "water_clear", sides=6)
-    for (y0, y1, r) in ((7, 8, 3.6), (8, 10, 5.0), (10, 12.6, 5.3), (12.6, 14, 4.6), (14, 14.8, 3.6)):
-        m.cyl("glass_bowl", 8, 8, y0, y1, r, "glass_bowl", sides=6)
+    # 水とガラスは重ねると濁って見えるので、重ならない形で作る
+    #  水：上から見て丸くなるよう、細い帯を横に並べる（帯どうしは重ならない）
+    import math as _m
+    R = 4.6
+    n = 14
+    for k in range(n):
+        x0 = -R + 2 * R * k / n
+        x1 = -R + 2 * R * (k + 1) / n
+        xc = max(abs(x0), abs(x1))
+        half = _m.sqrt(max(0.0, R * R - xc * xc))
+        if half > 0.1:
+            skip = (("west",) if k > 0 else ()) + (("east",) if k < n - 1 else ())   # 帯のあいだの面は描かない
+            m.cube("glass_water", (8 + x0, 7.4, 8 - half), (8 + x1, 13.2, 8 + half), "water_clear", skip=skip)
+    #  ガラス：うすい板をぐるっと並べた殻（輪切りごと）
+    from items_hires import ring
+    for (y0, y1, r) in ((7, 8, 3.8), (8, 10, 5.1), (10, 12.6, 5.4), (12.6, 14, 4.8), (14, 14.8, 3.8)):
+        ring(m, "glass_bowl", 8, (y0 + y1) / 2, 8, r, 0.12, y1 - y0, "glass_bowl", seg=18, plane="xz")
     m.cube("weed", (5.5, 7.4, 9), (6.3, 12, 9.8), "green_cloth", rot=(0, 0, 8), pivot=(6, 7.4, 9.4))
     m.cube("pebbles", (5, 7.2, 5), (11, 7.8, 11), "rock")
     # えさ（上から落ちる）

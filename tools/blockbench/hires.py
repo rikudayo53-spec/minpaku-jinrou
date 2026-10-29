@@ -241,8 +241,10 @@ def paint_real(img, x0, y0, w, h, mat, face, rng, along="u", seed=1):
                 c = shade(c, 0.7)
             if not mat.glow:
                 c = tuple(clamp(a + (n2 * mat.noise * 0.5)) for a in c[:3])
-            # ふち：上と左は光、下と右は影（面取りしたように見える）
-            if j == 0 or i == 0:
+            # ふち：上と左は光、下と右は影（面取りしたように見える）。透明なもの（ガラス）はふちを描かない
+            if mat.alpha < 128:
+                pass
+            elif j == 0 or i == 0:
                 c = mix(c, (255, 255, 255), 0.12) if not mat.glow else c
             elif j == h - 1 or i == w - 1:
                 c = shade(c, 0.8)
@@ -285,10 +287,10 @@ class HiRes:
         self.group_order.append(name)
         return name
 
-    def cube(self, name, frm, to, mat, rot=None, pivot=None, group=None, decal=None, along=None):
+    def cube(self, name, frm, to, mat, rot=None, pivot=None, group=None, decal=None, along=None, skip=()):
         """decal = 面ごとに追加で描く関数 decal(draw, face, x0, y0, w, h)"""
         self.cubes.append(dict(name=name, frm=list(frm), to=list(to), mat=mat, rot=rot, pivot=pivot, group=group,
-                               decal=decal, along=along))
+                               decal=decal, along=along, skip=tuple(skip)))
 
     # ---- アトラス
     def _face_size(self, c, f):
@@ -359,7 +361,7 @@ class HiRes:
             for f in FACES:
                 w, h = self._face_size(c, f)
                 x0, y0 = self.uv[(ci, f)]
-                faces[f] = {"uv": [x0, y0, x0 + w, y0 + h], "texture": 0}
+                faces[f] = {"uv": [x0, y0, x0 + w, y0 + h], "texture": 0 if f not in c.get("skip", ()) else None}
             u = uid()
             el_uuid.append(u)
             pivot = c["pivot"] or [(a + b) / 2 for a, b in zip(c["frm"], c["to"])]
@@ -430,6 +432,8 @@ class HiRes:
                 cube["pivot"] = [X(piv[0]), round(piv[1], 4), round(piv[2] - oz, 4)]
                 cube["rotation"] = [-c["rot"][0], -c["rot"][1], c["rot"][2]]
             for f in FACES:
+                if f in c.get("skip", ()):
+                    continue
                 w, h = self._face_size(c, f)
                 x0, y0 = self.uv[(ci, f)]
                 if f in ("up", "down"):
