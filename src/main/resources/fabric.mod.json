@@ -23,7 +23,7 @@
     "minecraft": "~1.21.1",
     "java": ">=21",
     "geckolib": ">=4.7",
-    "player-animator": ">=2.0"
+    "playeranimator": ">=2.0"
   },
   "mixins": [
     "minpaku.mixins.json"
