@@ -87,8 +87,11 @@ public final class SelfTest {
             sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 180f, 0f);
             GameManager gm = GameManager.get(sp.server);
             gm.stop(null);
+            if (sp.isDeadOrDying()) {
+                sp.setHealth(sp.getMaxHealth());
+            }
             gm.buildMap(sp, com.minpaku.game.Plans.ALL.get(i));
-            sp.setYRot(180f);
+            sp.setGameMode(GameType.SPECTATOR);
             sp.teleportTo(sp.serverLevel(), sp.getX(), sp.getY() + 0.2, sp.getZ(), 180f, 10f);
         });
     }
@@ -97,6 +100,7 @@ public final class SelfTest {
     private static void aerial(Minecraft mc, int i) {
         com.minpaku.game.MapPlan p = com.minpaku.game.Plans.ALL.get(i);
         server(mc, sp -> {
+            sp.setGameMode(GameType.SPECTATOR);
             double h = Math.max(p.w, p.d) * 0.75 + 12;
             sp.teleportTo(sp.serverLevel(), sp.getX(), sp.getY() + h, sp.getZ() + 8, 180f, 62f);
         });
@@ -104,7 +108,11 @@ public final class SelfTest {
 
     /** 家具の前に立って、タスクの動きを再生する */
     private static void furniture(Minecraft mc, MarkerType type) {
+        if (mc.screen != null) {
+            mc.setScreen(null);
+        }
         server(mc, sp -> {
+            GameManager.get(sp.server).stop(null);
             List<BlockPos> list = MapData.get(sp.serverLevel()).get(type);
             if (list.isEmpty()) {
                 return;
