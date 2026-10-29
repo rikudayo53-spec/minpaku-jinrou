@@ -114,6 +114,11 @@ public final class GameCommands {
                                                                                 + StringArgumentType.getString(ctx, "variant"),
                                                                         EntityArgument.getPlayer(ctx, "killer")))))))
                                 .then(simple("eject", "wolf", "wolf", "villager", "hidden", "teru"))
+                                .then(Commands.literal("evilgod").executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                                    ServerPlayNetworking.send(p, new Packets.Info("evil_god", p.getBlockX() + "," + p.getBlockY() + "," + p.getBlockZ()));
+                                    return 1;
+                                }))
                                 .then(Commands.literal("skip").executes(ctx -> send(ctx.getSource().getPlayerOrException(), "skip", "", null)))
                                 .then(simple("reveal", "wolf", roleIds))
                                 .then(simple("meeting", "report", "report", "bell"))

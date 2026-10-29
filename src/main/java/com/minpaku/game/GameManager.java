@@ -1178,7 +1178,7 @@ public final class GameManager {
             return;
         }
         Role r = Role.byId(body.killerRole);
-        String how = switch (r.finisherId()) {
+        String how = r == Role.SHERIFF ? "短筒で撃たれた跡" : switch (r.finisherId()) {
             case "shinobi" -> "口をふさがれ、押し入れへ";
             case "kairiki" -> "ちゃぶ台ごと投げ飛ばされた";
             case "juro" -> "呪符と青い鬼火";
