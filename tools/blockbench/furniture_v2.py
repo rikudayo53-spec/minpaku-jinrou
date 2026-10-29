@@ -1087,8 +1087,246 @@ def dust_pile():
     m.cube("cap", (7.3, 6.0, 8.5), (8.7, 7.2, 9.5), "broom_tie", group="broom")
     return m
 
+# ---------------------------------------------------------------- 17〜20 で使う材質
+MATS.update({
+    "take": Mat((190, 176, 104), "bamboo", accent=(150, 138, 70), noise=4),
+    "take_node": Mat((150, 138, 74), "metal", noise=4),
+    "cloth_w": Mat((240, 238, 230), "stipple", noise=4),
+    "yukata": Mat((60, 84, 150), "stipple", noise=5),
+    "yukata_pat": Mat((240, 236, 226), "stipple", noise=3),
+    "tenugui": Mat((226, 120, 120), "stipple", noise=5),
+    "pin": Mat((200, 170, 120), "wood", noise=4),
+    "celadon": Mat((150, 190, 172), "metal", noise=5),
+    "celadon_d": Mat((112, 152, 136), "metal", noise=5),
+    "petal_pink": Mat((240, 150, 176), "stipple", noise=6),
+    "petal_red": Mat((206, 46, 52), "stipple", noise=6),
+    "petal_y": Mat((246, 206, 70), "stipple", noise=6),
+    "flower_c": Mat((250, 220, 90), "stipple", noise=6),
+    "stem_g": Mat((80, 130, 56), "plain", noise=4),
+    "leaf_dk": Mat((60, 110, 46), "stone", noise=8),
+    "copper_can": Mat((182, 108, 66), "metal", noise=8),
+    "cab_wood": Mat((150, 108, 66), "wood", accent=(120, 82, 46), noise=5),
+    "cab_panel": Mat((170, 126, 80), "wood", accent=(138, 98, 58), noise=5),
+    "counter_s": Mat((140, 140, 136), "stone", noise=8),
+    "sink_steel": Mat((196, 200, 204), "metal", noise=5),
+    "plate": Mat((246, 244, 238), "plaster", noise=3),
+    "plate_rim": Mat((60, 90, 150), "plain", noise=3),
+    "plate_dirty": Mat((214, 196, 160), "stipple", noise=10),
+    "water_f": Mat((120, 176, 220), "water", accent=(190, 225, 245), alpha=150),
+    "getabako": Mat((132, 92, 56), "wood", accent=(104, 70, 40), noise=5),
+    "sneaker": Mat((236, 236, 232), "stipple", noise=4),
+    "sneaker_line": Mat((210, 50, 40), "plain", noise=3),
+    "leather": Mat((70, 44, 30), "metal", noise=6),
+})
+
+
+def flower(m, name, x, y, z, color, g, r=1.2):
+    """花：まん中の芯と、十字と斜めに重ねた花びら"""
+    m.cube(name, (x - r, y - 0.25, z - 0.4), (x + r, y + 0.25, z + 0.4), color, group=g)
+    m.cube(name, (x - 0.4, y - 0.25, z - r), (x + 0.4, y + 0.25, z + r), color, group=g)
+    m.cube(name, (x - r * 0.8, y - 0.2, z - 0.35), (x + r * 0.8, y + 0.2, z + 0.35), color, rot=[0, 45, 0], pivot=[x, y, z], group=g)
+    m.cube(name, (x - r * 0.8, y - 0.2, z - 0.35), (x + r * 0.8, y + 0.2, z + 0.35), color, rot=[0, -45, 0], pivot=[x, y, z], group=g)
+    m.cube(name + "_c", (x - 0.4, y, z - 0.4), (x + 0.4, y + 0.5, z + 0.4), "flower_c", group=g)
+
+
+def bent(m, name, pts, w, mat, group=None):
+    """折れ線（茎・取っ手など）：点 (x,y,z) を細い棒でつなぐ（xy 平面の向きだけ曲げる）"""
+    for (xa, ya, za), (xb, yb, zb) in zip(pts, pts[1:]):
+        ln = math.dist((xa, ya, za), (xb, yb, zb))
+        cx, cy, cz = (xa + xb) / 2, (ya + yb) / 2, (za + zb) / 2
+        rz = math.degrees(math.atan2(-(xb - xa), yb - ya))
+        rx = math.degrees(math.atan2(zb - za, math.hypot(xb - xa, yb - ya)))
+        m.cube(name, (cx - w / 2, cy - ln / 2 - 0.05, cz - w / 2), (cx + w / 2, cy + ln / 2 + 0.05, cz + w / 2), mat,
+               rot=[rx, 0, rz], pivot=[cx, cy, cz], group=group)
+
+
+# ---------------------------------------------------------------- 17 物干し
+
+def laundry_pole():
+    import random
+    rng = random.Random(17)
+    m = F("laundry_pole", 5)
+    for x in (-3, 17):
+        rough(m, "stone", (x - 1, 0, 6), (x + 3, 2, 10), "granite", rng, lumps=4, depth=0.2)
+        m.cyl("post", x + 1, 8, 2, 28, 0.9, "take", sides=4)
+        for y in (8, 14, 20):
+            m.cyl("node", x + 1, 8, y, y + 0.4, 1.05, "take_node", sides=4)
+        # 二股（Y）の先
+        m.cube("fork", (x + 0.6, 26, 7.6), (x + 1.4, 29, 8.4), "take", rot=[0, 0, 20], pivot=[x + 1, 26, 8])
+        m.cube("fork", (x + 0.6, 26, 7.6), (x + 1.4, 29, 8.4), "take", rot=[0, 0, -20], pivot=[x + 1, 26, 8])
+    cylx(m, "pole", 27, 8, -4, 20, 0.75, "take", sides=4)
+    for x in (2, 8, 14):
+        cylx(m, "pole_node", 27, 8, x, x + 0.4, 0.9, "take_node", sides=4)
+    # 洗濯物：しわ（細い帯を前後にずらして並べる）、洗濯ばさみ
+    cloths = [("cloth_w", -0.5, 3.5, 9), ("yukata", 4.5, 10.5, 11), ("tenugui", 11.5, 14.5, 8), ("cloth_w", 15, 17.5, 12)]
+    for i, (mat, x0, x1, h) in enumerate(cloths):
+        g = m.group(f"cloth{i}", ((x0 + x1) / 2, 26, 8))
+        n = max(3, int((x1 - x0) / 0.8))
+        for k in range(n):
+            xa = x0 + (x1 - x0) * k / n
+            xb = x0 + (x1 - x0) * (k + 1) / n
+            dz = 0.25 * math.sin(k * 1.7)
+            hh = h - (0.6 if k % 3 == 1 else 0)
+            m.cube("cloth", (xa, 26 - hh, 7.65 + dz), (xb + 0.02, 26.2, 8.35 + dz), mat, group=g)
+        if mat == "yukata":
+            for k in range(6):
+                y = 26 - 1.5 - k * 1.5
+                m.cube("pattern", (x0 + 0.6 + (k % 2) * 2, y, 7.5), (x0 + 1.4 + (k % 2) * 2, y + 0.8, 7.6), "yukata_pat", group=g)
+        for xp in (x0 + 0.3, x1 - 0.7):
+            m.cube("pin", (xp, 25.2, 7.4), (xp + 0.4, 27.6, 8.6), "pin", group=g)
+    # 洗濯かごとたたんだ服
+    m.cyl("basket", 7, -1, 0, 3.6, 4.0, "kago", sides=6)
+    m.cyl("basket_rim", 7, -1, 3.4, 3.9, 4.2, "hinoki_dark", sides=6)
+    for k, mat in enumerate(("yukata", "cloth_w", "tenugui")):
+        bevel(m, "folded", (4.2 + k * 0.3, 3.0 + k * 0.6, -3.4), (9.8 - k * 0.3, 3.6 + k * 0.6, 1.2), mat, b=0.15)
+    return m
+
+
+# ---------------------------------------------------------------- 18 花瓶
+
+def flower_vase():
+    m = F("flower_vase", 6)
+    # 台：漆の花台、脚
+    bevel(m, "stand", (0, 3, 0), (16, 4.2, 16), "urushi_k", b=0.3)
+    for (x, z) in ((0.6, 0.6), (13.6, 0.6), (0.6, 13.6), (13.6, 13.6)):
+        bevel(m, "stand_leg", (x, 0, z), (x + 1.8, 3, z + 1.8), "urushi_k", b=0.25)
+    m.cube("shikiita", (4, 4.2, 4), (12, 4.5, 12), "hinoki")
+    # 花瓶：青磁、ふくらみと首、口の縁（輪切りでなめらかに）
+    prof = [(4.5, 2.6), (5.5, 3.2), (6.5, 3.6), (7.5, 3.7), (8.5, 3.5), (9.5, 3.0), (10.5, 2.3), (11.5, 1.7), (12.5, 1.5),
+            (13.5, 1.6), (14.2, 2.0)]
+    for (ya, ra), (yb, rb) in zip(prof, prof[1:]):
+        m.cyl("vase", 8, 8, ya, yb, (ra + rb) / 2, "celadon", sides=8)
+    m.cyl("vase_lip", 8, 8, 14.2, 14.7, 2.2, "celadon_d", sides=8)
+    m.cyl("vase_mouth", 8, 8, 14.68, 14.72, 1.6, "deep_dark", sides=6)
+    # 花（茎は曲がり、葉がつき、花びらが重なる）
+    m.group("flowers", (8, 15, 8))
+    for i, (dx, dz, ln, col) in enumerate(((-1.2, -0.6, 9, "petal_pink"), (1.0, 0.4, 11, "petal_red"), (0.0, 1.0, 13, "petal_y"),
+                                           (-0.6, 0.8, 8, "petal_pink"))):
+        top = (8 + dx * 2.6, 14.5 + ln, 8 + dz * 2.0)
+        mid = (8 + dx * 1.2, 14.5 + ln * 0.5, 8 + dz)
+        bent(m, "stem", [(8 + dx * 0.4, 14, 8 + dz * 0.3), mid, top], 0.4, "stem_g", group="flowers")
+        flower(m, "petal", top[0], top[1] + 0.3, top[2], col, "flowers", r=1.3 if i != 2 else 1.6)
+        m.cube("leaf", (mid[0], mid[1], mid[2] - 0.2), (mid[0] + 2.2, mid[1] + 0.3, mid[2] + 0.6), "leaf_dk",
+               rot=[0, i * 80, 25], pivot=[mid[0], mid[1], mid[2]], group="flowers")
+    # じょうろ（銅）：胴・注ぎ口・はす口・取っ手
+    m.group("can", (16, 22, 8), rot=(0, 0, 25))
+    m.cyl("can_body", 16, 8, 19, 24, 2.6, "copper_can", sides=8, group="can")
+    m.cyl("can_top", 16, 8, 24, 24.6, 1.8, "copper_can", sides=6, group="can")
+    bent(m, "spout", [(13.6, 20.2, 8), (11.5, 21.6, 8), (9.6, 22.6, 8)], 0.6, "copper_can", group="can")
+    m.cube("rose", (8.6, 22.0, 7.2), (9.8, 23.4, 8.8), "copper_can", group="can")
+    bent(m, "handle", [(18.4, 20, 8), (19.6, 22.5, 8), (18.6, 25.2, 8), (16.6, 25.4, 8)], 0.5, "copper_can", group="can")
+    return m
+
+
+# ---------------------------------------------------------------- 19 流し台
+
+def kitchen_sink():
+    import random
+    rng = random.Random(19)
+    m = F("kitchen_sink", 5)
+    # 下の戸棚：框（かまち）が出っぱり、鏡板がへこむ、つまみ
+    bevel(m, "cabinet", (-2, 0, 2.6), (18, 14, 16), "cab_wood", b=0.3)
+    for x0 in (-1.6, 8.2):
+        for (a, b) in (((x0, 0.8), (x0 + 9.4, 1.6)), ((x0, 12.4), (x0 + 9.4, 13.2)), ((x0, 1.6), (x0 + 0.8, 12.4)),
+                       ((x0 + 8.6, 1.6), (x0 + 9.4, 12.4))):
+            bevel(m, "stile", (a[0], a[1], 2.0), (b[0], b[1], 2.6), "cab_wood", b=0.12)
+        m.cube("panel", (x0 + 0.8, 1.6, 2.35), (x0 + 8.6, 12.4, 2.6), "cab_panel")
+        bevel(m, "knob", (x0 + (8.0 if x0 < 0 else 0.9), 6.4, 1.4), (x0 + (8.5 if x0 < 0 else 1.4), 8.6, 2.0), "hinoki_dark", b=0.1)
+    m.cube("kick", (-1.6, 0, 2.4), (17.6, 0.8, 2.7), "hinoki_dark")
+    # 石の天板（ふちを落とす）と、くぼんだ流し（壁と底が別）
+    bevel(m, "counter", (-3, 14, 1), (19, 15.4, 17), "counter_s", b=0.3)
+    m.cube("basin_floor", (1, 14.6, 5), (11, 15.0, 13), "sink_steel")
+    for (a, b) in (((0, 4), (12, 5)), ((0, 13), (12, 14)), ((0, 5), (1, 13)), ((11, 5), (12, 13))):
+        bevel(m, "basin_wall", (a[0], 14.6, a[1]), (b[0], 17.6, b[1]), "sink_steel", b=0.15)
+    m.cube("drain", (5.4, 15.0, 8.4), (6.6, 15.05, 9.6), "deep_dark")
+    m.cube("glass_water", (1, 15.0, 5), (11, 16.0, 13), "water_f")
+    # 筧（かけい）：竹の管が上から水を引く
+    m.cyl("pipe_up", 14, 8, 15.4, 27, 0.9, "take", sides=4)
+    for y in (18, 22, 26):
+        m.cyl("pipe_node", 14, 8, y, y + 0.4, 1.05, "take_node", sides=4)
+    cylx(m, "pipe_arm", 25.6, 8, 5.4, 14.8, 0.75, "take", sides=4)
+    m.cube("pipe_cut", (5.0, 24.8, 7.2), (5.4, 26.4, 8.8), "take_node")
+    m.group("stream", (6, 25, 8))
+    m.cube("glass_stream", (5.6, 16, 7.6), (6.4, 25, 8.4), "water_f", group="stream")
+    m.cube("glass_splash", (4.6, 16.0, 6.6), (7.4, 16.3, 9.4), "water_f", group="stream")
+    # 汚れた皿（流しの中に重ねる）と、きれいな皿（水切りかごに立てる）
+    for i in range(5):
+        g = m.group(f"dirty{i}", (6, 16 + i * 0.7, 9))
+        y = 16 + i * 0.7
+        ox = (i % 2) * 0.5
+        m.cyl("dish", 6 + ox, 9, y, y + 0.35, 2.8, "plate_dirty", sides=6, group=g)
+        m.cyl("dish_rim", 6 + ox, 9, y + 0.3, y + 0.55, 3.0, "plate", sides=6, group=g)
+    bevel(m, "rack", (12.6, 15.4, 9.6), (19, 16.2, 16.8), "take", b=0.15)
+    for k in range(7):
+        x = 12.8 + k * 0.95
+        m.cube("rack_bar", (x, 16.2, 9.8), (x + 0.3, 19.4, 10.2), "take")
+        m.cube("rack_bar", (x, 16.2, 16.2), (x + 0.3, 19.4, 16.6), "take")
+    for i in range(5):
+        g = m.group(f"clean{i}", (14 + i * 1.1, 19, 13))
+        x = 13.6 + i * 1.1
+        m.cube("dish", (x, 16.2, 10.6), (x + 0.4, 21.6, 15.8), "plate", rot=[0, 0, -8], pivot=[x, 16.2, 13], group=g)
+        m.cube("dish_rim", (x - 0.05, 16.4, 10.4), (x + 0.45, 21.8, 10.7), "plate_rim", rot=[0, 0, -8], pivot=[x, 16.2, 13],
+               group=g)
+    # 洗い道具：たわしとふきん
+    bevel(m, "tawashi", (-2.4, 15.4, 2.0), (0.2, 16.6, 4.0), "kago", b=0.3)
+    m.cube("fukin", (-2.6, 15.4, 13.0), (0.2, 15.7, 16.4), "cloth_w")
+    return m
+
+
+# ---------------------------------------------------------------- 20 下駄箱
+
+def shoe_rack():
+    m = F("shoe_rack", 5)
+    # 本体：背板、側板（ふちを落とす）、棚板、仕切り。上に一輪挿しと敷物
+    bevel(m, "back", (0, 0, 15), (16, 22, 16), "getabako", b=0.15)
+    for x in (0, 15):
+        bevel(m, "side", (x, 0, 3.6), (x + 1, 22.6, 16), "getabako", b=0.2)
+    bevel(m, "top", (-0.4, 21.6, 3.2), (16.4, 22.8, 16.2), "getabako", b=0.3)
+    bevel(m, "bottom", (0.6, 0, 3.8), (15.4, 1.2, 15.4), "getabako", b=0.15)
+    bevel(m, "shelf", (1, 10.4, 4.0), (15, 11.4, 15.2), "getabako", b=0.15)
+    bevel(m, "divider", (7.5, 1.2, 4.0), (8.5, 21.6, 15.2), "getabako", b=0.15)
+    m.cube("kick", (0.6, 0, 3.4), (15.4, 1.0, 3.8), "hinoki_dark")
+    m.cube("cloth", (2, 22.8, 6.8), (7, 23.0, 12.2), "red_cloth")
+    m.cyl("ichirin", 4.5, 9.5, 23.0, 26.4, 0.9, "celadon", sides=6)
+    m.cyl("ichirin_neck", 4.5, 9.5, 26.4, 27.4, 0.45, "celadon_d", sides=4)
+    bent(m, "stem", [(4.5, 27, 9.5), (5.4, 30, 9.2)], 0.3, "stem_g")
+    flower(m, "petal", 5.4, 30.4, 9.2, "petal_red", None, r=0.9)
+    m.cyl("pot", 12.5, 9.5, 22.8, 25.8, 1.6, "celadon_d", sides=6)
+    for k in range(5):
+        m.cube("plant", (11.6, 25.6, 9.3), (13.4, 29 - (k % 2), 9.7), "leaf_dk", rot=[15, k * 72, 0], pivot=[12.5, 25.6, 9.5])
+    # 靴：下駄・草履・運動靴・革靴（左右1足ずつ）
+    cub = ((1.5, 1.2), (9, 1.2), (1.5, 11.4), (9, 11.4))
+    kinds = ("geta", "sneaker", "zori", "leather")
+    k = 0
+    for i in range(4):
+        for s_ in range(2):
+            x = cub[i][0] + s_ * 3.2
+            y = cub[i][1]
+            g = m.group(f"shoe{k}", (x + 1.3, y, 9))
+            kind = kinds[i]
+            if kind == "geta":
+                bevel(m, "geta", (x, y + 0.5, 6), (x + 2.6, y + 1.2, 13), "kiri_light", b=0.2, group=g)
+                for z in (7, 11):
+                    m.cube("tooth", (x + 0.2, y, z), (x + 2.4, y + 0.5, z + 0.8), "hinoki_dark", group=g)
+                m.cube("hanao", (x + 1.1, y + 1.2, 7), (x + 1.5, y + 1.8, 9), "hanao_red", group=g)
+            elif kind == "zori":
+                bevel(m, "zori", (x, y, 6), (x + 2.6, y + 0.5, 13), "igusa", b=0.12, group=g)
+                m.cube("hanao", (x + 1.1, y + 0.5, 7), (x + 1.5, y + 1.0, 9), "hanao_navy", group=g)
+            elif kind == "sneaker":
+                bevel(m, "sole", (x, y, 6), (x + 2.6, y + 0.6, 13), "switch_white", b=0.15, group=g)
+                bevel(m, "upper", (x + 0.15, y + 0.6, 6.4), (x + 2.45, y + 2.4, 12.4), "sneaker", b=0.4, group=g)
+                m.cube("line", (x + 0.1, y + 1.0, 7.5), (x + 2.5, y + 1.3, 11.5), "sneaker_line", group=g)
+                m.cube("lace", (x + 0.6, y + 2.3, 7.0), (x + 2.0, y + 2.5, 9.2), "switch_white", group=g)
+            else:
+                bevel(m, "sole", (x, y, 6), (x + 2.6, y + 0.5, 13), "leather", b=0.12, group=g)
+                bevel(m, "upper", (x + 0.15, y + 0.5, 6.3), (x + 2.45, y + 2.1, 12.6), "leather", b=0.5, group=g)
+                m.cube("heel", (x + 0.2, y, 11.6), (x + 2.4, y + 0.8, 13), "deep_dark", group=g)
+            k += 1
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
              "WIRING": wiring_panel, "LEDGER": ledger, "FUTON": futon, "KAMADO": kamado,
-             "BATH": bath_stove, "CHOPPING": chopping_block, "FIELD": vegetable_patch, "DUST": dust_pile}
+             "BATH": bath_stove, "CHOPPING": chopping_block, "FIELD": vegetable_patch, "DUST": dust_pile,
+             "LAUNDRY": laundry_pole, "VASE": flower_vase, "SINK": kitchen_sink, "SHOE_RACK": shoe_rack}
