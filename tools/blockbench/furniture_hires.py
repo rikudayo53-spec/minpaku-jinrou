@@ -1072,3 +1072,7 @@ DECOR = {"TANSU": tansu, "CHABUDAI": chabudai, "BYOBU": byobu, "TOUROU": tourou,
          "KASA": kasa_tate, "TANUKI": tanuki, "MANEKI": maneki_neko, "HIBACHI": hibachi, "TSUBO": tsubo}
 ALL.update(NEW_TASKS)
 ALL.update(DECOR)
+
+# 作り直した家具（furniture_v2.py）で置きかえる
+from furniture_v2 import OVERRIDES as _V2  # noqa: E402
+ALL.update(_V2)

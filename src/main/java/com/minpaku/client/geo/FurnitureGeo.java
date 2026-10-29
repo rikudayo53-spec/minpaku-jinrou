@@ -214,7 +214,7 @@ public final class FurnitureGeo {
         switch (type) {
             case BREAKER -> {
                 B.rot("lever", 50 - sm(w) * 100, 0, 0);
-                B.rot("door", 0, -door(an, type) * 115f, 0);
+                B.rot("door", 0, door(an, type) * 115f, 0);   // 手前に開く
             }
             case GAS_VALVE -> B.rot("wheel", 0, 0, sm(w) * 540f + (act ? (float) Math.sin(t * 0.6f) * 3f : 0f));
             case BOILER -> {
@@ -239,7 +239,7 @@ public final class FurnitureGeo {
                 }
                 B.show("lamp_off", w < 1f);
                 B.show("lamp_on", w >= 1f);
-                B.rot("door", 0, door(an, type) * 110f, 0);
+                B.rot("door", 0, -door(an, type) * 110f, 0);   // 手前に開く
             }
             case SHOJI -> {
                 float pop = s < 10 ? 0.4f + sm(s / 6f) * 0.75f - (s > 6 ? (s - 6) / 4f * 0.15f : 0f) : 1f;
