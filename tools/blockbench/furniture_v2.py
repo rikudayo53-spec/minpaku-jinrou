@@ -2222,6 +2222,163 @@ def chabudai():
             m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.4, z + 0.4), "yellow_cloth")
     return m
 
+# ---------------------------------------------------------------- 37〜40 で使う材質
+MATS.update({
+    "byobu_gold": Mat((226, 196, 120), "paper", accent=(240, 214, 140), noise=4),
+    "byobu_frame": Mat((30, 22, 20), "metal", noise=4),
+    "byobu_fit": Mat((196, 160, 80), "metal", noise=5),
+    "toro": Mat((150, 148, 138), "stone", accent=(118, 116, 108), noise=12),
+    "toro_d": Mat((120, 118, 110), "stone", accent=(96, 94, 88), noise=12),
+    "glow_paper": Mat((255, 214, 140), "paper", accent=(255, 236, 190), glow=True),
+    "komo": Mat((206, 184, 128), "rope", accent=(176, 152, 96)),
+    "komo_print": Mat((60, 50, 120), "plain", noise=3),
+    "taru_wood": Mat((214, 184, 136), "wood", accent=(188, 156, 108), noise=4),
+    "masu": Mat((232, 208, 160), "wood", accent=(210, 182, 130), noise=3),
+    "shigaraki": Mat((156, 104, 66), "stone", accent=(110, 70, 44), noise=14),
+    "glaze_g": Mat((90, 120, 80), "metal", noise=8),
+    "janome_r": Mat((176, 36, 32), "paper", accent=(150, 26, 24), noise=5),
+    "janome_b": Mat((44, 62, 116), "paper", accent=(30, 44, 90), noise=5),
+    "janome_y": Mat((214, 170, 70), "paper", accent=(184, 140, 50), noise=5),
+})
+
+
+# ---------------------------------------------------------------- 37 屏風
+
+def byobu():
+    from furniture_hires import _byobu_art
+    m = F("byobu", 6)
+    # 6枚の扇をジグザグにつなぐ：黒漆の縁、金地の絵、蝶番の金具
+    n, L, th = 6, 5.2, 28
+    pts = []
+    x, z = -8.0, 9.0
+    for k in range(n + 1):
+        pts.append((x, z))
+        dz = L * math.sin(math.radians(th)) * (1 if k % 2 == 0 else -1)
+        x += L * math.cos(math.radians(th))
+        z += dz
+    for k in range(n):
+        (xa, za), (xb, zb) = pts[k], pts[k + 1]
+        cx, cz = (xa + xb) / 2, (za + zb) / 2
+        ang = math.degrees(math.atan2(-(zb - za), xb - xa))
+        r = dict(rot=[0, ang, 0], pivot=[cx, 0, cz])
+        h = L / 2
+        m.cube("panel", (cx - h + 0.35, 1.6, cz - 0.15), (cx + h - 0.35, 23.4, cz + 0.15), "byobu_gold", decal=_byobu_art(k % 4), **r)
+        for (y0, y1) in ((0.4, 1.6), (23.4, 24.4)):
+            m.cube("fuchi", (cx - h, y0, cz - 0.35), (cx + h, y1, cz + 0.35), "byobu_frame", **r)
+        for xx in (cx - h, cx + h - 0.35):
+            m.cube("fuchi", (xx, 0.4, cz - 0.35), (xx + 0.35, 24.4, cz + 0.35), "byobu_frame", **r)
+        for (y0, y1) in ((0.4, 1.0), (23.8, 24.4)):
+            m.cube("kado", (cx - h - 0.05, y0, cz - 0.4), (cx - h + 0.6, y1, cz + 0.4), "byobu_fit", **r)
+            m.cube("kado", (cx + h - 0.6, y0, cz - 0.4), (cx + h + 0.05, y1, cz + 0.4), "byobu_fit", **r)
+        m.cube("ashi", (cx - h + 0.4, 0, cz - 0.3), (cx + h - 0.4, 0.4, cz + 0.3), "byobu_frame", **r)
+    for (x, z) in pts[1:-1]:
+        for y in (5, 19):
+            m.cube("chotsugai", (x - 0.25, y, z - 0.25), (x + 0.25, y + 1.6, z + 0.25), "byobu_fit")
+    return m
+
+
+# ---------------------------------------------------------------- 38 石灯籠（春日形）
+
+def tourou():
+    import random
+    rng = random.Random(38)
+    m = F("tourou", 6)
+    # 基礎（ごつごつ）・基壇（六角）
+    rough(m, "kiso", (1.4, 0, 1.4), (14.6, 1.6, 14.6), "toro_d", rng, lumps=6, depth=0.3)
+    m.cyl("kidai", 8, 8, 1.6, 2.6, 5.4, "toro", sides=3)
+    m.cyl("kidai2", 8, 8, 2.6, 3.4, 4.2, "toro", sides=3)
+    m.cyl("kidai3", 8, 8, 3.4, 3.8, 2.8, "toro", sides=3)
+    # 竿：まん中に節
+    m.cyl("sao", 8, 8, 3.8, 12, 1.9, "toro", sides=4)
+    m.cyl("sao_fushi", 8, 8, 7.6, 8.4, 2.2, "toro", sides=4)
+    # 中台（六角、上が広がる）
+    m.cyl("chudai", 8, 8, 12, 12.8, 3.0, "toro", sides=3)
+    m.cyl("chudai2", 8, 8, 12.8, 14.0, 4.8, "toro", sides=3)
+    # 火袋：六本の柱のあいだが窓（紙が光る）。鹿と月の彫り
+    for a in range(6):
+        ang = math.radians(a * 60 + 30)
+        x, z = 8 + 3.4 * math.cos(ang), 8 + 3.4 * math.sin(ang)
+        m.cube("hashira", (x - 0.55, 14, z - 0.55), (x + 0.55, 20, z + 0.55), "toro")
+    m.cyl("hibukuro_floor", 8, 8, 14, 14.4, 3.4, "toro", sides=3)
+    m.cyl("hibukuro_top", 8, 8, 19.4, 20, 3.8, "toro", sides=3)
+    m.cyl("glow_paper", 8, 8, 14.4, 19.4, 2.8, "glow_paper", sides=3)
+    m.group("flame", (8, 15.5, 8))
+    m.cube("glow_flame", (7.4, 15.2, 7.4), (8.6, 17.4, 8.6), "glow_fire", group="flame")
+    # 笠：六角の屋根。軒先がそり上がる（蕨手）
+    m.cyl("kasa", 8, 8, 20, 21.0, 6.6, "toro", sides=3)
+    m.cyl("kasa2", 8, 8, 21.0, 22.0, 5.0, "toro", sides=3)
+    m.cyl("kasa3", 8, 8, 22.0, 22.8, 3.2, "toro", sides=3)
+    for a in range(6):
+        ang = math.radians(a * 60)
+        x, z = 8 + 6.4 * math.cos(ang), 8 + 6.4 * math.sin(ang)
+        m.cube("warabite", (x - 0.5, 20.8, z - 0.5), (x + 0.5, 22.2, z + 0.5), "toro")
+    # 請花と宝珠
+    m.cyl("ukebana", 8, 8, 22.8, 23.6, 1.8, "toro", sides=4)
+    for (ya, yb, r) in ((23.6, 24.4, 1.3), (24.4, 25.4, 1.5), (25.4, 26.2, 1.0), (26.2, 26.8, 0.4)):
+        m.cyl("hoju", 8, 8, ya, yb, r, "toro", sides=4)
+    # 苔
+    for (x0, y0, z0) in ((3, 1.6, 9), (10.6, 1.6, 3), (5.4, 20.9, 4.6), (9, 21.9, 10)):
+        m.cube("moss", (x0, y0 - 0.05, z0), (x0 + rng.uniform(1.2, 2.4), y0 + 0.25, z0 + rng.uniform(1, 2)), "moss")
+    return m
+
+
+# ---------------------------------------------------------------- 39 酒樽（菰樽）
+
+def sake_barrel():
+    from items_hires import ring
+    m = F("sake_barrel", 6)
+    # 台
+    bevel(m, "dai", (0.4, 0, 0.4), (15.6, 1.4, 15.6), "hinoki_dark", b=0.3)
+    # 樽：菰（こも）を巻き、上下と胴に縄
+    m.cyl("taru", 8, 8, 1.4, 16.4, 6.6, "taru_wood", sides=6)
+    m.cyl("komo", 8, 8, 2.6, 15.0, 6.95, "komo", sides=6)
+    for y in (3.0, 9.0, 14.4):
+        m.cyl("nawa", 8, 8, y, y + 0.7, 7.25, "rope", sides=6)
+    # 銘の印刷（菰に刷った紺の文字と枠）
+    bevel(m, "label", (4.6, 5.0, 0.7), (11.4, 12.4, 1.0), "komo_print", b=0.1)
+    m.cube("label_in", (5.2, 5.6, 0.62), (10.8, 11.8, 0.72), "plate", decal=_text("祝", color=(40, 40, 110, 255), size=0.6))
+    # ふた（鏡）：板目、たが、升とひしゃく
+    m.cyl("kagami", 8, 8, 16.4, 16.9, 6.3, "taru_wood", sides=6)
+    ring(m, "taga", 8, 16.7, 8, 6.6, 0.35, 0.6, "take", seg=20, plane="xz")
+    for x in (4.0, 8.0, 12.0):
+        m.cube("kagami_line", (x - 0.05, 16.9, 2.4), (x + 0.05, 16.95, 13.6), "hinoki_dark")
+    for (a, b) in (((5.2, 9.0), (8.4, 9.4)), ((5.2, 11.8), (8.4, 12.2)), ((5.2, 9.4), (5.6, 11.8)), ((8.0, 9.4), (8.4, 11.8))):
+        m.cube("masu", (a[0], 16.9, a[1]), (b[0], 19.2, b[1]), "masu")
+    m.cube("masu_floor", (5.6, 16.9, 9.4), (8.0, 17.2, 11.8), "masu")
+    m.cyl("hishaku_cup", 11.4, 6.4, 16.9, 18.2, 1.0, "hinoki", sides=6)
+    bent(m, "hishaku_handle", [(11.4, 18.0, 7.4), (11.6, 17.8, 11.0), (11.8, 17.4, 14.6)], 0.4, "hinoki")
+    return m
+
+
+# ---------------------------------------------------------------- 40 傘立て
+
+def kasa_tate():
+    m = F("kasa_tate", 6)
+    # 信楽焼の壺：ふくらんで口が広がる、釉がたれる
+    prof = [(0, 0.8, 3.6), (0.8, 3.0, 4.2), (3.0, 6.0, 4.5), (6.0, 8.4, 4.2), (8.4, 9.4, 4.0), (9.4, 10.2, 4.4)]
+    for (ya, yb, r) in prof:
+        m.cyl("pot", 8, 8, ya, yb, r, "shigaraki", sides=6)
+    m.cyl("pot_glaze", 8, 8, 8.4, 10.2, 4.5, "glaze_g", sides=6)
+    for k in range(6):
+        a = math.radians(k * 60 + 15)
+        x, z = 8 + 4.55 * math.cos(a), 8 + 4.55 * math.sin(a)
+        m.cube("drip", (x - 0.3, 6.0 + (k % 3) * 0.6, z - 0.3), (x + 0.3, 8.6, z + 0.3), "glaze_g")
+    m.cyl("pot_inside", 8, 8, 10.15, 10.25, 3.6, "deep_dark", sides=6)
+    # 蛇の目傘：すぼめた傘（下が細く上が太い）、骨の筋、まとめ紐、竹の柄と石突き
+    umbs = ((-1.4, -1.0, -8, 4, "janome_r"), (1.4, 0.6, 10, -6, "janome_b"), (-0.2, 1.8, 2, 8, "janome_y"))
+    for k, (dx, dz, rz, rx, mat) in enumerate(umbs):
+        cx, cz = 8 + dx, 8 + dz
+        r = dict(rot=[rx, 0, rz], pivot=[cx, 1.0, cz])
+        m.cube("ishizuki", (cx - 0.25, 1.0, cz - 0.25), (cx + 0.25, 3.0, cz + 0.25), "hinoki_dark", **r)
+        for (ya, yb, rr) in ((3.0, 6.0, 0.7), (6.0, 11.0, 1.1), (11.0, 16.0, 1.4), (16.0, 19.0, 1.2), (19.0, 20.0, 0.7)):
+            m.cube("kasa", (cx - rr, ya, cz - rr), (cx + rr, yb, cz + rr), mat, **r)
+            m.cube("kasa", (cx - rr * 0.7, ya, cz - rr * 1.2), (cx + rr * 0.7, yb, cz + rr * 1.2), mat, **r)
+        m.cube("hone", (cx - 0.05, 6.0, cz - 1.42), (cx + 0.05, 19.0, cz - 1.3), "plate", **r)
+        m.cube("himo", (cx - 1.5, 13.0, cz - 1.5), (cx + 1.5, 13.5, cz + 1.5), "red_cloth", **r)
+        m.cube("e", (cx - 0.3, 20.0, cz - 0.3), (cx + 0.3, 25.0, cz + 0.3), "bamboo", **r)
+        m.cube("e_tip", (cx - 0.4, 25.0, cz - 0.4), (cx + 0.4, 25.8, cz + 0.4), "hinoki_dark", **r)
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
@@ -2231,4 +2388,5 @@ OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BRE
              "SHOJI": shoji_screen, "ANDON": andon, "IRORI": irori, "BONSAI": bonsai,
              "TEA": tea_set, "WELL": well, "SHOGI": shogi_board, "KAKEJIKU": kakejiku,
              "MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar,
-             "ZEN": zen_garden, "WASHTUB": washtub, "TANSU": tansu, "CHABUDAI": chabudai}
+             "ZEN": zen_garden, "WASHTUB": washtub, "TANSU": tansu, "CHABUDAI": chabudai,
+             "BYOBU": byobu, "TOUROU": tourou, "SAKE": sake_barrel, "KASA": kasa_tate}

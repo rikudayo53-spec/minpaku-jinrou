@@ -142,7 +142,7 @@ public final class FurnitureArt {
             case BATH, FUTON, HOKORA, BYOBU -> 1.3f;
             case BOILER, SINK -> 1.25f;
             case CHOPPING, TEA, SHOGI, WASHTUB -> 1.2f; case TANSU -> 1.3f;
-            case IRORI, MOCHI, CHABUDAI -> 1.15f;
+            case IRORI, MOCHI, CHABUDAI, SAKE -> 1.15f;
             case SHOJI -> 1.05f;
             default -> 1f;
         };
