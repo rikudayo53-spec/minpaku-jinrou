@@ -896,7 +896,199 @@ def kamado():
         m.cube("log_cut", (4.45 + k * 0.6, y - 0.8, z - 0.8), (4.6 + k * 0.6, y + 0.8, z + 0.8), "log_cut", decal=_rings)
     return m
 
+# ---------------------------------------------------------------- 13〜16 で使う材質
+MATS.update({
+    "sawara": Mat((210, 176, 128), "wood", accent=(182, 146, 98), noise=4),
+    "hoop_copper": Mat((150, 96, 60), "metal", noise=8),
+    "yu": Mat((150, 196, 210), "water", accent=(200, 230, 236), alpha=170),
+    "brick": Mat((150, 74, 52), "stone", accent=(120, 56, 40), noise=10),
+    "stump_bark": Mat((88, 66, 46), "stone", accent=(66, 48, 32), noise=12),
+    "stump_top": Mat((196, 156, 106), "wood", accent=(160, 120, 76), noise=5),
+    "split_wood": Mat((214, 178, 126), "wood", accent=(184, 146, 96), noise=5),
+    "axe_head": Mat((80, 82, 86), "metal", noise=6),
+    "axe_edge": Mat((196, 198, 202), "metal", noise=4),
+    "axe_handle": Mat((176, 134, 84), "wood", accent=(146, 106, 62), noise=5),
+    "soil_dark": Mat((84, 58, 38), "stone", accent=(66, 44, 28), noise=12),
+    "soil_ridge": Mat((104, 72, 46), "stone", accent=(84, 58, 36), noise=12),
+    "daikon": Mat((242, 240, 228), "plaster", noise=4),
+    "ninjin": Mat((232, 116, 36), "plaster", noise=6),
+    "leaf_g": Mat((76, 134, 52), "stone", accent=(58, 110, 40), noise=10),
+    "leaf_l": Mat((110, 168, 70), "stone", accent=(88, 146, 54), noise=10),
+    "kago": Mat((190, 160, 100), "rope", accent=(150, 122, 70)),
+    "dust_g": Mat((150, 146, 138), "stipple", noise=14),
+    "dust_d": Mat((112, 108, 102), "stipple", noise=14),
+    "broom_straw": Mat((196, 164, 86), "rope", accent=(160, 128, 60)),
+    "broom_tie": Mat((40, 90, 60), "stipple", noise=4),
+    "chiritori": Mat((60, 66, 74), "metal", noise=6),
+})
+
+
+def _wood_rings(draw, face, x0, y0, w, h):
+    """切り株・薪の上の年輪とひび"""
+    if face != "up":
+        return
+    cx, cy = x0 + w / 2, y0 + h / 2
+    for k in range(1, 7):
+        r = min(w, h) * k / 14
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(150, 110, 66, 255))
+    draw.line([(cx, cy), (x0 + w * 0.9, y0 + h * 0.2)], fill=(90, 60, 36, 255), width=1)
+
+
+# ---------------------------------------------------------------- 13 風呂釜（五右衛門風呂）
+
+def bath_stove():
+    import random
+    rng = random.Random(13)
+    m = F("bath_stove", 5)
+    # 下はれんがの焚き口台、上に木の桶（板を並べて銅のたが）
+    for row in range(4):
+        y = row * 1.0
+        off = 0.9 if row % 2 else 0
+        x = -2.2 - off
+        while x < 18.2:
+            x1 = min(18.2, x + 1.9)
+            bevel(m, "brick", (max(-2.2, x), y, -1.0), (x1, y + 0.95, 15.6), "brick", b=0.12)
+            x += 2.0
+    m.cube("brick_core", (-2.0, 0, -0.8), (18.0, 4.0, 15.4), "brick")
+    # 桶：板を一周並べた壁（中が見える）と底
+    from items_hires import ring
+    m.cyl("oke_bottom", 8, 7.3, 4.0, 4.4, 7.4, "sawara", sides=8)
+    ring(m, "oke", 8, 8.65, 7.3, 7.35, 0.7, 8.5, "sawara", seg=24, plane="xz")
+    for y in (5.6, 11.4):
+        ring(m, "taga", 8, y, 7.3, 7.75, 0.25, 0.9, "hoop_copper", seg=24, plane="xz")
+    ring(m, "rim", 8, 13.0, 7.3, 7.35, 0.9, 0.5, "hinoki", seg=24, plane="xz")
+    m.group("water", (8, 4, 7.3))
+    m.cyl("glass_water", 8, 7.3, 4.4, 11.6, 6.9, "yu", sides=8, group="water")
+    # 浮き板（底板。お湯に浮かぶ小さめの板）
+    m.cyl("ukiita", 6.5, 8.0, 11.55, 11.75, 2.6, "sawara", sides=6, group="water")
+    boards(m, "lid", 10, 17.5, 9, 15.5, 13.3, 13.9, 4, "sawara", rng, along="z", gap=0.15)
+    # 焚き口（手前）：鉄の扉枠、奥で火
+    bevel(m, "takiguchi", (4.4, 0.2, -1.8), (11.6, 3.8, -0.8), "iron_fit", b=0.2)
+    m.cube("takiguchi_in", (5.2, 0.6, -1.95), (10.8, 3.2, -1.8), "soot")
+    m.group("fire", (8, 2.5, -1.9))
+    m.cube("glow_fire", (5.4, 0.7, -1.85), (10.6, 3.0, -1.75), "glow_fire", group="fire")
+    m.cube("glow_coal", (5.4, 0.6, -1.9), (10.6, 1.3, -1.2), "ember_g", group="fire")
+    # 煙突（れんが）と手おけ・ひしゃく
+    for y in range(0, 20, 2):
+        bevel(m, "chimney", (16.6, y, 11), (20.0, y + 1.95, 14.4), "brick", b=0.15)
+    m.cyl("teoke", 21.5, 2.5, 0, 3.2, 1.9, "sawara", sides=6)
+    m.cyl("teoke_hoop", 21.5, 2.5, 0.6, 1.1, 2.0, "hoop_copper", sides=6)
+    cylx(m, "hishaku_handle", 3.6, 2.5, 22.4, 26.4, 0.25, "hinoki", sides=3)
+    m.cyl("hishaku_cup", 21.8, 2.5, 3.0, 4.2, 0.8, "sawara", sides=4)
+    return m
+
+
+# ---------------------------------------------------------------- 14 薪割り台
+
+def chopping_block():
+    import random
+    rng = random.Random(14)
+    m = F("chopping_block", 5)
+    # 切り株：樹皮のでこぼこ、上は年輪と斧の傷
+    m.cyl("stump", 8, 8, 0, 7.6, 5.6, "stump_bark", sides=8)
+    for k in range(12):
+        a = 2 * math.pi * k / 12 + rng.uniform(-0.1, 0.1)
+        x, z = 8 + math.cos(a) * 5.7, 8 + math.sin(a) * 5.7
+        m.cube("bark", (x - 0.5, rng.uniform(0, 1.5), z - 0.5), (x + 0.5, rng.uniform(5.5, 7.4), z + 0.5), "stump_bark")
+    m.cyl("stump_top", 8, 8, 7.6, 8.0, 5.3, "stump_top", sides=8)
+    m.cube("rings", (3.6, 7.98, 3.6), (12.4, 8.02, 12.4), "stump_top", decal=_wood_rings)
+    m.cube("scar", (5, 8.0, 7.8), (11, 8.08, 8.2), "hinoki_dark")
+    m.cube("root", (1.6, 0, 6.6), (3.4, 1.2, 9.4), "stump_bark")
+    m.cube("root", (12.6, 0, 7.0), (14.6, 1.0, 9.6), "stump_bark")
+    # 割る薪（左右に割れる）
+    for name, x0, x1 in (("half_l", 5, 8), ("half_r", 8, 11)):
+        m.group(name, ((x0 + x1) / 2 + (-1.5 if name == "half_l" else 1.5), 8, 8))
+        bevel(m, "log", (x0 + (0.05 if name == "half_r" else 0), 8, 5), (x1 - (0.05 if name == "half_l" else 0), 16, 11), "split_wood",
+              b=0.3, group=name)
+        m.cube("log_bark", (x0 - 0.15 if name == "half_l" else x1 - 0.2, 8.2, 5.2), (x0 + 0.2 if name == "half_l" else x1 + 0.15, 15.8, 10.8),
+               "stump_bark", group=name)
+        m.cube("log_top", (x0 + 0.2, 15.95, 5.3), (x1 - 0.2, 16.05, 10.7), "stump_top", decal=_wood_rings, group=name)
+    # 斧：柄は少し曲がり、刃は厚みと光る刃先
+    m.group("axe", (21, 9, 8), rot=(0, 0, 50))
+    bevel(m, "handle", (20.4, 9, 7.4), (21.6, 18, 8.6), "axe_handle", b=0.3, group="axe")
+    bevel(m, "handle2", (20.2, 17.6, 7.4), (21.4, 23.2, 8.6), "axe_handle", b=0.3, rot=[0, 0, -6], pivot=[20.8, 17.6, 8],
+          group="axe")
+    bevel(m, "head", (17.0, 19.6, 7.2), (21.8, 23.4, 8.8), "axe_head", b=0.25, group="axe")
+    m.cube("bevel_edge", (16.0, 19.2, 7.5), (17.0, 23.8, 8.5), "axe_edge", group="axe")
+    m.cube("wedge", (21.0, 22.6, 7.0), (22.2, 23.6, 9.0), "axe_head", group="axe")
+    # 割った薪の山
+    for k, (x, y, z, rz) in enumerate(((-4.5, 0, 10, 0), (-4.0, 0, 13.4, 0), (-3.8, 1.8, 11.6, 4), (-5.0, 0, 3.0, -8))):
+        bevel(m, "pile", (x, y, z), (x + 5.0, y + 1.8, z + 2.2), "split_wood", b=0.3, rot=[0, rz, 0], pivot=[x + 2.5, y, z + 1.1])
+    return m
+
+
+# ---------------------------------------------------------------- 15 畑
+
+def vegetable_patch():
+    import random
+    rng = random.Random(15)
+    m = F("vegetable_patch", 5)
+    # 畝（うね）：盛り上がった土の山と、土くれ
+    m.cube("bed", (-4, 0, -2), (20, 1.8, 18), "soil_dark")
+    for z0 in (0.2, 9.2):
+        bevel(m, "ridge", (-3.6, 1.8, z0), (19.6, 3.4, z0 + 6.6), "soil_ridge", b=0.7)
+        for _ in range(10):
+            x, z = rng.uniform(-3, 18.6), rng.uniform(z0 + 0.4, z0 + 5.8)
+            m.cube("clod", (x, 3.3, z), (x + rng.uniform(0.5, 1.1), 3.3 + rng.uniform(0.2, 0.5), z + rng.uniform(0.5, 1.0)), "soil_dark")
+    # 野菜（大根と人参が交互）：根・肩・広がる葉
+    k = 0
+    for z in (2, 11):
+        for x in (-2, 3, 8, 13):
+            g = m.group(f"veg{k}", (x + 1.5, 4, z + 1.5))
+            daikon = k % 2 == 0
+            root = "daikon" if daikon else "ninjin"
+            m.cyl("root", x + 1.5, z + 1.5, -2.6, 3.4, 1.2 if daikon else 0.9, root, sides=4, group=g)
+            m.cyl("tip", x + 1.5, z + 1.5, -4.2, -2.6, 0.6 if daikon else 0.4, root, sides=3, group=g)
+            m.cyl("shoulder", x + 1.5, z + 1.5, 3.4, 4.2, 1.0 if daikon else 0.7, "leaf_l" if daikon else root, sides=4, group=g)
+            for j in range(5):
+                a = j * 72 + k * 13
+                m.cube("leaf", (x + 1.3, 4.2, z + 1.3), (x + 1.7, 8.6 - (j % 2) * 1.2, z + 1.7), "leaf_g" if j % 2 else "leaf_l",
+                       rot=[18, a, 0], pivot=[x + 1.5, 4.2, z + 1.5], group=g)
+                m.cube("leaflet", (x + 0.9, 6.5 - (j % 2), z + 1.4), (x + 2.1, 7.8 - (j % 2), z + 1.6), "leaf_g",
+                       rot=[18, a, 0], pivot=[x + 1.5, 4.2, z + 1.5], group=g)
+            k += 1
+    # 収穫かご
+    m.cyl("kago", 9, -4, 0, 2.6, 3.0, "kago", sides=6)
+    m.cyl("kago_rim", 9, -4, 2.4, 2.9, 3.2, "hinoki_dark", sides=6)
+    return m
+
+
+# ---------------------------------------------------------------- 16 ほこり（掃除）
+
+def dust_pile():
+    import random
+    rng = random.Random(16)
+    m = F("dust_pile", 5)
+    # ほこりの山：ふわふわ（小さな塊を重ねる）
+    m.group("dust", (6, 0, 7))
+    for k in range(18):
+        cx, cz = 6 + rng.uniform(-4, 4), 7 + rng.uniform(-3.5, 3.5)
+        r = rng.uniform(0.8, 2.0)
+        h = rng.uniform(0.5, 2.4) * (1 - (abs(cx - 6) + abs(cz - 7)) / 12)
+        m.cube("dust", (cx - r, 0, cz - r), (cx + r, max(0.3, h), cz + r), "dust_g" if k % 3 else "dust_d", group="dust")
+    for k in range(5):
+        x, z = rng.uniform(-3, 13), rng.uniform(0, 14)
+        m.cube("fluff", (x, 0, z), (x + 0.8, 0.3, z + 0.8), "dust_g", group="dust")
+    # ちり取り（ふちが立ち上がる）
+    m.cube("pan", (12, 0, 1), (18, 0.4, 6), "chiritori")
+    m.cube("pan_back", (12, 0.4, 5.4), (18, 3.2, 6), "chiritori")
+    for x in (12, 17.6):
+        m.cube("pan_side", (x, 0.4, 2.6), (x + 0.4, 2.6, 5.4), "chiritori", rot=[-20, 0, 0], pivot=[x, 0.4, 5.4])
+    cylz(m, "pan_handle", 15, 1.6, 6, 11.4, 0.45, "fude", sides=3)
+    # ほうき：穂は細いわらの束（すき間あり）、緑の糸で巻く
+    m.group("broom", (8, 22, 9))
+    m.cyl("stick", 8, 9, 5.2, 26, 0.55, "fude", sides=4, group="broom")
+    for k in range(9):
+        x = 4.8 + k * 0.75
+        m.cube("straw", (x, 0, 8.3 + (k % 2) * 0.3), (x + 0.6, 6.0 - abs(k - 4) * 0.2, 9.5 + (k % 2) * 0.3), "broom_straw",
+               rot=[0, 0, (k - 4) * 2.5], pivot=[8, 6, 9], group="broom")
+    for y in (4.6, 5.6):
+        m.cube("tie", (6.6, y, 8.1), (9.4, y + 0.5, 9.9), "broom_tie", group="broom")
+    m.cube("cap", (7.3, 6.0, 8.5), (8.7, 7.2, 9.5), "broom_tie", group="broom")
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
-             "WIRING": wiring_panel, "LEDGER": ledger, "FUTON": futon, "KAMADO": kamado}
+             "WIRING": wiring_panel, "LEDGER": ledger, "FUTON": futon, "KAMADO": kamado,
+             "BATH": bath_stove, "CHOPPING": chopping_block, "FIELD": vegetable_patch, "DUST": dust_pile}
