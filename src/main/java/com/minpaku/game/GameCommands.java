@@ -7,9 +7,15 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import com.minpaku.network.Packets;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.commands.arguments.EntityArgument;
+
+import java.util.UUID;
 
 /**
  * /minpaku start | stop | build | key | status
+ * /minpaku finisher [犯人]  … 襲われたときの演出を自分の画面で再生する（確認・撮影用）
  */
 public final class GameCommands {
     private GameCommands() {
@@ -39,6 +45,20 @@ public final class GameCommands {
                             p.getInventory().add(new ItemStack(ModItems.KEY));
                             return 1;
                         }))
+                        .then(Commands.literal("finisher")
+                                .executes(ctx -> {
+                                    // 犯人を指定しないときは、標準スキンの「人狼」
+                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                                    UUID fake = UUID.nameUUIDFromBytes(("minpaku-wolf-" + p.getRandom().nextInt(8)).getBytes());
+                                    ServerPlayNetworking.send(p, new Packets.KillFx(0, "人狼", fake));
+                                    return 1;
+                                })
+                                .then(Commands.argument("killer", EntityArgument.player()).executes(ctx -> {
+                                    ServerPlayer p = ctx.getSource().getPlayerOrException();
+                                    ServerPlayer k = EntityArgument.getPlayer(ctx, "killer");
+                                    ServerPlayNetworking.send(p, new Packets.KillFx(0, k.getGameProfile().getName(), k.getUUID()));
+                                    return 1;
+                                })))
                         .then(Commands.literal("status").executes(ctx -> {
                             ctx.getSource().sendSuccess(() -> Component.literal(
                                     GameManager.get(ctx.getSource().getServer()).status()).withStyle(ChatFormatting.AQUA), false);
