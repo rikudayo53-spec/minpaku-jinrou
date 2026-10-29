@@ -392,6 +392,81 @@ class HiRes:
                 "resolution": {"width": self.size, "height": self.size},
                 "elements": elements, "outliner": outl, "textures": [tex], "animations": []}
 
+    # ---- GeckoLib 用の書き出し（.geo.json ＋ テクスチャ ＋ 光る部分のマスク）
+    def to_geo(self, center=True):
+        """Bedrock 形式のモデル。GeckoLib は X を左右反転して読むので、ここで反転して書く
+        （読みこまれた後はマイクラの座標と同じになる）。center=True ならブロックの中心を原点にする"""
+        if not hasattr(self, "atlas"):
+            self.build_texture()
+        ox = 8.0 if center else 0.0
+        oz = 8.0 if center else 0.0
+
+        def X(x):
+            return round(-(x - ox), 4)
+
+        bones = [{"name": "root", "pivot": [0, 0, 0]}]
+        index = {"root": bones[0]}
+        for gname in self.group_order:
+            origin, parent = self.groups[gname]
+            b = {"name": gname, "parent": parent or "root",
+                 "pivot": [X(origin[0]), round(origin[1], 4), round(origin[2] - oz, 4)]}
+            bones.append(b)
+            index[gname] = b
+        for ci, c in enumerate(self.cubes):
+            frm, to = c["frm"], c["to"]
+            size = [round(to[i] - frm[i], 4) for i in range(3)]
+            cube = {"origin": [X(to[0]), round(frm[1], 4), round(frm[2] - oz, 4)], "size": size, "uv": {}}
+            if c["rot"] and any(c["rot"]):
+                piv = c["pivot"] or [(a + b) / 2 for a, b in zip(frm, to)]
+                cube["pivot"] = [X(piv[0]), round(piv[1], 4), round(piv[2] - oz, 4)]
+                cube["rotation"] = [-c["rot"][0], -c["rot"][1], c["rot"][2]]
+            for f in FACES:
+                w, h = self._face_size(c, f)
+                x0, y0 = self.uv[(ci, f)]
+                cube["uv"][f] = {"uv": [x0, y0], "uv_size": [w, h]}
+            bone = index.get(c["group"]) if c["group"] else None
+            if bone is None:
+                bone = bones[0]
+            bone.setdefault("cubes", []).append(cube)
+        return {"format_version": "1.12.0", "minecraft:geometry": [{
+            "description": {"identifier": "geometry." + self.name, "texture_width": self.size, "texture_height": self.size,
+                            "visible_bounds_width": 4, "visible_bounds_height": 4, "visible_bounds_offset": [0, 1.5, 0]},
+            "bones": bones}]}
+
+    def glowmask(self):
+        """光る箱（名前が glow_）の面だけを残した絵（GeckoLib の _glowmask）"""
+        if not hasattr(self, "atlas"):
+            self.build_texture()
+        mask = Image.new("RGBA", self.atlas.size, (0, 0, 0, 0))
+        any_glow = False
+        for ci, c in enumerate(self.cubes):
+            if not c["name"].startswith("glow_"):
+                continue
+            any_glow = True
+            for f in FACES:
+                w, h = self._face_size(c, f)
+                x0, y0 = self.uv[(ci, f)]
+                mask.paste(self.atlas.crop((x0, y0, x0 + w, y0 + h)), (x0, y0))
+        return mask if any_glow else None
+
+    def save_geo(self, root, kind="block", center=True):
+        """assets/minpaku/ の下に geo/<kind>/<name>.geo.json と textures/<kind>/geo/<name>.png を書く"""
+        import os
+        geo = self.to_geo(center)
+        gdir = os.path.join(root, "geo", kind)
+        tdir = os.path.join(root, "textures", kind, "geo")
+        os.makedirs(gdir, exist_ok=True)
+        os.makedirs(tdir, exist_ok=True)
+        with open(os.path.join(gdir, self.name + ".geo.json"), "w", encoding="utf-8") as f:
+            json.dump(geo, f, ensure_ascii=False, separators=(",", ":"))
+        self.atlas.save(os.path.join(tdir, self.name + ".png"))
+        gm = self.glowmask()
+        gpath = os.path.join(tdir, self.name + "_glowmask.png")
+        if gm is not None:
+            gm.save(gpath)
+        elif os.path.exists(gpath):
+            os.remove(gpath)
+
     def save(self, path):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.to_json(), f, ensure_ascii=False, separators=(",", ":"))

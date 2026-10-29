@@ -41,6 +41,9 @@ jobs:
                      animatable.instance.AnimatableInstanceCache; do
               javap -cp "$GL" "software.bernie.geckolib.$c" >> /tmp/out/geckolib_api.txt 2>&1
             done
+            for c in loading.json.typeadapter.KeyFramesAdapter loading.json.typeadapter.BakedAnimationsAdapter loading.object.BakedModelFactory\$Builtin loading.object.BakedModelFactory util.RenderUtil; do
+              javap -c -p -cp "$GL" "software.bernie.geckolib.$c" >> /tmp/out/geckolib_code.txt 2>&1
+            done
             unzip -l "$GL" | grep -E "\.class" | awk '{print $4}' | grep -E "^software/bernie/geckolib/(animation|model|renderer|animatable|cache/object|util)/[A-Za-z]+\.class" >> /tmp/out/geckolib_api.txt
           fi
           cd /tmp/out
