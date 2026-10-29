@@ -908,12 +908,55 @@ def koi_gold_mid(m, P): _koi(m, P, "mid", "gold")
 def koi_gold_tail(m, P): _koi(m, P, "tail", "gold")
 
 
+
+def _glock(m, P, slide_mat, frame_mat):
+    """グロック風の拳銃（Blender 版）。銃口は -Y（前）、にぎりは下・後ろ。全長 0.75"""
+    # スライド（角を丸めた箱）
+    m.box((0.11, 0.70, 0.12), (0, -0.02, 0.50), slide_mat, bevel=0.018)
+    m.box((0.095, 0.05, 0.10), (0, -0.39, 0.50), slide_mat, bevel=0.015)
+    # セレーション（後ろの溝）
+    for k in range(7):
+        y = 0.22 + k * 0.016
+        for sx in (-1, 1):
+            m.box((0.006, 0.006, 0.085), (sx * 0.056, y, 0.50), P["dark"], bevel=0)
+    # 排莢口・銃口
+    m.box((0.03, 0.12, 0.05), (0.04, -0.02, 0.545), P["dark"], bevel=0.004)
+    m.cyl(0.022, 0.02, (0, -0.415, 0.50), P["dark"], rot=(90, 0, 0), verts=16, bevel=0)
+    # 照準
+    m.box((0.02, 0.025, 0.03), (0, -0.33, 0.575), P["white"], bevel=0.004)
+    m.box((0.035, 0.02, 0.035), (-0.03, 0.30, 0.575), slide_mat, bevel=0.004)
+    m.box((0.035, 0.02, 0.035), (0.03, 0.30, 0.575), slide_mat, bevel=0.004)
+    # フレーム（レール部分）
+    m.box((0.10, 0.42, 0.06), (0, -0.14, 0.415), frame_mat, bevel=0.012)
+    m.box((0.10, 0.30, 0.06), (0, 0.20, 0.415), frame_mat, bevel=0.012)
+    for k in range(3):
+        m.box((0.104, 0.012, 0.02), (0, -0.30 + k * 0.035, 0.405), P["dark"], bevel=0)
+    # 用心金（丸い輪の下半分）と引き金
+    m.torus(0.085, 0.012, (0, 0.0, 0.385), frame_mat, rot=(0, 90, 0), seg=24, ring=8, arc=180)
+    m.box((0.024, 0.02, 0.07), (0, 0.01, 0.35), P["iron"], rot=(-15, 0, 0), bevel=0.006)
+    # にぎり（後ろへ傾く。前に指のかかり）
+    m.box((0.105, 0.15, 0.34), (0, 0.18, 0.24), frame_mat, rot=(18, 0, 0), bevel=0.025)
+    m.box((0.104, 0.24, 0.07), (0, 0.17, 0.375), frame_mat, bevel=0.012)      # にぎりの上のすき間をうめる
+    for k in range(3):
+        m.box((0.108, 0.012, 0.012), (0, 0.15 + k * 0.03, 0.30 - k * 0.08), P["dark"], rot=(18, 0, 0), bevel=0)
+    m.box((0.112, 0.16, 0.025), (0, 0.235, 0.075), frame_mat, rot=(18, 0, 0), bevel=0.008)   # 弾倉の底
+    m.box((0.10, 0.07, 0.03), (0, 0.30, 0.43), frame_mat, bevel=0.01)                     # ビーバーテイル
+
+
+def sheriff_glock_black(m, P):
+    _glock(m, P, P["dark"], P["lacquer"])
+
+
+def sheriff_glock_silver(m, P):
+    _glock(m, P, P["silver"], P["lacquer"])
+
+
 BLOCKS = [call_bell, floor_hatch, breaker, gas_valve, boiler, wiring_panel, ledger, futon, kamado, bath_stove,
           chopping_block, vegetable_patch, dust_pile, entrance_mat, laundry_pole, flower_vase, kitchen_sink,
           shoe_rack, shoji_screen]
 ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman, detective_lens, okami_keyring, itamae_onigiri,
          sheriff_gun, buttoner_bell, iei, koi_kohaku_front, koi_kohaku_mid, koi_kohaku_tail,
-         koi_gold_front, koi_gold_mid, koi_gold_tail]
+         koi_gold_front, koi_gold_mid, koi_gold_tail, sheriff_glock_black, sheriff_glock_silver]
 
 
 # ============================================================ 書き出し

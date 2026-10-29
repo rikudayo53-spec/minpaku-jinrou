@@ -4,17 +4,26 @@
   "version": "${version}",
   "name": "民泊人狼",
   "description": "古民家の民泊を舞台にした、Among Us風のマイクラ人狼。",
-  "authors": ["rikudayo"],
+  "authors": [
+    "rikudayo"
+  ],
   "license": "All-Rights-Reserved",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.minpaku.MinpakuJinrou"],
-    "client": ["com.minpaku.client.MinpakuClient"]
+    "main": [
+      "com.minpaku.MinpakuJinrou"
+    ],
+    "client": [
+      "com.minpaku.client.MinpakuClient"
+    ]
   },
   "depends": {
     "fabricloader": ">=0.16.0",
     "fabric-api": "*",
     "minecraft": "~1.21.1",
     "java": ">=21"
-  }
+  },
+  "mixins": [
+    "minpaku.mixins.json"
+  ]
 }

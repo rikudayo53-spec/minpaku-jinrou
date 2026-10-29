@@ -101,13 +101,13 @@ public final class FurnitureArt {
         }
     }
 
-    private static float smooth(float x) {
+    static float smooth(float x) {
         x = Mth.clamp(x, 0f, 1f);
         return x * x * (3 - 2 * x);
     }
 
     /** 湯気（下から上へ。active のときだけ） */
-    private static void steam(Art a, float time, float x, float y, float z, float amount) {
+    static void steam(Art a, float time, float x, float y, float z, float amount) {
         if (amount <= 0.01f) {
             return;
         }
@@ -139,6 +139,10 @@ public final class FurnitureArt {
 
     /** 1つの家具を描く（ブロックの角が原点、まだ向きは回していない状態で呼ぶ） */
     public static void draw(MarkerType type, Anim an, PoseStack ps, MultiBufferSource buf, int light) {
+        // 高精細モデル（Blockbench）があればそちらで描く
+        if (FurnitureHiRes.draw(type, an, ps, buf, light)) {
+            return;
+        }
         float sz = size(type);
         ps.pushPose();
         ps.translate(0.5, 0, 0.5);

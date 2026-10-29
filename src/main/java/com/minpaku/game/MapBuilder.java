@@ -254,8 +254,8 @@ public final class MapBuilder {
             }
         }
         // 今回の範囲を覚えておく
-        BlockPos p1 = world(-4, -1, -4);
-        BlockPos p2 = world(plan.w + 4, roof + 4, plan.d + 6);
+        BlockPos p1 = world(-4 - RING, -1, -4 - RING);
+        BlockPos p2 = world(plan.w + 4 + RING, Math.max(roof + 4, BAMBOO_TOP + 2), plan.d + 6 + RING);
         data.setLastBuilt(new int[]{Math.min(p1.getX(), p2.getX()), Math.min(p1.getY(), p2.getY()), Math.min(p1.getZ(), p2.getZ()),
                 Math.max(p1.getX(), p2.getX()), Math.max(p1.getY(), p2.getY()), Math.max(p1.getZ(), p2.getZ())});
     }
@@ -263,11 +263,49 @@ public final class MapBuilder {
     private void clearSite() {
         int w = plan.w;
         int d = plan.d;
-        fill(-4, 0, -4, w + 4, roof + 4, d + 6, Blocks.AIR.defaultBlockState());
-        fill(-4, -1, -4, w + 4, -1, d + 6, Blocks.GRASS_BLOCK);
-        fill(-4, -3, -4, w + 4, -2, d + 6, Blocks.DIRT);
+        fill(-4 - RING, 0, -4 - RING, w + 4 + RING, Math.max(roof + 4, BAMBOO_TOP + 2), d + 6 + RING, Blocks.AIR.defaultBlockState());
+        fill(-4 - RING, -1, -4 - RING, w + 4 + RING, -1, d + 6 + RING, Blocks.GRASS_BLOCK);
+        fill(-4 - RING, -3, -4 - RING, w + 4 + RING, -2, d + 6 + RING, Blocks.DIRT);
+        bambooRing();
         fill(-2, -1, -2, w + 2, -1, d + 2, Blocks.GRAVEL);
         fill(plan.entranceX - 1, -1, d + 1, plan.entranceX + 2, -1, d + 6, Blocks.STONE_BRICKS);
+    }
+
+    /** 敷地のまわりの竹林の厚さ（ブロック） */
+    static final int RING = 7;
+    static final int BAMBOO_TOP = 17;
+
+    /** 敷地のまわりをぐるっと竹林で囲む（外が見えないように）。霧はクライアント側でかける */
+    private void bambooRing() {
+        int x1 = -4 - RING, z1 = -4 - RING, x2 = plan.w + 4 + RING, z2 = plan.d + 6 + RING;
+        java.util.Random rnd = new java.util.Random(plan.w * 7919L + plan.d * 31L + 5);
+        BlockState base = Blocks.BAMBOO.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.BambooStalkBlock.STAGE, 1);
+        for (int x = x1; x <= x2; x++) {
+            for (int z = z1; z <= z2; z++) {
+                boolean inside = x > -4 && x < plan.w + 4 && z > -4 && z < plan.d + 6;
+                if (inside) {
+                    continue;
+                }
+                // 外側ほど濃く、内側の1列目は少しまばらに
+                int depth = Math.min(Math.min(x - x1, x2 - x), Math.min(z - z1, z2 - z));
+                float chance = depth >= RING - 1 ? 0.45f : 0.82f;
+                if (rnd.nextFloat() > chance) {
+                    set(x, -1, z, rnd.nextInt(3) == 0 ? Blocks.PODZOL : Blocks.GRASS_BLOCK);
+                    continue;
+                }
+                set(x, -1, z, Blocks.PODZOL);
+                int h = 11 + rnd.nextInt(BAMBOO_TOP - 10);
+                boolean thick = rnd.nextInt(3) > 0;
+                for (int y = 0; y < h; y++) {
+                    var leaves = y >= h - 2 ? net.minecraft.world.level.block.state.properties.BambooLeaves.LARGE
+                            : y >= h - 4 ? net.minecraft.world.level.block.state.properties.BambooLeaves.SMALL
+                            : net.minecraft.world.level.block.state.properties.BambooLeaves.NONE;
+                    set(x, y, z, base.setValue(net.minecraft.world.level.block.BambooStalkBlock.AGE, thick ? 1 : 0)
+                            .setValue(net.minecraft.world.level.block.BambooStalkBlock.LEAVES, leaves));
+                }
+            }
+        }
     }
 
     private void floors() {

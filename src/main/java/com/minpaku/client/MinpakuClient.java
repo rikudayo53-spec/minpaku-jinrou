@@ -40,6 +40,7 @@ public class MinpakuClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.BODY, BodyRenderer::new);
         com.minpaku.client.model.MeshCache.register();
         com.minpaku.client.bb.BbCache.register();
+        com.minpaku.client.model.HiRes.register();
         net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
                 com.minpaku.registry.ModBlockEntities.MARKER, com.minpaku.client.render.MarkerRenderer::new);
         registerItemModels();
@@ -52,7 +53,6 @@ public class MinpakuClient implements ClientModInitializer {
         GameHud.VOTE_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
                 new net.minecraft.client.KeyMapping("key.minpaku.vote", org.lwjgl.glfw.GLFW.GLFW_KEY_V, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(com.minpaku.client.render.Distortion::render);
         WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.RoleTags::render);
 
         ClientBridge.openSettings = () -> Minecraft.getInstance().setScreen(new SettingsScreen());
@@ -98,7 +98,21 @@ public class MinpakuClient implements ClientModInitializer {
         itemModel(com.minpaku.registry.ModItems.LENS, "detective_lens");
         itemModel(com.minpaku.registry.ModItems.KEYRING, "okami_keyring");
         itemModel(com.minpaku.registry.ModItems.ONIGIRI, "itamae_onigiri");
-        itemModel(com.minpaku.registry.ModItems.GUN, "sheriff_gun");
+        // シェリフの銃（グロック）：Blockbench の高精細モデル。持ち手（グリップ）がアイテムの中心＝手の位置に来るように置く
+        net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(com.minpaku.registry.ModItems.GUN,
+                (stack, mode, ps, buffers, light, overlay) -> {
+                    if (!roleItemVisible(com.minpaku.registry.ModItems.GUN)) {
+                        return;
+                    }
+                    com.minpaku.client.model.HiRes m = com.minpaku.client.model.HiRes.get("glock_black");
+                    if (m == null) {
+                        return;
+                    }
+                    ps.pushPose();
+                    ps.translate(0.5, 0.5 - 1.8 / 16.0, 0.5 - 4.0 / 16.0);
+                    m.render(ps, buffers, light, overlay, com.minpaku.client.model.HiRes.STILL);
+                    ps.popPose();
+                });
         itemModel(com.minpaku.registry.ModItems.HANDBELL, "buttoner_bell");
     }
 
