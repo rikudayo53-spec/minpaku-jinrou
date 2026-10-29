@@ -124,8 +124,29 @@ public final class FurnitureArt {
         }
     }
 
+    /** 家具ごとの大きさ（足もとの中心を基準に大きくする） */
+    public static float size(MarkerType type) {
+        return switch (type) {
+            case CHOPPING, VASE -> 1.3f;
+            case DUST, SHOE_RACK, LEDGER, GAS_VALVE -> 1.2f;
+            case SINK, BREAKER, WIRING -> 1.15f;
+            case KAMADO, BATH, FUTON -> 1.1f;
+            default -> 1f;
+        };
+    }
+
     /** 1つの家具を描く（ブロックの角が原点、まだ向きは回していない状態で呼ぶ） */
     public static void draw(MarkerType type, Anim an, PoseStack ps, MultiBufferSource buf, int light) {
+        float sz = size(type);
+        ps.pushPose();
+        ps.translate(0.5, 0, 0.5);
+        ps.scale(sz, sz, sz);
+        ps.translate(-0.5, 0, -0.5);
+        drawRaw(type, an, ps, buf, light);
+        ps.popPose();
+    }
+
+    private static void drawRaw(MarkerType type, Anim an, PoseStack ps, MultiBufferSource buf, int light) {
         Art a = new Art(ps, buf, light);
         float w = an.work();
         float t = an.time();

@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.LanternBlock;
-import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
@@ -24,84 +23,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 基本マップ「和モダンの古民家民泊」を建てる（大きい版：45 × 41 マス、2階建て）。
- *
- * 家の座標: x = 0〜44、z = 0〜40。正面玄関は z = 40 側。
- *  1階  北: 台所 / 食堂 / 大広間（囲炉裏・呼び鈴）/ 土間（配電盤）
- *       中: 風呂場 / 階段 / 中庭（池・畑・物干し）/ 納戸
- *       南: トイレ / 洗面所 / 玄関 / 帳場 / 縁側の間 / 物置
- *  2階  客室 × 8 / 事務室 / 布団部屋 / ベランダ
- *  1階・2階とも、北と南に長い廊下がある。
+ * マップの設計図（MapPlan）から建物を建てる。
+ *  - 部屋のすき間が壁になる（庭だけに面した壁は土塀）
+ *  - となり合う部屋には自動で出入り口があく
+ *  - 2階は plan.upper の範囲。庭（open）の上には2階も屋根もない
  */
 public final class MapBuilder {
-    private static final int W = 44;      // x の最大
-    private static final int D = 40;      // z の最大
-    private static final int F1 = 0;
-    private static final int F2 = 5;
-    private static final int ROOF = 10;
-
-    // 中庭（2階には床がない）
-    private static final int CX1 = 15, CZ1 = 16, CX2 = 33, CZ2 = 25;
-
-    private record RoomDef(String name, int floor, int x1, int z1, int x2, int z2, Block floorBlock) {
-        boolean has(int x, int z) {
-            return x >= x1 && x <= x2 && z >= z1 && z <= z2;
-        }
-    }
-
-    private static final List<RoomDef> ROOMS = new ArrayList<>();
-
-    private static void room(String name, int floor, int x1, int z1, int x2, int z2, Block floorBlock) {
-        ROOMS.add(new RoomDef(name, floor, x1, z1, x2, z2, floorBlock));
-    }
-
-    static {
-        // 1階
-        room("台所", F1, 1, 1, 10, 10, Blocks.SMOOTH_STONE);
-        room("食堂", F1, 12, 1, 21, 10, Blocks.OAK_PLANKS);
-        room("大広間", F1, 23, 1, 34, 10, Blocks.BAMBOO_PLANKS);
-        room("土間", F1, 36, 1, 43, 10, Blocks.PACKED_MUD);
-        room("廊下", F1, 1, 12, 43, 14, Blocks.OAK_PLANKS);
-        room("風呂場", F1, 1, 16, 9, 25, Blocks.CALCITE);
-        room("階段", F1, 11, 16, 13, 25, Blocks.OAK_PLANKS);
-        room("中庭", F1, CX1, CZ1, CX2, CZ2, Blocks.GRASS_BLOCK);
-        room("納戸", F1, 35, 16, 43, 25, Blocks.SPRUCE_PLANKS);
-        room("廊下", F1, 1, 27, 43, 29, Blocks.OAK_PLANKS);
-        room("トイレ", F1, 1, 31, 5, 39, Blocks.CALCITE);
-        room("洗面所", F1, 7, 31, 11, 39, Blocks.CALCITE);
-        room("玄関", F1, 13, 31, 19, 39, Blocks.OAK_PLANKS);
-        room("帳場", F1, 21, 31, 28, 39, Blocks.OAK_PLANKS);
-        room("縁側の間", F1, 30, 31, 36, 39, Blocks.BAMBOO_PLANKS);
-        room("物置", F1, 38, 31, 43, 39, Blocks.SPRUCE_PLANKS);
-        // 2階
-        room("客室・松", F2, 1, 1, 10, 10, Blocks.BAMBOO_PLANKS);
-        room("客室・竹", F2, 12, 1, 21, 10, Blocks.BAMBOO_PLANKS);
-        room("客室・梅", F2, 23, 1, 33, 10, Blocks.BAMBOO_PLANKS);
-        room("客室・桜", F2, 35, 1, 43, 10, Blocks.BAMBOO_PLANKS);
-        room("2階 廊下", F2, 1, 12, 43, 14, Blocks.SPRUCE_PLANKS);
-        room("客室・菊", F2, 1, 16, 9, 25, Blocks.BAMBOO_PLANKS);
-        room("階段", F2, 11, 16, 13, 25, Blocks.SPRUCE_PLANKS);
-        room("ベランダ", F2, 35, 16, 43, 25, Blocks.SPRUCE_PLANKS);
-        room("2階 廊下", F2, 1, 27, 43, 29, Blocks.SPRUCE_PLANKS);
-        room("客室・藤", F2, 1, 31, 11, 39, Blocks.BAMBOO_PLANKS);
-        room("事務室", F2, 13, 31, 20, 39, Blocks.SPRUCE_PLANKS);
-        room("客室・萩", F2, 22, 31, 30, 39, Blocks.BAMBOO_PLANKS);
-        room("布団部屋", F2, 32, 31, 43, 39, Blocks.SPRUCE_PLANKS);
-    }
+    public static final int F1 = 0;
+    public static final int F2 = 5;
 
     private final ServerLevel level;
     private final BlockPos origin;
     private final Rotation rotation;
+    private final MapPlan plan;
+    private final int roof;
     private final List<BlockPos> fixups = new ArrayList<>();
 
-    private MapBuilder(ServerLevel level, BlockPos origin, Rotation rotation) {
+    private MapBuilder(ServerLevel level, BlockPos origin, Rotation rotation, MapPlan plan) {
         this.level = level;
         this.origin = origin;
         this.rotation = rotation;
+        this.plan = plan;
+        this.roof = plan.twoFloors() ? 10 : 5;
     }
 
     /** プレイヤーの目の前に建てる。玄関がプレイヤーの方を向く。スタート地点を返す */
-    public static BlockPos build(ServerPlayer player) {
+    public static BlockPos build(ServerPlayer player, MapPlan plan) {
         Direction facing = player.getDirection();
         Rotation rot = switch (facing) {
             case NORTH -> Rotation.NONE;
@@ -110,33 +57,38 @@ public final class MapBuilder {
             default -> Rotation.COUNTERCLOCKWISE_90;
         };
         BlockPos front = player.blockPosition().relative(facing, 3);
-        BlockPos offset = new BlockPos(-16, -1, -(D + 3)).rotate(rot);
-        MapBuilder b = new MapBuilder(player.serverLevel(), front.offset(offset), rot);
+        BlockPos offset = new BlockPos(-(plan.entranceX + 1), -1, -(plan.d + 3)).rotate(rot);
+        MapBuilder b = new MapBuilder(player.serverLevel(), front.offset(offset), rot, plan);
         b.run();
-        return b.world(16, F1 + 1, 35);
+        return b.world(plan.spawnX, F1 + 1, plan.spawnZ);
     }
 
-    // ------------------------------------------------------------ 座標と置く処理
+    // ------------------------------------------------------------ 設計図から使う道具
 
-    private BlockPos world(int x, int y, int z) {
+    /** 階（0 = 1階、1 = 2階）の床の上の高さ */
+    public int y(int floor) {
+        return (floor == 0 ? F1 : F2) + 1;
+    }
+
+    public BlockPos world(int x, int y, int z) {
         return origin.offset(new BlockPos(x, y, z).rotate(rotation));
     }
 
-    private void set(int x, int y, int z, BlockState state) {
+    public void set(int x, int y, int z, BlockState state) {
         BlockPos pos = world(x, y, z);
         level.setBlock(pos, state.rotate(rotation), Block.UPDATE_CLIENTS);
         Block b = state.getBlock();
         if (state.is(BlockTags.STAIRS) || b == Blocks.WHITE_STAINED_GLASS_PANE || b == Blocks.GLASS_PANE
-                || state.is(BlockTags.FENCES)) {
+                || state.is(BlockTags.FENCES) || state.is(BlockTags.WALLS)) {
             fixups.add(pos);
         }
     }
 
-    private void set(int x, int y, int z, Block block) {
+    public void set(int x, int y, int z, Block block) {
         set(x, y, z, block.defaultBlockState());
     }
 
-    private void fill(int x1, int y1, int z1, int x2, int y2, int z2, BlockState state) {
+    public void fill(int x1, int y1, int z1, int x2, int y2, int z2, BlockState state) {
         for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
             for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
                 for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
@@ -146,41 +98,104 @@ public final class MapBuilder {
         }
     }
 
-    private void fill(int x1, int y1, int z1, int x2, int y2, int z2, Block block) {
+    public void fill(int x1, int y1, int z1, int x2, int y2, int z2, Block block) {
         fill(x1, y1, z1, x2, y2, z2, block.defaultBlockState());
     }
 
-    private void marker(MarkerType type, int x, int y, int z, Direction facing) {
+    /** 家具（専用ブロック）を置く。y は高さ（ふつうは y(階)） */
+    public void marker(MarkerType type, int x, int y, int z, Direction facing) {
         set(x, y, z, ModBlocks.BLOCKS.get(type).defaultBlockState().setValue(MarkerBlock.FACING, facing));
     }
 
-    private boolean isAir(int x, int y, int z) {
+    public boolean isAir(int x, int y, int z) {
         return level.getBlockState(world(x, y, z)).isAir();
     }
 
-    private static boolean courtyard(int x, int z) {
-        return x >= CX1 && x <= CX2 && z >= CZ1 && z <= CZ2;
+    /** 池：x1〜x2, z1〜z2 を水にして、まわりを苔石で囲む（地面の高さ） */
+    public void pond(int x1, int z1, int x2, int z2) {
+        fill(x1, F1, z1, x2, F1, z2, Blocks.WATER);
+        fill(x1, F1 - 1, z1, x2, F1 - 1, z2, Blocks.CLAY);
+        for (int x = x1 - 1; x <= x2 + 1; x++) {
+            set(x, F1, z1 - 1, Blocks.MOSSY_COBBLESTONE);
+            set(x, F1, z2 + 1, Blocks.MOSSY_COBBLESTONE);
+        }
+        for (int z = z1; z <= z2; z++) {
+            set(x1 - 1, F1, z, Blocks.MOSSY_COBBLESTONE);
+            set(x2 + 1, F1, z, Blocks.MOSSY_COBBLESTONE);
+        }
+        set((x1 + x2) / 2, F1 + 1, (z1 + z2) / 2, Blocks.LILY_PAD);
     }
 
-    /** その階で、そこが部屋の中か */
-    private static boolean inRoom(int floor, int x, int z) {
-        for (RoomDef r : ROOMS) {
-            if (r.floor == floor && r.has(x, z)) {
-                return true;
+    // ------------------------------------------------------------ 部屋と壁の判定
+
+    private boolean inside(int x, int z) {
+        return x >= 0 && x <= plan.w && z >= 0 && z <= plan.d;
+    }
+
+    private boolean inUpper(int x, int z) {
+        int[] u = plan.upper;
+        return u != null && x >= u[0] && x <= u[2] && z >= u[1] && z <= u[3];
+    }
+
+    private MapPlan.Room roomAt(int floor, int x, int z) {
+        for (MapPlan.Room r : plan.rooms) {
+            if (r.floor() == floor && r.has(x, z)) {
+                return r;
             }
         }
-        return false;
+        return null;
     }
 
-    /** その階で、そこが壁になるか（家の中で部屋でない所）。2階の中庭の上は空 */
-    private static boolean isWall(int floor, int x, int z) {
-        if (x < 0 || x > W || z < 0 || z > D) {
+    private boolean openAt(int x, int z) {
+        MapPlan.Room r = roomAt(0, x, z);
+        return r != null && r.open();
+    }
+
+    /** その階で壁になるか */
+    private boolean isWall(int floor, int x, int z) {
+        if (!inside(x, z)) {
             return false;
         }
-        if (floor == F2 && courtyard(x, z)) {
+        if (floor == 1 && (!inUpper(x, z) || openAt(x, z))) {
             return false;
         }
-        return !inRoom(floor, x, z);
+        return roomAt(floor, x, z) == null;
+    }
+
+    /** 1階の壁のうち、庭か外にしか面していない（＝屋根のいらない土塀） */
+    private boolean gardenWall(int x, int z) {
+        if (!isWall(0, x, z)) {
+            return false;
+        }
+        boolean touchesGarden = false;
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (int[] dd : dirs) {
+            int nx = x + dd[0];
+            int nz = z + dd[1];
+            MapPlan.Room r = roomAt(0, nx, nz);
+            if (r != null && !r.open()) {
+                return false;
+            }
+            if (r != null) {
+                touchesGarden = true;
+            }
+        }
+        // 角（斜め）に部屋があるときも家の壁にする
+        for (int[] dd : new int[][]{{1, 1}, {1, -1}, {-1, 1}, {-1, -1}}) {
+            MapPlan.Room r = roomAt(0, x + dd[0], z + dd[1]);
+            if (r != null && !r.open()) {
+                return false;
+            }
+        }
+        return touchesGarden || !inside(x + 1, z) || !inside(x - 1, z) || !inside(x, z + 1) || !inside(x, z - 1);
+    }
+
+    /** 屋根がいる所（1階の屋根の高さ） */
+    private boolean roofed(int x, int z) {
+        if (!inside(x, z) || openAt(x, z)) {
+            return false;
+        }
+        return !gardenWall(x, z);
     }
 
     // ------------------------------------------------------------ 建てる
@@ -189,13 +204,16 @@ public final class MapBuilder {
         MapData.get(level).clearAll();
         clearSite();
         floors();
-        walls(F1);
-        walls(F2);
+        walls(0);
+        if (plan.twoFloors()) {
+            walls(1);
+        }
         stairs();
         doorways();
+        entrance();
         windows();
-        roof();
-        furnish();
+        roofs();
+        plan.furnish.accept(this);
         lights();
         fixShapes();
         registerRooms();
@@ -203,38 +221,51 @@ public final class MapBuilder {
     }
 
     private void clearSite() {
-        fill(-4, 0, -4, W + 4, ROOF + 4, D + 6, Blocks.AIR.defaultBlockState());
-        fill(-4, -1, -4, W + 4, -1, D + 6, Blocks.GRASS_BLOCK);
-        fill(-4, -3, -4, W + 4, -2, D + 6, Blocks.DIRT);
-        fill(-2, -1, -2, W + 2, -1, D + 2, Blocks.GRAVEL);
-        fill(15, -1, D + 1, 17, -1, D + 6, Blocks.STONE_BRICKS);
+        int w = plan.w;
+        int d = plan.d;
+        fill(-4, 0, -4, w + 4, roof + 4, d + 6, Blocks.AIR.defaultBlockState());
+        fill(-4, -1, -4, w + 4, -1, d + 6, Blocks.GRASS_BLOCK);
+        fill(-4, -3, -4, w + 4, -2, d + 6, Blocks.DIRT);
+        fill(-2, -1, -2, w + 2, -1, d + 2, Blocks.GRAVEL);
+        fill(plan.entranceX - 1, -1, d + 1, plan.entranceX + 2, -1, d + 6, Blocks.STONE_BRICKS);
     }
 
     private void floors() {
-        fill(0, F1, 0, W, F1, D, Blocks.STONE_BRICKS);
-        fill(1, F2, 1, W - 1, F2, D - 1, Blocks.SPRUCE_PLANKS);
-        for (RoomDef r : ROOMS) {
-            fill(r.x1, r.floor, r.z1, r.x2, r.floor, r.z2, r.floorBlock);
+        for (int x = 0; x <= plan.w; x++) {
+            for (int z = 0; z <= plan.d; z++) {
+                set(x, F1, z, Blocks.STONE_BRICKS);
+                if (inUpper(x, z) && !openAt(x, z)) {
+                    set(x, F2, z, Blocks.SPRUCE_PLANKS);
+                }
+            }
         }
-        // 玄関のたたき
-        fill(13, F1, 36, 19, F1, 39, Blocks.POLISHED_ANDESITE);
-        // 中庭の上（2階の床なし）と階段の吹き抜け
-        fill(CX1, F2, CZ1, CX2, F2, CZ2, Blocks.AIR);
-        fill(11, F2, 19, 13, F2, 25, Blocks.AIR);
-        // 中庭の縁側
-        fill(CX1, F1, CZ1, CX2, F1, CZ1, Blocks.OAK_PLANKS);
+        for (MapPlan.Room r : plan.rooms) {
+            int fy = r.floor() == 0 ? F1 : F2;
+            fill(r.x1(), fy, r.z1(), r.x2(), fy, r.z2(), r.floorBlock());
+        }
+        // 階段の吹き抜け
+        for (MapPlan.Stair s : plan.stairs) {
+            fill(s.x1(), F2, s.zStart() - 3, s.x2(), F2, s.zStart() + 3, Blocks.AIR);
+        }
     }
 
-    private void walls(int base) {
-        for (int x = 0; x <= W; x++) {
-            for (int z = 0; z <= D; z++) {
-                if (!isWall(base, x, z)) {
+    private void walls(int floor) {
+        int base = floor == 0 ? F1 : F2;
+        for (int x = 0; x <= plan.w; x++) {
+            for (int z = 0; z <= plan.d; z++) {
+                if (!isWall(floor, x, z)) {
                     continue;
                 }
-                boolean outer = x == 0 || x == W || z == 0 || z == D;
-                boolean wx = isWall(base, x - 1, z) || isWall(base, x + 1, z);
-                boolean wz = isWall(base, x, z - 1) || isWall(base, x, z + 1);
-                boolean pillar = (wx && wz) || (outer && ((z == 0 || z == D) ? x % 4 == 0 : z % 4 == 0));
+                if (floor == 0 && gardenWall(x, z)) {
+                    // 土塀
+                    fill(x, base + 1, z, x, base + 2, z, Blocks.MUD_BRICKS);
+                    set(x, base + 3, z, Blocks.DEEPSLATE_TILE_SLAB);
+                    continue;
+                }
+                boolean outer = x == 0 || x == plan.w || z == 0 || z == plan.d;
+                boolean wx = isWall(floor, x - 1, z) || isWall(floor, x + 1, z);
+                boolean wz = isWall(floor, x, z - 1) || isWall(floor, x, z + 1);
+                boolean pillar = (wx && wz) || (outer && ((z == 0 || z == plan.d) ? x % 4 == 0 : z % 4 == 0));
                 if (pillar) {
                     fill(x, base + 1, z, x, base + 4, z, outer ? Blocks.DARK_OAK_LOG : Blocks.STRIPPED_SPRUCE_LOG);
                 } else {
@@ -242,7 +273,7 @@ public final class MapBuilder {
                     fill(x, base + 2, z, x, base + 3, z, Blocks.SMOOTH_QUARTZ);
                     set(x, base + 4, z, outer ? Blocks.DARK_OAK_PLANKS : Blocks.STRIPPED_SPRUCE_WOOD);
                 }
-                if (base == F1) {
+                if (floor == 0) {
                     set(x, F2, z, Blocks.DARK_OAK_PLANKS);   // 梁
                 }
             }
@@ -250,330 +281,184 @@ public final class MapBuilder {
     }
 
     private void doorway(int floor, int x1, int z1, int x2, int z2) {
-        fill(x1, floor + 1, z1, x2, floor + 3, z2, Blocks.AIR.defaultBlockState());
+        int base = floor == 0 ? F1 : F2;
+        fill(x1, base + 1, z1, x2, base + 3, z2, Blocks.AIR.defaultBlockState());
     }
 
+    /** となり合う部屋のあいだ（1マスの壁）に出入り口をあける */
     private void doorways() {
-        // 1階：北の部屋
-        doorway(F1, 5, 11, 6, 11);
-        doorway(F1, 16, 11, 17, 11);
-        doorway(F1, 11, 5, 11, 6);         // 台所 ↔ 食堂
-        doorway(F1, 27, 11, 30, 11);       // 大広間（広め）
-        doorway(F1, 39, 11, 40, 11);
-        doorway(F1, 35, 6, 35, 7);         // 大広間 ↔ 土間
-        // 1階：真ん中
-        doorway(F1, 4, 15, 5, 15);
-        doorway(F1, 11, 15, 13, 15);
-        doorway(F1, 11, 26, 13, 26);
-        doorway(F1, 19, 15, 20, 15);
-        doorway(F1, 28, 15, 29, 15);
-        doorway(F1, 24, 26, 25, 26);
-        doorway(F1, 38, 15, 39, 15);
-        doorway(F1, 38, 26, 39, 26);
-        // 1階：南の部屋
-        doorway(F1, 3, 30, 3, 30);
-        doorway(F1, 8, 30, 9, 30);
-        doorway(F1, 15, 30, 17, 30);
-        doorway(F1, 24, 30, 25, 30);
-        doorway(F1, 32, 30, 33, 30);
-        doorway(F1, 40, 30, 41, 30);
-        // 2階
-        doorway(F2, 5, 11, 6, 11);
-        doorway(F2, 16, 11, 17, 11);
-        doorway(F2, 27, 11, 28, 11);
-        doorway(F2, 39, 11, 40, 11);
-        doorway(F2, 4, 15, 5, 15);
-        doorway(F2, 4, 26, 5, 26);
-        doorway(F2, 11, 15, 13, 15);
-        doorway(F2, 38, 15, 39, 15);
-        doorway(F2, 38, 26, 39, 26);
-        doorway(F2, 5, 30, 6, 30);
-        doorway(F2, 16, 30, 17, 30);
-        doorway(F2, 25, 30, 26, 30);
-        doorway(F2, 37, 30, 38, 30);
-        // 正面玄関の引き戸
-        for (int x = 15; x <= 17; x++) {
-            if (x == 17) {
-                fill(x, F1 + 1, D, x, F1 + 3, D, Blocks.DARK_OAK_PLANKS);
-                continue;
+        for (MapPlan.Door dr : plan.doors) {
+            doorway(dr.floor(), dr.x1(), dr.z1(), dr.x2(), dr.z2());
+        }
+        if (!plan.autoDoors) {
+            return;
+        }
+        List<MapPlan.Room> rs = plan.rooms;
+        for (int i = 0; i < rs.size(); i++) {
+            for (int j = i + 1; j < rs.size(); j++) {
+                MapPlan.Room a = rs.get(i);
+                MapPlan.Room b = rs.get(j);
+                if (a.floor() != b.floor() || plan.noDoor.contains(a.name() + "|" + b.name())) {
+                    continue;
+                }
+                boolean wide = a.open() || b.open() || a.name().contains("廊下") || b.name().contains("廊下")
+                        || a.name().contains("回廊") || b.name().contains("回廊");
+                int width = wide ? 3 : 2;
+                // 東西に並ぶ（あいだが x = 壁）
+                int wallX = a.x2() + 2 == b.x1() ? a.x2() + 1 : b.x2() + 2 == a.x1() ? b.x2() + 1 : Integer.MIN_VALUE;
+                if (wallX != Integer.MIN_VALUE) {
+                    int lo = Math.max(a.z1(), b.z1());
+                    int hi = Math.min(a.z2(), b.z2());
+                    cut(a.floor(), true, wallX, lo, hi, width);
+                }
+                int wallZ = a.z2() + 2 == b.z1() ? a.z2() + 1 : b.z2() + 2 == a.z1() ? b.z2() + 1 : Integer.MIN_VALUE;
+                if (wallZ != Integer.MIN_VALUE) {
+                    int lo = Math.max(a.x1(), b.x1());
+                    int hi = Math.min(a.x2(), b.x2());
+                    cut(a.floor(), false, wallZ, lo, hi, width);
+                }
             }
-            BlockState lower = Blocks.SPRUCE_DOOR.defaultBlockState()
-                    .setValue(DoorBlock.FACING, Direction.NORTH).setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER);
-            set(x, F1 + 1, D, lower);
-            set(x, F1 + 2, D, lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
-            set(x, F1 + 3, D, Blocks.DARK_OAK_PLANKS);
         }
     }
 
-    private void stairs() {
-        // 階段：南から入って北へ上る（z = 22 → 19）。上りきると z = 16〜18 の踊り場（2階）
-        BlockState step = Blocks.SPRUCE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH);
-        for (int i = 0; i < 4; i++) {
-            int z = 22 - i;
-            if (i > 0) {
-                fill(11, F1 + 1, z, 13, F1 + i, z, Blocks.SPRUCE_PLANKS);
+    /** 壁の線（alongZ なら x = line の壁を z 方向に）の lo〜hi の範囲に出入り口を1〜2か所 */
+    private void cut(int floor, boolean alongZ, int line, int lo, int hi, int width) {
+        int len = hi - lo + 1;
+        if (len < 2) {
+            return;
+        }
+        width = Math.min(width, len);
+        List<Integer> centers = new ArrayList<>();
+        if (len >= 16) {
+            centers.add(lo + len / 4);
+            centers.add(lo + len * 3 / 4);
+        } else {
+            centers.add(lo + len / 2);
+        }
+        for (int c : centers) {
+            int s = Math.max(lo, Math.min(hi - width + 1, c - width / 2));
+            if (alongZ) {
+                doorway(floor, line, s, line, s + width - 1);
+            } else {
+                doorway(floor, s, line, s + width - 1, line);
             }
-            fill(11, F1 + 1 + i, z, 13, F1 + 1 + i, z, step);
+        }
+    }
+
+    private void entrance() {
+        int z = plan.d;
+        for (int x = plan.entranceX; x <= plan.entranceX + 1; x++) {
+            BlockState lower = Blocks.SPRUCE_DOOR.defaultBlockState()
+                    .setValue(DoorBlock.FACING, Direction.NORTH).setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER)
+                    .setValue(DoorBlock.HINGE, x == plan.entranceX ? net.minecraft.world.level.block.state.properties.DoorHingeSide.LEFT
+                            : net.minecraft.world.level.block.state.properties.DoorHingeSide.RIGHT);
+            set(x, F1 + 1, z, lower);
+            set(x, F1 + 2, z, lower.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+            set(x, F1 + 3, z, Blocks.DARK_OAK_PLANKS);
+        }
+        // 玄関のひさしとちょうちん
+        BlockState lantern = Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true);
+        fill(plan.entranceX - 1, F1 + 4, z + 1, plan.entranceX + 2, F1 + 4, z + 1,
+                Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.TOP));
+        set(plan.entranceX - 1, F1 + 3, z + 1, lantern);
+        set(plan.entranceX + 2, F1 + 3, z + 1, lantern);
+    }
+
+    private void stairs() {
+        BlockState step = Blocks.SPRUCE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH);
+        for (MapPlan.Stair s : plan.stairs) {
+            for (int i = 0; i < 4; i++) {
+                int z = s.zStart() - i;
+                if (i > 0) {
+                    fill(s.x1(), F1 + 1, z, s.x2(), F1 + i, z, Blocks.SPRUCE_PLANKS);
+                }
+                fill(s.x1(), F1 + 1 + i, z, s.x2(), F1 + 1 + i, z, step);
+            }
         }
     }
 
     private void windows() {
         BlockState shoji = Blocks.WHITE_STAINED_GLASS_PANE.defaultBlockState();
         BlockState glass = Blocks.GLASS_PANE.defaultBlockState();
-        for (int base : new int[]{F1, F2}) {
-            for (int x = 1; x < W; x++) {
-                if (x % 4 == 2) {
-                    for (int z : new int[]{0, D}) {
-                        if (isWall(base, x, z) && !(base == F1 && z == D && x >= 14 && x <= 18)) {
-                            set(x, base + 2, z, shoji);
-                            set(x, base + 3, z, shoji);
-                        }
+        for (int floor = 0; floor <= (plan.twoFloors() ? 1 : 0); floor++) {
+            int base = floor == 0 ? F1 : F2;
+            for (int x = 0; x <= plan.w; x++) {
+                for (int z = 0; z <= plan.d; z++) {
+                    if (!isWall(floor, x, z) || (floor == 0 && gardenWall(x, z))) {
+                        continue;
                     }
-                }
-            }
-            for (int z = 1; z < D; z++) {
-                if (z % 4 == 2) {
-                    for (int x : new int[]{0, W}) {
-                        if (isWall(base, x, z)) {
-                            set(x, base + 2, z, shoji);
-                            set(x, base + 3, z, shoji);
-                        }
+                    if (level.getBlockState(world(x, base + 2, z)).is(Blocks.DARK_OAK_LOG)
+                            || level.getBlockState(world(x, base + 2, z)).is(Blocks.STRIPPED_SPRUCE_LOG)) {
+                        continue;
                     }
-                }
-            }
-        }
-        // 中庭のまわりはガラス戸（1階）とガラス窓（2階）
-        for (int x = CX1; x <= CX2; x++) {
-            for (int z : new int[]{CZ1 - 1, CZ2 + 1}) {
-                if (isAir(x, F1 + 1, z)) {
-                    continue;     // 出入り口
-                }
-                if (x % 3 != 0) {
-                    fill(x, F1 + 1, z, x, F1 + 3, z, glass);
-                }
-                if (x % 2 == 0) {
-                    set(x, F2 + 2, z, glass);
-                    set(x, F2 + 3, z, glass);
-                }
-            }
-        }
-        for (int z = CZ1; z <= CZ2; z++) {
-            for (int x : new int[]{CX1 - 1, CX2 + 1}) {
-                if (z % 3 != 0) {
-                    set(x, F1 + 2, z, glass);
-                    set(x, F1 + 3, z, glass);
-                }
-                if (z % 2 == 0) {
-                    set(x, F2 + 2, z, glass);
-                    set(x, F2 + 3, z, glass);
+                    boolean outer = x == 0 || x == plan.w || z == 0 || z == plan.d;
+                    boolean nearEntrance = z == plan.d && x >= plan.entranceX - 1 && x <= plan.entranceX + 2;
+                    boolean facesGarden = openAt(x + 1, z) || openAt(x - 1, z) || openAt(x, z + 1) || openAt(x, z - 1);
+                    boolean along = (z == 0 || z == plan.d) ? x % 4 == 2 : z % 4 == 2;
+                    if (outer && along && !nearEntrance && !isAir(x, base + 2, z)) {
+                        set(x, base + 2, z, shoji);
+                        set(x, base + 3, z, shoji);
+                    } else if (facesGarden && (x + z) % 3 != 0 && !isAir(x, base + 2, z)) {
+                        set(x, base + 2, z, glass);
+                        set(x, base + 3, z, glass);
+                    }
                 }
             }
         }
     }
 
-    private void roof() {
+    private void roofs() {
         BlockState tiles = Blocks.DEEPSLATE_TILES.defaultBlockState();
         BlockState slab = Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
-        for (int x = -1; x <= W + 1; x++) {
-            for (int z = -1; z <= D + 1; z++) {
-                if (courtyard(x, z)) {
+        for (int x = -1; x <= plan.w + 1; x++) {
+            for (int z = -1; z <= plan.d + 1; z++) {
+                boolean edge = !inside(x, z);
+                int cx = Math.max(0, Math.min(plan.w, x));
+                int cz = Math.max(0, Math.min(plan.d, z));
+                if (!roofed(cx, cz)) {
                     continue;
                 }
-                boolean eave = x == -1 || x == W + 1 || z == -1 || z == D + 1;
-                set(x, ROOF, z, eave ? slab : tiles);
+                boolean up = inUpper(cx, cz);
+                int y = up ? roof : F2;
+                if (!up) {
+                    // 1階だけの所：天井（2階の床の高さ）に瓦
+                    set(x, y, z, edge ? slab : tiles);
+                } else {
+                    set(x, y, z, edge ? slab : tiles);
+                }
+                // 庭のふちはひさし
+                if (!edge && (openAt(x + 1, z) || openAt(x - 1, z) || openAt(x, z + 1) || openAt(x, z - 1))) {
+                    set(x, y, z, slab);
+                }
             }
         }
-        // 中庭のふちのひさし
-        for (int x = CX1; x <= CX2; x++) {
-            set(x, ROOF, CZ1, slab);
-            set(x, ROOF, CZ2, slab);
-        }
-        // 棟
-        BlockState n = Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH);
-        BlockState s = Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.SOUTH);
-        for (int x = 0; x <= W; x++) {
-            set(x, ROOF + 1, 6, n);
-            set(x, ROOF + 1, 7, s);
-            set(x, ROOF + 1, 33, n);
-            set(x, ROOF + 1, 34, s);
-        }
-    }
-
-    private void furnish() {
-        int a = F1 + 1;
-        int b = F2 + 1;
-        BlockState zabuton = Blocks.RED_CARPET.defaultBlockState();
-
-        // ---- 台所
-        marker(MarkerType.KAMADO, 2, a, 1, Direction.SOUTH);
-        marker(MarkerType.KAMADO, 4, a, 1, Direction.SOUTH);
-        marker(MarkerType.SINK, 7, a, 1, Direction.SOUTH);
-        marker(MarkerType.GAS_VALVE, 9, a, 3, Direction.WEST);
-        fill(1, a, 6, 1, a + 1, 7, Blocks.BARREL);
-        set(4, a, 6, Blocks.SPRUCE_FENCE);
-        set(4, a + 1, 6, Blocks.SPRUCE_PRESSURE_PLATE);
-        marker(MarkerType.VENT, 8, a, 9, Direction.NORTH);
-
-        // ---- 食堂（長い座卓と座布団）
-        for (int x = 14; x <= 19; x++) {
-            set(x, a, 5, Blocks.SPRUCE_FENCE);
-            set(x, a + 1, 5, Blocks.SPRUCE_PRESSURE_PLATE);
-            set(x, a, 4, zabuton);
-            set(x, a, 6, zabuton);
-        }
-        marker(MarkerType.VASE, 20, a, 1, Direction.SOUTH);
-        marker(MarkerType.SHOJI, 13, a, 1, Direction.SOUTH);
-        marker(MarkerType.DUST, 13, a, 8, Direction.NORTH);
-
-        // ---- 大広間（囲炉裏と呼び鈴。会議はここ）
-        marker(MarkerType.BELL, 28, a, 5, Direction.SOUTH);
-        for (int i = 0; i < 16; i++) {
-            double ang = i / 16.0 * Math.PI * 2;
-            int cx = 28 + (int) Math.round(Math.cos(ang) * 2.6);
-            int cz = 5 + (int) Math.round(Math.sin(ang) * 2.6);
-            if (isAir(cx, a, cz)) {
-                set(cx, a, cz, zabuton);
+        // 2階の屋根の棟
+        if (plan.twoFloors()) {
+            int[] u = plan.upper;
+            int mid = (u[1] + u[3]) / 2;
+            BlockState n = Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH);
+            BlockState s = Blocks.DEEPSLATE_TILE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.SOUTH);
+            for (int x = u[0]; x <= u[2]; x++) {
+                if (roofed(x, mid) && roofed(x, mid + 1)) {
+                    set(x, roof + 1, mid, n);
+                    set(x, roof + 1, mid + 1, s);
+                }
             }
         }
-        marker(MarkerType.VASE, 28, a, 1, Direction.SOUTH);
-        set(26, a, 1, Blocks.POTTED_AZALEA);
-        set(30, a, 1, Blocks.BOOKSHELF);
-        set(24, a, 1, Blocks.CHISELED_BOOKSHELF);
-        marker(MarkerType.SHOJI, 24, a, 10, Direction.NORTH);
-        marker(MarkerType.SHOJI, 33, a, 10, Direction.NORTH);
-
-        // ---- 土間
-        marker(MarkerType.CHOPPING, 39, a, 8, Direction.NORTH);
-        marker(MarkerType.BREAKER, 42, a + 1, 1, Direction.SOUTH);
-        fill(36, a, 1, 37, a + 1, 2, Blocks.STRIPPED_OAK_LOG);
-        set(43, a, 5, Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL, 3));
-        set(43, a, 8, Blocks.COMPOSTER);
-        marker(MarkerType.VENT, 37, a, 6, Direction.NORTH);
-
-        // ---- 1階 廊下
-        marker(MarkerType.DUST, 8, a, 13, Direction.NORTH);
-        marker(MarkerType.DUST, 31, a, 13, Direction.NORTH);
-        marker(MarkerType.DUST, 20, a, 28, Direction.NORTH);
-        set(1, a, 13, Blocks.POTTED_FERN);
-        set(43, a, 13, Blocks.POTTED_FERN);
-        set(1, a, 28, Blocks.POTTED_BAMBOO);
-        set(43, a, 28, Blocks.POTTED_BAMBOO);
-
-        // ---- 風呂場
-        fill(2, a, 20, 6, a, 24, Blocks.STRIPPED_SPRUCE_LOG);
-        fill(3, a, 21, 5, a, 23, Blocks.WATER);
-        marker(MarkerType.BATH, 8, a, 22, Direction.WEST);
-        marker(MarkerType.BOILER, 1, a, 17, Direction.EAST);
-        marker(MarkerType.VENT, 6, a, 17, Direction.NORTH);
-
-        // ---- 中庭（池・畑・物干し）
-        fill(21, F1, 19, 26, F1, 22, Blocks.WATER);
-        fill(21, F1 - 1, 19, 26, F1 - 1, 22, Blocks.CLAY);
-        for (int x = 20; x <= 27; x++) {
-            set(x, F1, 18, Blocks.MOSSY_COBBLESTONE);
-            set(x, F1, 23, Blocks.MOSSY_COBBLESTONE);
-        }
-        for (int z = 19; z <= 22; z++) {
-            set(20, F1, z, Blocks.MOSSY_COBBLESTONE);
-            set(27, F1, z, Blocks.MOSSY_COBBLESTONE);
-        }
-        set(23, F1 + 1, 20, Blocks.LILY_PAD);
-        marker(MarkerType.FIELD, 16, a, 18, Direction.NORTH);
-        marker(MarkerType.FIELD, 17, a, 18, Direction.NORTH);
-        marker(MarkerType.FIELD, 16, a, 19, Direction.NORTH);
-        marker(MarkerType.LAUNDRY, 31, a, 24, Direction.NORTH);
-        set(32, a, 18, Blocks.FLOWERING_AZALEA);
-        set(29, a, 21, Blocks.STONE_BRICK_WALL);
-        set(29, a + 1, 21, Blocks.LANTERN);
-        set(17, a, 24, Blocks.POPPY);
-        set(18, a, 24, Blocks.DANDELION);
-        set(33, a, 24, Blocks.CORNFLOWER);
-
-        // ---- 納戸
-        fill(43, a, 17, 43, a + 2, 19, Blocks.BARREL);
-        set(42, a, 17, Blocks.CHEST);
-        marker(MarkerType.DUST, 40, a, 21, Direction.NORTH);
-        marker(MarkerType.VENT, 36, a, 24, Direction.NORTH);
-
-        // ---- トイレ・洗面所
-        set(3, a, 38, Blocks.CAULDRON);
-        set(1, a, 32, Blocks.POTTED_FERN);
-        marker(MarkerType.SINK, 9, a, 39, Direction.NORTH);
-        marker(MarkerType.VASE, 7, a, 31, Direction.SOUTH);
-
-        // ---- 玄関（スタート地点）
-        marker(MarkerType.SPAWN, 16, a, 35, Direction.NORTH);
-        marker(MarkerType.SHOE_RACK, 13, a, 38, Direction.EAST);
-        set(19, a, 38, Blocks.POTTED_BAMBOO);
-        set(19, a, 32, Blocks.FLOWER_POT);
-
-        // ---- 帳場
-        marker(MarkerType.LEDGER, 24, a, 34, Direction.SOUTH);
-        fill(21, a, 39, 22, a + 1, 39, Blocks.BOOKSHELF);
-        set(28, a, 31, Blocks.LECTERN);
-        marker(MarkerType.VENT, 27, a, 38, Direction.NORTH);
-
-        // ---- 縁側の間
-        marker(MarkerType.SHOJI, 33, a, 39, Direction.NORTH);
-        marker(MarkerType.DUST, 35, a, 35, Direction.NORTH);
-        set(31, a, 35, Blocks.SPRUCE_TRAPDOOR);
-        set(30, a, 31, Blocks.POTTED_CHERRY_SAPLING);
-
-        // ---- 物置
-        fill(43, a, 36, 43, a + 2, 39, Blocks.BARREL);
-        marker(MarkerType.DUST, 40, a, 35, Direction.NORTH);
-        marker(MarkerType.VENT, 41, a, 38, Direction.NORTH);
-
-        // ================= 2階
-        marker(MarkerType.FUTON, 3, b, 3, Direction.SOUTH);           // 松
-        marker(MarkerType.DUST, 8, b, 8, Direction.NORTH);
-        marker(MarkerType.VENT, 9, b, 2, Direction.NORTH);
-
-        marker(MarkerType.FUTON, 14, b, 3, Direction.SOUTH);          // 竹
-        marker(MarkerType.SHOJI, 18, b, 1, Direction.SOUTH);
-
-        marker(MarkerType.FUTON, 25, b, 3, Direction.SOUTH);          // 梅
-        marker(MarkerType.VASE, 32, b, 1, Direction.SOUTH);
-
-        marker(MarkerType.FUTON, 37, b, 3, Direction.SOUTH);          // 桜
-        marker(MarkerType.DUST, 42, b, 8, Direction.NORTH);
-
-        marker(MarkerType.DUST, 25, b, 13, Direction.NORTH);          // 2階 廊下
-
-        marker(MarkerType.FUTON, 3, b, 23, Direction.NORTH);          // 菊
-        marker(MarkerType.SHOJI, 1, b, 19, Direction.EAST);
-        marker(MarkerType.VENT, 8, b, 24, Direction.NORTH);
-
-        marker(MarkerType.LAUNDRY, 39, b, 20, Direction.NORTH);       // ベランダ
-        set(43, b, 17, Blocks.POTTED_AZALEA);
-
-        marker(MarkerType.FUTON, 3, b, 37, Direction.NORTH);          // 藤
-        marker(MarkerType.DUST, 9, b, 33, Direction.NORTH);
-
-        marker(MarkerType.WIRING, 16, b, 39, Direction.NORTH);        // 事務室
-        marker(MarkerType.LEDGER, 14, b, 33, Direction.SOUTH);
-        fill(13, b, 39, 13, b + 1, 39, Blocks.BOOKSHELF);
-        set(20, b, 39, Blocks.BARREL);
-        marker(MarkerType.VENT, 19, b, 36, Direction.NORTH);
-
-        marker(MarkerType.FUTON, 24, b, 37, Direction.NORTH);         // 萩
-        marker(MarkerType.SHOJI, 29, b, 39, Direction.NORTH);
-
-        marker(MarkerType.FUTON, 34, b, 37, Direction.NORTH);         // 布団部屋
-        fill(41, b, 36, 43, b + 1, 39, Blocks.WHITE_WOOL);
-        fill(41, b, 32, 43, b, 34, Blocks.BLUE_WOOL);
-        marker(MarkerType.VENT, 38, b, 33, Direction.NORTH);
     }
 
     private void lights() {
         BlockState lantern = Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true);
-        for (RoomDef r : ROOMS) {
-            if (r.name.equals("中庭")) {
+        for (MapPlan.Room r : plan.rooms) {
+            if (r.open()) {
                 continue;
             }
-            int ceil = r.floor == F1 ? F2 : ROOF;
-            for (int x = r.x1 + 1; x <= r.x2 - 1; x += 4) {
-                for (int z = r.z1 + 1; z <= r.z2 - 1; z += 4) {
+            int ceil = r.floor() == 0 ? F2 : roof;
+            if (r.floor() == 0 && !inUpper(r.x1(), r.z1()) && !plan.twoFloors()) {
+                ceil = F2;
+            }
+            for (int x = r.x1() + 1; x <= r.x2() - 1; x += 4) {
+                for (int z = r.z1() + 1; z <= r.z2() - 1; z += 4) {
                     if (isAir(x, ceil - 1, z) && !isAir(x, ceil, z)) {
                         set(x, ceil - 1, z, lantern);
                     }
@@ -595,11 +480,12 @@ public final class MapBuilder {
     /** 部屋の名前と範囲を登録（画面の「現在地」やタスクの場所の表示に使う） */
     private void registerRooms() {
         List<MapData.Room> list = new ArrayList<>();
-        for (RoomDef r : ROOMS) {
-            int top = r.name.equals("中庭") ? ROOF : r.floor + 4;
-            BlockPos p1 = world(r.x1, r.floor, r.z1);
-            BlockPos p2 = world(r.x2, top, r.z2);
-            list.add(new MapData.Room(r.name,
+        for (MapPlan.Room r : plan.rooms) {
+            int fy = r.floor() == 0 ? F1 : F2;
+            int top = r.open() ? roof : fy + 4;
+            BlockPos p1 = world(r.x1(), fy, r.z1());
+            BlockPos p2 = world(r.x2(), top, r.z2());
+            list.add(new MapData.Room(r.name(),
                     Math.min(p1.getX(), p2.getX()), Math.min(p1.getY(), p2.getY()), Math.min(p1.getZ(), p2.getZ()),
                     Math.max(p1.getX(), p2.getX()), Math.max(p1.getY(), p2.getY()), Math.max(p1.getZ(), p2.getZ())));
         }

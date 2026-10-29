@@ -272,14 +272,18 @@ public final class GameManager {
         }
     }
 
-    /** 基本マップ「古民家民泊」を目の前に建てる */
+    /** 設定で選んだ基本マップを目の前に建てる */
     public void buildMap(ServerPlayer p) {
+        buildMap(p, Plans.byIndex(settings().get("map")));
+    }
+
+    public void buildMap(ServerPlayer p, MapPlan plan) {
         if (running()) {
             p.sendSystemMessage(Component.literal("ゲーム中はマップを建てられません").withStyle(ChatFormatting.RED));
             return;
         }
-        p.sendSystemMessage(Component.literal("古民家民泊を建てています…").withStyle(ChatFormatting.GOLD));
-        BlockPos spawn = MapBuilder.build(p);
+        p.sendSystemMessage(Component.literal("「" + plan.name + "」（" + plan.players + "）を建てています…").withStyle(ChatFormatting.GOLD));
+        BlockPos spawn = MapBuilder.build(p, plan);
         p.teleportTo(p.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, p.getYRot(), 0f);
         p.sendSystemMessage(Component.literal("完成！ 玄関がスタート地点です。管理人の鍵でゲームを始めよう。")
                 .withStyle(ChatFormatting.GREEN));

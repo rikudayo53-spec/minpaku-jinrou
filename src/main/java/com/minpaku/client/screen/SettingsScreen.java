@@ -80,10 +80,11 @@ public class SettingsScreen extends Screen {
         Ui.sans(g, sub, px + 42, py + 26, s != null && !s.canEdit() ? Ui.VERMILION : Ui.INK_SOFT, 0.8f, -1);
 
         // マップを建てる
-        int bw = 104;
+        String mapName = s == null ? "マップ" : com.minpaku.game.Plans.byIndex(s.settings().get("map")).name;
+        String bl = confirmBuild ? "本当に建てる？" : "「" + mapName + "」を建てる";
+        int bw = Math.max(104, (int) (Ui.width(Ui.sans(bl)) * 0.8f) + 16);
         int bx = px + pw - bw - 10;
         boolean bh = in(mouseX, mouseY, bx, py + 9, bw, 16);
-        String bl = confirmBuild ? "本当に建てる？" : "古民家マップを建てる";
         Ui.sprite(g, canEdit() && !running() ? "btn_dark" : "btn_off", bx, py + 9, bw, 16);
         Ui.sans(g, bl, bx + bw / 2f, py + 12.5f, bh ? 0xFFFFFFFF : Ui.CREAM, 0.8f, 0);
         if (canEdit() && !running()) {
@@ -147,6 +148,9 @@ public class SettingsScreen extends Screen {
             ry += 20;
         }
         // タブごとの補足
+        if (group.equals("マップ") && s != null) {
+            mapTab(g, s, lx + 8, ry, lw - 16, ly + lh - ry - 6, mouseX, mouseY);
+        }
         if (group.equals("役職") && s != null) {
             int special = 0;
             for (Role r : Role.special()) {
@@ -258,6 +262,56 @@ public class SettingsScreen extends Screen {
         int n = GameSettings.GROUPS.length;
         tab = Math.floorMod(tab - (int) Math.signum(dy), n);
         return true;
+    }
+
+    /** マップのタブ：6種類の一覧（クリックで選ぶ）と、選んだマップの間取り図 */
+    private void mapTab(GuiGraphics g, Packets.Settings s, int x, int y, int w, int h, int mouseX, int mouseY) {
+        int sel = s.settings().get("map");
+        int listW = Math.min(150, w / 2 - 4);
+        java.util.List<com.minpaku.game.MapPlan> all = com.minpaku.game.Plans.ALL;
+        int rowH = Math.max(14, Math.min(20, h / all.size()));
+        for (int i = 0; i < all.size(); i++) {
+            com.minpaku.game.MapPlan p = all.get(i);
+            int ry = y + i * rowH;
+            boolean on = sel == i + 1;
+            boolean hov = in(mouseX, mouseY, x, ry, listW, rowH - 2);
+            g.fill(x, ry, x + listW, ry + rowH - 2, on ? 0xFFC8372D : hov ? 0x40C8372D : 0x20000000);
+            String size = p.w + "×" + p.d + (p.twoFloors() ? "・2階" : "");
+            Ui.sans(g, (i + 1) + ". " + p.name, x + 4, ry + 2, on ? 0xFFFFFFFF : Ui.INK, 0.85f, -1);
+            Ui.sans(g, p.players + "　" + size, x + listW - 4, ry + 3, on ? 0xFFFFE9B8 : Ui.INK_SOFT, 0.65f, 1);
+            if (canEdit()) {
+                final int value = i + 1;
+                hits.add(new Hit(x, ry, listW, rowH - 2, () -> {
+                    ClientPlayNetworking.send(new Packets.SetSetting("map", value));
+                    ClientGame.play(SoundEvents.BOOK_PAGE_TURN, 1.3f);
+                }));
+            }
+        }
+        // 間取り図
+        com.minpaku.game.MapPlan p = com.minpaku.game.Plans.byIndex(sel);
+        int mx = x + listW + 10;
+        int mw = w - listW - 10;
+        float sc = Math.min(mw / (float) (p.w + 1), (h - 12) / (float) (p.d + 1));
+        int ox = mx + (int) ((mw - (p.w + 1) * sc) / 2);
+        int oy = y + 10;
+        g.fill(ox, oy, ox + (int) ((p.w + 1) * sc), oy + (int) ((p.d + 1) * sc), 0xFF3B2A1C);
+        for (com.minpaku.game.MapPlan.Room r : p.rooms) {
+            if (r.floor() != 0) {
+                continue;
+            }
+            int color = r.open() ? 0xFF7DAF5A : r.name().contains("廊下") || r.name().contains("回廊") ? 0xFFD9C29A : 0xFFF1E4C8;
+            g.fill(ox + (int) (r.x1() * sc), oy + (int) (r.z1() * sc), ox + (int) ((r.x2() + 1) * sc), oy + (int) ((r.z2() + 1) * sc),
+                    color);
+        }
+        // 玄関
+        g.fill(ox + (int) (p.entranceX * sc), oy + (int) (p.d * sc), ox + (int) ((p.entranceX + 2) * sc), oy + (int) ((p.d + 1) * sc),
+                0xFFC8372D);
+        java.util.Set<String> names = new java.util.LinkedHashSet<>();
+        for (com.minpaku.game.MapPlan.Room r : p.rooms) {
+            names.add(r.name());
+        }
+        Ui.sans(g, "1階の間取り" + (p.twoFloors() ? "（2階あり）" : "") + "　部屋 " + names.size() + "　赤＝玄関・緑＝庭", mx, y,
+                Ui.INK_SOFT, 0.65f, -1);
     }
 
     @Override

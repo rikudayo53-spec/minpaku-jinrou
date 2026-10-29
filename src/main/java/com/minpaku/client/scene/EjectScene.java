@@ -126,16 +126,16 @@ public final class EjectScene {
         float fy = 2.25f + 0.62f * tau - 0.0025f * tau * tau;
         float fz = -0.5f - 0.08f * tau;
         if (t < 44) {
-            eye = new Vector3f(cx - 0.3f, 2.0f, 6.2f);
-            target = new Vector3f(cx + 0.4f, 1.5f, -0.5f);
+            eye = new Vector3f(cx - 0.2f, 1.9f, 4.3f);
+            target = new Vector3f(cx + 0.4f, 1.55f, -0.5f);
             fov = 55;
         } else if (t < 76) {
             float f = Mth.clamp((t - 44) / 32f, 0f, 1f);
-            eye = new Vector3f(Mth.lerp(f, 9.8f, 8.6f), 1.9f, Mth.lerp(f, 4.2f, 3.4f));
-            target = new Vector3f(3.2f, 1.7f, -0.5f);
+            eye = new Vector3f(Mth.lerp(f, 9.6f, 8.0f), 1.8f, Mth.lerp(f, 0.4f, 0.0f));
+            target = new Vector3f(2.6f, 1.75f, -0.5f);
             fov = 50;
         } else {
-            eye = new Vector3f(7.5f, 0.9f, 4.6f);
+            eye = new Vector3f(7.8f, 0.8f, 2.4f);
             float k = Mth.clamp(tau / 30f, 0f, 1f);
             float ty = Math.min(fy, 26f);
             target = new Vector3f(Mth.lerp(k, 4f, Math.min(fx, 22f)), Mth.lerp(k, 2.2f, ty), Mth.lerp(k, -0.5f, fz));
@@ -301,20 +301,20 @@ public final class EjectScene {
         for (int x = -12; x <= 1; x += 3) {
             s.block(Blocks.BOOKSHELF.defaultBlockState(), x + 1, 0, -3);
         }
-        // 玄関の戸口（x=5 の壁、z=-2〜0 があいている）
-        for (int z = -4; z <= 2; z++) {
-            boolean open = z >= -2 && z <= 0;
+        // 玄関の戸口（x=5 の壁、z=-3〜1 があいている）
+        for (int z = -5; z <= 3; z++) {
+            boolean open = z >= -3 && z <= 1;
             for (int y = 0; y <= 3; y++) {
                 if (open && y <= 2) {
                     continue;
                 }
-                s.block(y == 3 || z == -3 || z == 1 ? beam : (z == -4 || z == 2 ? post : wall), 5, y, z);
+                s.block(y == 3 ? beam : (z == -4 || z == 2 ? post : wall), 5, y, z);
             }
         }
-        // 開いた引き戸
+        // 開いた引き戸（右へ寄せてある）
         for (int y = 0; y <= 2; y++) {
             s.block(Blocks.SPRUCE_TRAPDOOR.defaultBlockState().setValue(BlockStateProperties.OPEN, true)
-                    .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 5, y, 1);
+                    .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 4, y, 2);
         }
         // 屋根のひさし
         for (int z = -4; z <= 2; z++) {
@@ -330,14 +330,14 @@ public final class EjectScene {
         }
         // 外の家の壁（玄関の左右）と植木・灯籠
         for (int z = -9; z <= 6; z++) {
-            if (z < -4 || z > 2) {
+            if (z < -5 || z > 3) {
                 for (int y = 0; y <= 3; y++) {
                     s.block(y == 3 ? beam : (z % 3 == 0 ? post : wall), 5, y, z);
                 }
             }
         }
-        s.block(Blocks.STONE_BRICK_WALL.defaultBlockState(), 9, 0, 2);
-        s.block(Blocks.LANTERN.defaultBlockState(), 9, 1, 2);
+        s.block(Blocks.STONE_BRICK_WALL.defaultBlockState(), 12, 0, -5);
+        s.block(Blocks.LANTERN.defaultBlockState(), 12, 1, -5);
         s.block(Blocks.AZALEA.defaultBlockState(), 11, 0, -4);
         s.block(Blocks.FLOWERING_AZALEA.defaultBlockState(), 14, 0, 3);
         s.block(Blocks.CHERRY_LEAVES.defaultBlockState(), 16, 0, -5);
@@ -355,12 +355,26 @@ public final class EjectScene {
     private static void renderNone(GuiGraphics g, float t, Cast cast, int w, int h) {
         // ゆっくり寄るカメラ
         float k = Mth.clamp(t / LEN, 0f, 1f);
-        Vector3f eye = new Vector3f(Mth.lerp(k, 3.6f, 2.6f), Mth.lerp(k, 1.9f, 1.5f), Mth.lerp(k, 4.6f, 3.4f));
-        Vector3f target = new Vector3f(0.2f, 0.55f, 0f);
+        Vector3f eye = new Vector3f(Mth.lerp(k, 2.1f, 1.6f), Mth.lerp(k, 1.25f, 1.0f), Mth.lerp(k, 2.9f, 2.2f));
+        Vector3f target = new Vector3f(0.9f, 0.35f, 0.1f);
         Scene3D s = Scene3D.begin(g, eye, target, 50);
         // 中庭：苔と砂利、奥に縁側
-        s.fill(Blocks.MOSS_BLOCK.defaultBlockState(), -8, -1, -6, 8, -1, 6);
-        s.fill(Blocks.GRAVEL.defaultBlockState(), -1, -1, 1, 6, -1, 4);
+        for (int x = -8; x <= 8; x++) {
+            for (int z = -6; z <= 6; z++) {
+                // 鹿威しの横の池（x=1〜3, z=-2〜2）と、そのまわりの石の縁
+                boolean pond = x >= 1 && x <= 3 && z >= -2 && z <= 2;
+                boolean rim = !pond && x >= 0 && x <= 4 && z >= -3 && z <= 3;
+                if (pond) {
+                    s.block(Blocks.MUD.defaultBlockState(), x, -2, z);
+                } else if (rim) {
+                    s.block((x + z) % 2 == 0 ? Blocks.MOSSY_COBBLESTONE.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState(),
+                            x, -1, z);
+                } else {
+                    s.block(x >= -4 && x <= -1 && z >= 2 && z <= 5 ? Blocks.GRAVEL.defaultBlockState()
+                            : Blocks.MOSS_BLOCK.defaultBlockState(), x, -1, z);
+                }
+            }
+        }
         s.fill(Blocks.SPRUCE_PLANKS.defaultBlockState(), -8, 0, -6, 8, 0, -5);
         for (int x = -8; x <= 8; x++) {
             s.fill(x % 3 == 0 ? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState() : Blocks.CALCITE.defaultBlockState(), x, 1, -6, x, 3, -6);
@@ -368,12 +382,27 @@ public final class EjectScene {
         }
         // 池（水）と石
         TextureAtlasSprite water = Scene3D.sprite("minecraft:block/water_still");
-        s.box(water, -2.5f, -0.12f, 0.6f, 1.6f, -0.1f, 3.4f, 0xCC3F76E4);
-        s.box(Scene3D.sprite("minecraft:block/dirt"), -2.5f, -0.6f, 0.6f, 1.6f, -0.5f, 3.4f, 0xFF3A2A1A);
-        s.block(Blocks.MOSSY_COBBLESTONE.defaultBlockState(), -3, -1, 0);
-        s.block(Blocks.MOSSY_COBBLESTONE.defaultBlockState(), 2, -1, 3);
-        s.block(Blocks.STONE.defaultBlockState(), 2, -1, 0);
-        s.block(Blocks.LILY_PAD.defaultBlockState(), -1, -1, 2);
+        // 池の鯉（ゆっくり回る）
+        for (int i = 0; i < 2; i++) {
+            double ang = t * 0.035 + i * Math.PI;
+            float kx = 2.5f + (float) Math.cos(ang) * 0.75f;
+            float kz = 0.5f + (float) Math.sin(ang) * 1.2f;
+            s.ps.pushPose();
+            s.ps.translate(kx, -0.42f, kz);
+            s.ps.mulPose(com.mojang.math.Axis.YP.rotationDegrees((float) Math.toDegrees(-ang)));
+            String body = i == 0 ? "minecraft:block/orange_concrete" : "minecraft:block/white_concrete";
+            s.box(Scene3D.sprite(body), -0.08f, -0.05f, -0.2f, 0.08f, 0.05f, 0.2f, 0xFFFFFFFF);
+            s.box(Scene3D.sprite("minecraft:block/red_concrete"), -0.06f, 0.05f, -0.08f, 0.06f, 0.07f, 0.06f, 0xFFFFFFFF);
+            s.box(Scene3D.sprite(body), -0.1f, -0.02f, 0.2f, 0.1f, 0.02f, 0.3f, 0xFFFFFFFF);
+            s.ps.popPose();
+        }
+        // 倒れた竹から水が落ちると水面がゆれる
+        float ripple = t > 59 && t < 75 ? (float) Math.sin((t - 59) * 1.2f) * 0.03f * (1f - (t - 59) / 16f) : 0f;
+        s.box(water, 1f, -0.95f, -2f, 4f, -0.2f + ripple, 3f, 0xB83F76E4);
+        s.block(Blocks.LILY_PAD.defaultBlockState(), 3, -0.24f, 2);
+        s.block(Blocks.LILY_PAD.defaultBlockState(), 2, -0.24f, -2);
+        s.block(Blocks.MOSSY_COBBLESTONE.defaultBlockState(), 4, 0, -3);
+        s.block(Blocks.STONE.defaultBlockState(), -3, -1, 0);
         s.block(Blocks.FERN.defaultBlockState(), -4, 0, -1);
         s.block(Blocks.FERN.defaultBlockState(), 3, 0, -2);
         s.block(Blocks.AZALEA.defaultBlockState(), -6, 0, -3);
@@ -393,22 +422,22 @@ public final class EjectScene {
         s.box(bambooTop, -0.03f, 0.6f, -0.42f, 0.03f, 0.66f, 0.42f, 0xFFFFFFFF);
         // 打つ石
         s.box(stone, -0.95f, 0f, -0.18f, -0.65f, 0.16f, 0.18f, 0xFFFFFFFF);
-        // 筧（水を落とす竹）
-        s.box(bamboo, 0.9f, 0f, -0.08f, 1.02f, 1.15f, 0.04f, 0xFFFFFFFF);
-        s.box(bamboo, 0.55f, 1.05f, -0.06f, 1.0f, 1.13f, 0.02f, 0xFFFFFFFF);
+        // 筧（池の向こうから水を引く竹）
+        s.box(bamboo, 3.05f, -0.2f, -0.08f, 3.17f, 1.2f, 0.04f, 0xFFFFFFFF);
+        s.box(bamboo, 1.0f, 1.08f, -0.06f, 3.12f, 1.16f, 0.02f, 0xFFFFFFFF);
         // 傾き：ふだんは口が上（+18°）。水がたまって下がり、一気に倒れて戻る→石を打つ（64）
         float ang = track(t, 0, 18, 40, 16, 56, 2, 60, -28, 63, 22, 66, 15, 70, 18);
         s.ps.pushPose();
         s.ps.translate(0, 0.63f, -0.02f);
         s.ps.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(ang));
-        s.box(bamboo, -0.85f, -0.07f, -0.07f, 0.75f, 0.07f, 0.07f, 0xFFFFFFFF);
-        s.box(bambooTop, 0.74f, -0.065f, -0.065f, 0.76f, 0.065f, 0.065f, 0xFFFFFFFF);
+        s.box(bamboo, -0.85f, -0.07f, -0.07f, 1.2f, 0.07f, 0.07f, 0xFFFFFFFF);
+        s.box(bambooTop, 1.19f, -0.065f, -0.065f, 1.21f, 0.065f, 0.065f, 0xFFFFFFFF);
         s.ps.popPose();
         // 筧から落ちる水
-        s.box(water, 0.56f, Mth.lerp(Mth.clamp(ang / 18f, 0f, 1f), 0.75f, 0.85f), -0.03f, 0.6f, 1.05f, 0.01f, 0xAA6FA8FF);
-        // 倒れたときにこぼれる水
-        if (t > 58 && t < 66) {
-            s.box(water, 0.62f, 0.05f, -0.05f, 0.7f, 0.4f, 0.05f, 0xAA6FA8FF);
+        s.box(water, 1.03f, Mth.lerp(Mth.clamp(ang / 18f, 0f, 1f), 0.75f, 1.0f), -0.03f, 1.07f, 1.08f, 0.01f, 0xAA6FA8FF);
+        // 倒れたときに池へこぼれる水
+        if (t > 58 && t < 67) {
+            s.box(water, 1.08f, -0.2f, -0.05f, 1.18f, 0.12f, 0.05f, 0xAA6FA8FF);
         }
         float[] hit = s.toScreen(-0.8f, 0.4f, 0f);
         s.end();

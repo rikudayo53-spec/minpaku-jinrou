@@ -36,11 +36,13 @@ public final class GameSettings {
     }
 
     /** 設定画面のタブ（この順に並ぶ） */
-    public static final String[] GROUPS = {"役職", "能力", "人狼", "会議", "タスク", "ボット"};
+    public static final String[] GROUPS = {"マップ", "役職", "能力", "人狼", "会議", "タスク", "ボット"};
 
     private static final List<Def> DEFS = new ArrayList<>();
 
     static {
+        // マップ（建てるときに使う。小さい順）
+        DEFS.add(new Def("map", "建てるマップ", "マップ", Kind.CHOICE, 1, Plans.ALL.size(), 1, 3, Plans.labels()));
         // 役職の人数（Role に登録した役職ぶん自動で作る）
         for (Role role : Role.special()) {
             int def = role == Role.WOLF ? 1 : (role == Role.MADMAN ? 0 : 1);

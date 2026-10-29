@@ -80,6 +80,28 @@ public final class SelfTest {
         server(mc, sp -> sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5 + dx, spawn.getY() + dy, spawn.getZ() + 0.5 + dz, yaw, pitch));
     }
 
+    /** マップを建てて、玄関に立つ */
+    private static void buildPlan(Minecraft mc, int i) {
+        server(mc, sp -> {
+            sp.setGameMode(GameType.SPECTATOR);
+            sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, 180f, 0f);
+            GameManager gm = GameManager.get(sp.server);
+            gm.stop(null);
+            gm.buildMap(sp, com.minpaku.game.Plans.ALL.get(i));
+            sp.setYRot(180f);
+            sp.teleportTo(sp.serverLevel(), sp.getX(), sp.getY() + 0.2, sp.getZ(), 180f, 10f);
+        });
+    }
+
+    /** 上から見下ろす */
+    private static void aerial(Minecraft mc, int i) {
+        com.minpaku.game.MapPlan p = com.minpaku.game.Plans.ALL.get(i);
+        server(mc, sp -> {
+            double h = Math.max(p.w, p.d) * 0.75 + 12;
+            sp.teleportTo(sp.serverLevel(), sp.getX(), sp.getY() + h, sp.getZ() + 8, 180f, 62f);
+        });
+    }
+
     /** 家具の前に立って、タスクの動きを再生する */
     private static void furniture(Minecraft mc, MarkerType type) {
         server(mc, sp -> {
@@ -268,7 +290,31 @@ public final class SelfTest {
             case 6130 -> furniture(mc, MarkerType.BOILER);
             case 6144 -> shot(mc, "50_11_boiler_a");
             case 6170 -> shot(mc, "50_11_boiler_b");
-            case 6190 -> mc.stop();
+            case 6190 -> buildPlan(mc, 0);
+            case 6250 -> shot(mc, "60_0_inside");
+            case 6256 -> aerial(mc, 0);
+            case 6330 -> shot(mc, "61_0_aerial");
+            case 6340 -> buildPlan(mc, 1);
+            case 6400 -> shot(mc, "60_1_inside");
+            case 6406 -> aerial(mc, 1);
+            case 6480 -> shot(mc, "61_1_aerial");
+            case 6490 -> buildPlan(mc, 2);
+            case 6550 -> shot(mc, "60_2_inside");
+            case 6556 -> aerial(mc, 2);
+            case 6630 -> shot(mc, "61_2_aerial");
+            case 6640 -> buildPlan(mc, 3);
+            case 6700 -> shot(mc, "60_3_inside");
+            case 6706 -> aerial(mc, 3);
+            case 6780 -> shot(mc, "61_3_aerial");
+            case 6790 -> buildPlan(mc, 4);
+            case 6850 -> shot(mc, "60_4_inside");
+            case 6856 -> aerial(mc, 4);
+            case 6930 -> shot(mc, "61_4_aerial");
+            case 6940 -> buildPlan(mc, 5);
+            case 7000 -> shot(mc, "60_5_inside");
+            case 7006 -> aerial(mc, 5);
+            case 7080 -> shot(mc, "61_5_aerial");
+            case 7090 -> mc.stop();
             default -> {
             }
         }
