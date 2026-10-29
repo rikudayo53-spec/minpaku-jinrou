@@ -191,7 +191,25 @@ public final class SelfTest {
                     new Packets.Participant(UUID.randomUUID(), "そうた", true, "madman")),
                     List.of(2, 1, 0, 0, 0, 0, 0, 0), 74, 3)));
             case 5100 -> shot(mc, "30_result");
-            case 5120 -> mc.stop();
+            case 5130 -> mc.setScreen(new com.minpaku.client.screen.PreviewScreen(new com.minpaku.client.scene.EjectScene.Cast(
+                    mc.player.getUUID(), "Player", "Player は人狼だった", List.of(
+                    UUID.nameUUIDFromBytes("c0".getBytes()), UUID.nameUUIDFromBytes("c1".getBytes()),
+                    UUID.nameUUIDFromBytes("c2".getBytes()), UUID.nameUUIDFromBytes("c3".getBytes())))));
+            case 5150 -> shot(mc, "40a_eject_carry");
+            case 5168 -> shot(mc, "40b_eject_carry2");
+            case 5186 -> shot(mc, "40c_eject_seeno");
+            case 5198 -> shot(mc, "40d_eject_seeno2");
+            case 5210 -> shot(mc, "40e_eject_throw");
+            case 5230 -> shot(mc, "40f_eject_fly");
+            case 5254 -> shot(mc, "40g_eject_star");
+            case 5285 -> shot(mc, "40h_eject_result");
+            case 5300 -> mc.setScreen(new com.minpaku.client.screen.PreviewScreen(new com.minpaku.client.scene.EjectScene.Cast(
+                    Packets.NONE, "", "誰も追放されなかった", List.of())));
+            case 5340 -> shot(mc, "41a_skip");
+            case 5361 -> shot(mc, "41b_skip_tip");
+            case 5368 -> shot(mc, "41c_skip_kakon");
+            case 5410 -> shot(mc, "41d_skip_result");
+            case 5470 -> mc.stop();
             default -> {
             }
         }

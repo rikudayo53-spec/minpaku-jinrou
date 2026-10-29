@@ -3,12 +3,12 @@ package com.minpaku.client;
 import net.minecraft.util.Mth;
 
 /** 演出用のキーフレーム */
-final class Keyframes {
+public final class Keyframes {
     private Keyframes() {
     }
 
     /** なめらかにつなぐキーフレーム。keys = {時間, 値, 時間, 値, ...} */
-    static float track(float t, float... keys) {
+    public static float track(float t, float... keys) {
         if (t <= keys[0]) {
             return keys[1];
         }

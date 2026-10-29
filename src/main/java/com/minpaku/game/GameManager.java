@@ -73,7 +73,7 @@ public final class GameManager {
     }
 
     private static final int MEETING_RESULT_TICKS = 70;   // 投票結果を見せる時間
-    private static final int EJECT_TICKS = 110;           // 追放演出の時間
+    private static final int EJECT_TICKS = 160;           // 追放演出の時間
     private static final int END_TICKS = 240;             // 結果画面からロビーに戻るまで
     private static final int FIRST_KILL_COOLDOWN = 200;
 

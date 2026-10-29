@@ -17,6 +17,7 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(Packets.Voted.TYPE, Packets.Voted.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.MeetingResult.TYPE, Packets.MeetingResult.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.KillFx.TYPE, Packets.KillFx.CODEC);
+        PayloadTypeRegistry.playS2C().register(Packets.Preview.TYPE, Packets.Preview.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.OpenTask.TYPE, Packets.OpenTask.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Announce.TYPE, Packets.Announce.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Result.TYPE, Packets.Result.CODEC);

@@ -134,6 +134,10 @@ public class MinpakuClient implements ClientModInitializer {
                 m.onResult(p);
             }
         }));
+        ClientPlayNetworking.registerGlobalReceiver(Packets.Preview.TYPE, (p, ctx) -> ctx.client().execute(() ->
+                Minecraft.getInstance().setScreen(new com.minpaku.client.screen.PreviewScreen(
+                        new com.minpaku.client.scene.EjectScene.Cast(p.kind() == 2 ? Packets.NONE : p.ejected(), p.name(), p.text(),
+                                p.carriers())))));
         ClientPlayNetworking.registerGlobalReceiver(Packets.KillFx.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             ClientGame.killFxKind = p.kind();
             ClientGame.killFxOther = p.other();

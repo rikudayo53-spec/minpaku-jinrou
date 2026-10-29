@@ -428,6 +428,41 @@ public final class Packets {
     }
 
     /** 投票（target = NONE ならスキップ） */
+    /** アニメーションの確認（/minpaku preview）。kind: 1 = 追放 / 2 = 追放なし */
+    public record Preview(int kind, UUID ejected, String name, String text, List<UUID> carriers) implements CustomPacketPayload {
+        public static final Type<Preview> TYPE = key("preview");
+        public static final StreamCodec<FriendlyByteBuf, Preview> CODEC = CustomPacketPayload.codec(Preview::write, Preview::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeVarInt(kind);
+            b.writeUUID(ejected);
+            b.writeUtf(name);
+            b.writeUtf(text);
+            b.writeVarInt(carriers.size());
+            for (UUID u : carriers) {
+                b.writeUUID(u);
+            }
+        }
+
+        private static Preview read(FriendlyByteBuf b) {
+            int kind = b.readVarInt();
+            UUID e = b.readUUID();
+            String name = b.readUtf();
+            String text = b.readUtf();
+            int n = b.readVarInt();
+            List<UUID> list = new java.util.ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                list.add(b.readUUID());
+            }
+            return new Preview(kind, e, name, text, list);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
     /** 人狼のキル（能力）。target は参加者の UUID */
     public record KillRequest(UUID target) implements CustomPacketPayload {
         public static final Type<KillRequest> TYPE = key("kill_request");

@@ -28,7 +28,7 @@ import java.util.UUID;
 public class MeetingScreen extends Screen {
     private static final int SPLASH = 45;
     private static final int RESULT_SHOW = 70;
-    private static final int EJECT_LEN = 110;
+    private static final int EJECT_LEN = com.minpaku.client.scene.EjectScene.LEN;
 
     private final Packets.Meeting meeting;
     private int age;
@@ -93,8 +93,8 @@ public class MeetingScreen extends Screen {
         }
         if (result != null) {
             resultAge++;
-            if (resultAge == RESULT_SHOW) {
-                ClientGame.play(SoundEvents.ENDERMAN_TELEPORT, 0.6f);
+            if (resultAge >= RESULT_SHOW) {
+                com.minpaku.client.scene.EjectScene.tick(resultAge - RESULT_SHOW, cast());
             }
             if (resultAge >= RESULT_SHOW + EJECT_LEN) {
                 onClose();
@@ -322,28 +322,34 @@ public class MeetingScreen extends Screen {
 
     private void eject(GuiGraphics g, float t) {
         input.visible = false;
-        int cx = width / 2;
-        int cy = height / 2;
-        g.fill(0, 0, width, height, 0xFF05060A);
-        for (int i = 0; i < 70; i++) {
-            int sx = (int) ((i * 97 + t * (1 + i % 3)) % width);
-            int sy = (i * 53) % height;
-            g.fill(sx, sy, sx + 1, sy + 1, i % 5 == 0 ? 0xFFFFE9B8 : 0xFFFFFFFF);
-        }
         if (result == null) {
             return;
         }
-        if (!result.ejected().equals(Packets.NONE)) {
-            float x = -40 + (width + 80) * Mth.clamp(t / (EJECT_LEN * 0.8f), 0f, 1f);
-            g.pose().pushPose();
-            g.pose().translate(x, cy - 50, 0);
-            g.pose().mulPose(com.mojang.math.Axis.ZP.rotationDegrees(t * 8f));
-            Ui.face(g, result.ejected(), -16, -16, 32);
-            g.pose().popPose();
+        com.minpaku.client.scene.EjectScene.render(g, t, cast());
+    }
+
+    @Nullable
+    private com.minpaku.client.scene.EjectScene.Cast cast;
+
+    /** 追放の場面に出す人（担ぐのは生き残り。自分が生きていれば自分も入る） */
+    private com.minpaku.client.scene.EjectScene.Cast cast() {
+        if (cast == null && result != null) {
+            java.util.List<UUID> carriers = new java.util.ArrayList<>();
+            UUID me = minecraft != null && minecraft.player != null ? minecraft.player.getUUID() : null;
+            for (Packets.Participant p : meeting.participants()) {
+                if (p.alive() && !p.id().equals(result.ejected()) && p.id().equals(me)) {
+                    carriers.add(p.id());
+                }
+            }
+            for (Packets.Participant p : meeting.participants()) {
+                if (p.alive() && !p.id().equals(result.ejected()) && !p.id().equals(me) && carriers.size() < 4) {
+                    carriers.add(p.id());
+                }
+            }
+            cast = new com.minpaku.client.scene.EjectScene.Cast(result.ejected(), result.ejectedName(), result.ejectText(),
+                    carriers);
         }
-        String text = result.ejectText();
-        int shown = Mth.clamp((int) ((t - 10) / 2.5f), 0, text.length());
-        Ui.text(g, Ui.serif(text.substring(0, shown)), cx, cy, 0xFFFFFFFF, 2.2f, 0, true);
+        return cast;
     }
 
     // ------------------------------------------------------------ 操作
