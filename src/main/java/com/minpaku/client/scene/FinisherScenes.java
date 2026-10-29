@@ -214,6 +214,9 @@ public final class FinisherScenes {
                 } catch (NumberFormatException ignored) {
                 }
                 if (bone.equals("screen")) {
+                    if (sfx(text)) {
+                        continue;
+                    }
                     float st = t - e.time() * 20f;
                     if (st > 0 && st < 22) {
                         float a = st < 16 ? 1f : 1f - (st - 16) / 6f;
@@ -617,7 +620,18 @@ public final class FinisherScenes {
         return s.toScreen(x, y, z);
     }
 
+    /** 擬音（オノマトペ）は出さない。セリフ（くらえっ！ など）や「呪」「一本！」は出す */
+    static final java.util.Set<String> SFX = java.util.Set.of("ドーン！！", "ピクピク…", "ペタッ", "ドンガラガッシャーン", "シャーッ！！",
+            "ボフッ", "ボフッ！！", "カコーン", "バーン！！", "ピシャッ", "ワオーン！", "バリーン", "ポイッ！", "バタン！！", "ぽつーん…");
+
+    static boolean sfx(String text) {
+        return SFX.contains(text.trim());
+    }
+
     static void pop(GuiGraphics g, float[] at, float t, float start, String text, int color, float size) {
+        if (sfx(text)) {
+            return;
+        }
         if (at == null || t < start || t > start + 18) {
             return;
         }

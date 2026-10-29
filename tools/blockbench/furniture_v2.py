@@ -2432,6 +2432,8 @@ MATS.update({
     "neko_orange": Mat((226, 140, 60), "plaster", noise=5),
     "neko_black": Mat((40, 36, 34), "plaster", noise=4),
     "koban": Mat((226, 186, 70), "metal", accent=(250, 220, 120), noise=6),
+    "neko_gold": Mat((214, 164, 50), "metal", accent=(246, 214, 120), noise=6),
+    "koban_b": Mat((246, 214, 110), "metal", accent=(255, 240, 170), noise=4),
     "hibachi_c": Mat((228, 222, 206), "plaster", noise=4),
     "hibachi_blue": Mat((50, 76, 140), "plain", noise=3),
     "tsubo_body": Mat((96, 62, 40), "stone", accent=(70, 44, 28), noise=12),
@@ -2513,25 +2515,26 @@ def maneki_neko():
     bevel(m, "cushion", (1.4, 0, 1.4), (14.6, 1.6, 14.6), "red_cloth", b=0.5)
     bevel(m, "cushion_top", (2.0, 1.6, 2.0), (14.0, 2.0, 14.0), "red_cloth", b=0.3)
     for (x, z) in ((1.6, 1.6), (14.0, 1.6), (1.6, 14.0), (14.0, 14.0)):
-        m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.5, z + 0.4), "koban")
+        m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.5, z + 0.4), "koban_b")
     # 胴：すわった形（下がふくらむ）、三毛のぶち
-    blob(m, "body", 8, 8.6, 2.0, 11.6, 4.7, "neko", n=9, lo=0.8, hi=0.55)
-    m.cube("buchi", (9.6, 4.0, 11.4), (12.4, 8.4, 12.8), "neko_orange")
-    m.cube("buchi", (3.8, 6.0, 9.0), (4.2, 9.2, 12.0), "neko_black")
+    blob(m, "body", 8, 8.6, 2.0, 11.6, 4.7, "neko_gold", n=9, lo=0.8, hi=0.55)
+    # 赤い前掛け（首輪から胸に下がる）
+    for (y0, y1, w, z0) in ((9.9, 10.7, 3.0, 3.9), (9.1, 9.9, 2.3, 3.7)):
+        m.cube("maekake", (8 - w, y0, z0), (8 + w, y1, z0 + 0.9), "red_cloth")
     for x in (5.0, 9.4):
-        blob(m, "hind", x + 0.8, 5.4, 2.0, 3.6, 1.2, "neko", n=2, lo=0.9, hi=0.6, sides=4)
+        blob(m, "hind", x + 0.8, 5.4, 2.0, 3.6, 1.2, "neko_gold", n=2, lo=0.9, hi=0.6, sides=4)
     # 頭：大きくまるい。三角の耳、目・鼻・口・ひげ
-    blob(m, "head", 8, 8.2, 10.6, 18.6, 4.5, "neko", n=8, lo=0.6, hi=0.5)
-    m.cube("buchi_head", (9.6, 15.2, 4.4), (11.6, 17.6, 6.0), "neko_orange")
+    blob(m, "head", 8, 8.2, 10.6, 18.6, 4.5, "neko_gold", n=8, lo=0.6, hi=0.5)
     for x, sgn in ((5.4, -1), (10.6, 1)):
-        m.cube("ear", (x - 1.0, 17.0, 7.4), (x + 1.0, 19.4, 8.8), "neko", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
-        m.cube("ear_in", (x - 0.6, 17.4, 7.3), (x + 0.6, 18.9, 7.45), "pink_cloth", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
+        m.cube("ear", (x - 1.0, 17.0, 7.4), (x + 1.0, 19.4, 8.8), "neko_gold", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
+        m.cube("ear_in", (x - 0.6, 17.4, 7.3), (x + 0.6, 18.9, 7.45), "red", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
     for x in (5.9, 9.1):
         m.cube("eye", (x, 14.6, 4.0), (x + 1.0, 15.1, 4.2), "neko_black")
         m.cube("eye_hi", (x + 0.2, 14.9, 3.95), (x + 0.4, 15.1, 4.0), "plate")
-    blob(m, "muzzle", 7.2, 4.6, 12.2, 14.2, 1.1, "neko", n=3, lo=0.7, hi=0.7, sides=4)
-    blob(m, "muzzle", 8.8, 4.6, 12.2, 14.2, 1.1, "neko", n=3, lo=0.7, hi=0.7, sides=4)
-    m.cube("nose", (7.6, 13.6, 3.5), (8.4, 14.1, 3.7), "pink_cloth")
+        m.cube("brow", (x - 0.1, 15.5, 4.0), (x + 1.1, 15.7, 4.15), "neko_black")
+    blob(m, "muzzle", 7.2, 4.6, 12.2, 14.2, 1.1, "neko_gold", n=3, lo=0.7, hi=0.7, sides=4)
+    blob(m, "muzzle", 8.8, 4.6, 12.2, 14.2, 1.1, "neko_gold", n=3, lo=0.7, hi=0.7, sides=4)
+    m.cube("nose", (7.6, 13.6, 3.5), (8.4, 14.1, 3.7), "red")
     m.cube("mouth", (7.9, 12.8, 3.55), (8.1, 13.6, 3.62), "neko_black")
     for sgn in (-1, 1):
         for k in range(2):
@@ -2544,16 +2547,16 @@ def maneki_neko():
     m.cube("bell_slit", (7.4, 9.5, 3.7), (8.6, 9.65, 3.8), "neko_black")
     # 小判（だ円）と抱える左手
     for (x0, x1, y0, y1) in ((5.4, 10.6, 4.4, 8.6), (5.0, 11.0, 5.0, 8.0), (5.8, 10.2, 4.0, 9.0)):
-        m.cube("koban", (x0, y0, 3.6), (x1, y1, 4.2), "koban")
-    m.cube("koban_face", (5.9, 4.7, 3.55), (10.1, 8.3, 3.6), "koban", decal=_text("千万両", size=0.45))
-    blob(m, "paw_l", 4.4, 5.4, 5.4, 9.0, 1.4, "neko", n=4, lo=0.7, hi=0.6, sides=4)
+        m.cube("koban", (x0, y0, 3.6), (x1, y1, 4.2), "koban_b")
+    m.cube("koban_face", (5.9, 4.7, 3.55), (10.1, 8.3, 3.6), "koban_b", decal=_text("千万両", size=0.45))
+    blob(m, "paw_l", 4.4, 5.4, 5.4, 9.0, 1.4, "neko_gold", n=4, lo=0.7, hi=0.6, sides=4)
     # 招く手（ゆっくり手まねき）：腕・まるい手・肉球
     m.group("paw", (11.5, 11, 7))
-    blob(m, "arm", 11.6, 7.2, 10.4, 16.6, 1.3, "neko", n=5, lo=0.8, hi=0.8, sides=4, group="paw")
-    blob(m, "hand", 11.6, 7.0, 15.8, 18.2, 1.6, "neko", n=4, lo=0.6, hi=0.55, sides=4, group="paw")
-    m.cube("pad", (10.9, 16.4, 5.5), (12.3, 17.2, 5.65), "pink_cloth", group="paw")
+    blob(m, "arm", 11.6, 7.2, 10.4, 16.6, 1.3, "neko_gold", n=5, lo=0.8, hi=0.8, sides=4, group="paw")
+    blob(m, "hand", 11.6, 7.0, 15.8, 18.2, 1.6, "neko_gold", n=4, lo=0.6, hi=0.55, sides=4, group="paw")
+    m.cube("pad", (10.9, 16.4, 5.5), (12.3, 17.2, 5.65), "red", group="paw")
     for x in (10.7, 11.45, 12.2):
-        m.cube("toe", (x, 17.35, 5.5), (x + 0.45, 17.75, 5.65), "pink_cloth", group="paw")
+        m.cube("toe", (x, 17.35, 5.5), (x + 0.45, 17.75, 5.65), "red", group="paw")
     return m
 
 

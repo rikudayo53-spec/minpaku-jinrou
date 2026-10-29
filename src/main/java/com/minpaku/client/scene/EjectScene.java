@@ -277,18 +277,18 @@ public final class EjectScene {
             }
         }
         if (t >= 76 && t < 90) {
-            Ui.text(g, Ui.serif("ポイッ！"), w / 2f, h * 0.2f, Ui.alpha(0xFFFFFFFF, 1f - (t - 76) / 14f), 3.2f, 0, true);
+            // （擬音は出さない）
         }
         if (t >= 104 && t < 122 && gateTop != null) {
             float st = t - 104;
             float a = st < 12 ? 1f : 1f - (st - 12) / 6f;
             float pop = st < 3 ? 0.6f + st / 3f * 0.7f : 1.3f - Math.min(0.3f, (st - 3) / 10f);
-            Ui.text(g, Ui.serif("バタン！！"), gateTop[0], gateTop[1] - 10, Ui.alpha(0xFFFFE08A, a), 3.0f * pop, 0, true);
+            // （擬音は出さない）
         }
         if (!cast.teru() && t >= 112 && t < 150 && eHead != null) {
             float st = t - 112;
             float a = st < 30 ? Math.min(1f, st / 4f) : 1f - (st - 30) / 8f;
-            Ui.text(g, Ui.serif("ぽつーん…"), eHead[0] + 26, eHead[1] - 20, Ui.alpha(0xFFFFFFFF, a), 1.6f, 0, true);
+            // （擬音は出さない）
         }
         // てるてるの喜びの声
         if (cast.teru() && eHead != null) {
@@ -584,7 +584,7 @@ public final class EjectScene {
         if (t >= 64 && hit != null) {
             float st = t - 64;
             float a = st < 14 ? 1f : Mth.clamp(1f - (st - 14) / 8f, 0f, 1f);
-            Ui.text(g, Ui.serif("カコーン"), hit[0] - 6, hit[1] - 40 - st * 0.6f, Ui.alpha(0xFFFFFFFF, a), 2.4f, 0, true);
+            // （擬音は出さない）
         }
         if (t >= 80) {
             result(g, t - 80, cast.text(), w, h);
