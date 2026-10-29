@@ -32,6 +32,17 @@ jobs:
           cp build.log /tmp/out/
           cp build/libs/*.jar /tmp/out/ 2>/dev/null
           rm -f /tmp/out/*-sources.jar
+          # 前提MOD（GeckoLib）の使える関数の一覧（開発用）
+          GL=$(find .gradle/loom-cache/remapped_mods -name "geckolib-fabric*.jar" 2>/dev/null | head -1)
+          if [ -n "$GL" ]; then
+            for c in model.GeoModel model.DefaultedBlockGeoModel renderer.GeoBlockRenderer renderer.GeoRenderer animatable.GeoBlockEntity animatable.GeoAnimatable \
+                     cache.object.GeoBone cache.object.BakedGeoModel animation.AnimationController animation.RawAnimation animation.AnimatableManager \
+                     animation.AnimatableManager\$ControllerRegistrar animation.AnimationState animation.AnimationProcessor util.GeckoLibUtil core.animation.AnimationController \
+                     animatable.instance.AnimatableInstanceCache; do
+              javap -cp "$GL" "software.bernie.geckolib.$c" >> /tmp/out/geckolib_api.txt 2>&1
+            done
+            unzip -l "$GL" | grep -E "\.class" | awk '{print $4}' | grep -E "^software/bernie/geckolib/(animation|model|renderer|animatable|cache/object|util)/[A-Za-z]+\.class" >> /tmp/out/geckolib_api.txt
+          fi
           cd /tmp/out
           git init -q
           git checkout -q -b jar
