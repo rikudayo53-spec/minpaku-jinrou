@@ -95,9 +95,42 @@ public class MinpakuClient implements ClientModInitializer {
         itemModel(com.minpaku.registry.ModItems.ONIGIRI, "itamae_onigiri");
     }
 
+    /** 役職のアイテムは、ゲーム中はその役職の人の画面にだけ描く（ほかの人には手ぶらに見える） */
+    private static boolean roleItemVisible(net.minecraft.world.item.Item item) {
+        if (!ClientGame.inGame() || item == com.minpaku.registry.ModItems.KEY) {
+            return true;
+        }
+        com.minpaku.game.Role r = ClientGame.role();
+        if (r == null) {
+            return false;
+        }
+        if (item == com.minpaku.registry.ModItems.CRYSTAL) {
+            return r == com.minpaku.game.Role.SEER;
+        }
+        if (item == com.minpaku.registry.ModItems.CHARM) {
+            return r == com.minpaku.game.Role.KNIGHT;
+        }
+        if (item == com.minpaku.registry.ModItems.TALISMAN) {
+            return r.canSabotage();
+        }
+        if (item == com.minpaku.registry.ModItems.LENS) {
+            return r == com.minpaku.game.Role.DETECTIVE;
+        }
+        if (item == com.minpaku.registry.ModItems.KEYRING) {
+            return r == com.minpaku.game.Role.OKAMI;
+        }
+        if (item == com.minpaku.registry.ModItems.ONIGIRI) {
+            return r == com.minpaku.game.Role.ITAMAE;
+        }
+        return true;
+    }
+
     private static void itemModel(net.minecraft.world.item.Item item, String mesh) {
         net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry.INSTANCE.register(item,
                 (stack, mode, ps, buffers, light, overlay) -> {
+                    if (!roleItemVisible(item)) {
+                        return;
+                    }
                     com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(mesh);
                     if (m == null) {
                         return;

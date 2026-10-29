@@ -455,6 +455,9 @@ public final class GameManager {
         } else if (ps.role == Role.ITAMAE) {
             p.getInventory().setItem(0, new ItemStack(ModItems.ONIGIRI));
         }
+        // 能力のアイテムをすぐ手に持つ（いちばん左のスロットを選ぶ）
+        p.getInventory().selected = 0;
+        p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(0));
     }
 
     List<Packets.Mate> mates(PlayerState ps) {

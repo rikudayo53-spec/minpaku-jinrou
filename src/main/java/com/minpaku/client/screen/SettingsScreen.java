@@ -34,8 +34,8 @@ public class SettingsScreen extends Screen {
 
     @Override
     protected void init() {
-        pw = Math.min(width - 16, 440);
-        ph = Math.min(height - 16, 300);
+        pw = Math.min(width - 16, 520);
+        ph = Math.min(height - 16, 330);
         px = (width - pw) / 2;
         py = (height - ph) / 2;
     }
@@ -70,6 +70,7 @@ public class SettingsScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float pt) {
         renderBackground(g, mouseX, mouseY, pt);
         hits.clear();
+        hoverRole = null;
         Packets.Settings s = ClientGame.settings;
         Ui.sprite(g, "panel", px, py, pw, ph);
 
@@ -119,12 +120,14 @@ public class SettingsScreen extends Screen {
         // タブ
         int tx = px + 12;
         int ty = py + 56;
-        for (int i = 0; i < GameSettings.GROUPS.length; i++) {
+        int ng = GameSettings.GROUPS.length;
+        int tabW = (pw - 24 - (ng - 1) * 2) / ng;
+        for (int i = 0; i < ng; i++) {
             String name = GameSettings.GROUPS[i];
-            int w = (int) (Ui.width(Ui.sans(name)) * 0.9f) + 16;
+            int w = tabW;
             boolean on = i == tab;
             Ui.sprite(g, on ? "tab_on" : "tab_off", tx, ty + (on ? 0 : 2), w, on ? 16 : 14);
-            Ui.sans(g, name, tx + w / 2f, ty + 4, on ? Ui.INK : 0xFF5A4330, 0.9f, 0);
+            Ui.fitSans(g, name, tx + w / 2f, ty + 4, w - 6, on ? Ui.INK : 0xFF5A4330, 0.9f, 0);
             final int idx = i;
             hits.add(new Hit(tx, ty, w, 16, () -> {
                 tab = idx;
@@ -141,12 +144,16 @@ public class SettingsScreen extends Screen {
         // 選んでいるタブの設定
         String group = GameSettings.GROUPS[Math.max(0, Math.min(tab, GameSettings.GROUPS.length - 1))];
         int ry = ly + 6;
-        for (GameSettings.Def d : GameSettings.defs()) {
-            if (!d.group().equals(group)) {
-                continue;
+        if (group.equals("役職")) {
+            ry = roleTab(g, lx + 8, ry, lw - 16, mouseX, mouseY);
+        } else {
+            for (GameSettings.Def d : GameSettings.defs()) {
+                if (!d.group().equals(group)) {
+                    continue;
+                }
+                row(g, d, lx + 8, ry, lw - 16, mouseX, mouseY);
+                ry += 20;
             }
-            row(g, d, lx + 8, ry, lw - 16, mouseX, mouseY);
-            ry += 20;
         }
         // タブごとの補足
         if (group.equals("フィニッシャー")) {
@@ -161,8 +168,8 @@ public class SettingsScreen extends Screen {
                 special += s.settings().roleCount(r);
             }
             int total = s.settings().flag("bots_enabled") ? Math.max(1, s.settings().get("bot_fill")) : 1;
-            Ui.sans(g, "特別な役職 " + special + " 人（残りは村人）　・　ボット込みで最大 " + total + " 人", lx + 8, ry + 2,
-                    Ui.INK_SOFT, 0.75f, -1);
+            Ui.fitSans(g, "特別な役職 " + special + " 人（残りは村人）　・　ボット込みで最大 " + total + " 人", lx + 8, ry + 2,
+                    lw - 16, Ui.INK_SOFT, 0.75f, -1);
         }
         if (group.equals("ボット") && s != null && s.settings().flag("bots_enabled")) {
             String[] names = {"たろう", "はなこ", "けんた", "さくら", "ゆうき", "みお", "そうた", "あおい", "りく", "ひなた", "かいと"};
@@ -203,10 +210,25 @@ public class SettingsScreen extends Screen {
         boolean h3 = in(mouseX, mouseY, cx + 72, by, 76, 22);
         Ui.button(g, cx + 72, by, 76, 22, "閉じる", false, h3, true, 1f);
         hits.add(new Hit(cx + 72, by, 76, 22, this::onClose));
+
+        // 役職の説明（カードにマウスを乗せたとき）
+        if (hoverRole != null) {
+            String text = hoverRole.name + "：" + hoverRole.description;
+            int tw = Math.min(pw - 40, (int) (Ui.width(Ui.sans(text)) * 0.8f) + 14);
+            int tx2 = Math.max(px + 8, Math.min(mouseX + 8, px + pw - tw - 8));
+            int ty2 = mouseY + 12;
+            g.pose().pushPose();
+            g.pose().translate(0, 0, 300);
+            g.fill(tx2, ty2, tx2 + tw, ty2 + 16, 0xF0201510);
+            g.fill(tx2, ty2, tx2 + 2, ty2 + 16, 0xFF000000 | hoverRole.color);
+            Ui.fitSans(g, text, tx2 + 7, ty2 + 4, tw - 10, 0xFFF4ECD8, 0.8f, -1);
+            g.pose().popPose();
+        }
     }
 
     private void row(GuiGraphics g, GameSettings.Def d, int x, int y, int w, int mouseX, int mouseY) {
-        Ui.sans(g, d.label(), x + 2, y + 4, Ui.INK, 0.9f, -1);
+        int ctrlW = d.kind() == GameSettings.Kind.TOGGLE ? 70 : d.kind() == GameSettings.Kind.CHOICE ? Math.min(w / 2, 220) : 96;
+        Ui.fitSans(g, d.label(), x + 2, y + 4, w - ctrlW - 8, Ui.INK, 0.9f, -1);
         g.fill(x, y + 17, x + w, y + 18, 0x55C9B48E);
         int v = value(d);
         boolean edit = canEdit();
@@ -223,15 +245,17 @@ public class SettingsScreen extends Screen {
             }
             return;
         }
-        int bx = x + w - 90;
+        int bx = x + w - ctrlW + 2;
+        int plusX = x + w - 18;
         boolean hm = in(mouseX, mouseY, bx, y + 1, 16, 15);
-        boolean hp = in(mouseX, mouseY, bx + 72, y + 1, 16, 15);
+        boolean hp = in(mouseX, mouseY, plusX, y + 1, 16, 15);
         Ui.button(g, bx, y + 1, 16, 15, "−", false, hm && edit, edit && v > d.min(), 1f);
-        Ui.button(g, bx + 72, y + 1, 16, 15, "＋", false, hp && edit, edit && v < d.max(), 1f);
-        Ui.sans(g, d.format(v), bx + 44, y + 3.5f, Ui.INK, 1.1f, 0);
+        Ui.button(g, plusX, y + 1, 16, 15, "＋", false, hp && edit, edit && v < d.max(), 1f);
+        float mid = (bx + 16 + plusX) / 2f;
+        Ui.fitSans(g, d.format(v), mid, y + 3.5f, plusX - bx - 22, Ui.INK, d.kind() == GameSettings.Kind.CHOICE ? 0.9f : 1.1f, 0);
         if (edit) {
             hits.add(new Hit(bx, y + 1, 16, 15, () -> change(d, v - d.step())));
-            hits.add(new Hit(bx + 72, y + 1, 16, 15, () -> change(d, v + d.step())));
+            hits.add(new Hit(plusX, y + 1, 16, 15, () -> change(d, v + d.step())));
         }
     }
 
@@ -268,9 +292,67 @@ public class SettingsScreen extends Screen {
         return true;
     }
 
+    /** 役職のタブ：陣営ごとにカードを3列で並べる。カードの −／＋ で人数を変える。下の端の y を返す */
+    private int roleTab(GuiGraphics g, int x, int y, int w, int mouseX, int mouseY) {
+        Role.Team[] teams = {Role.Team.WOLF, Role.Team.VILLAGE, Role.Team.FOX};
+        String[] titles = {"人狼陣営", "村人陣営", "第三陣営"};
+        int cols = 3;
+        int gap = 4;
+        int cw = (w - gap * (cols - 1)) / cols;
+        int ch = 18;
+        boolean edit = canEdit();
+        for (int k = 0; k < teams.length; k++) {
+            List<Role> list = new ArrayList<>();
+            for (Role r : Role.special()) {
+                boolean third = r.team == Role.Team.FOX || r.team == Role.Team.TERU;
+                if ((teams[k] == Role.Team.FOX && third) || r.team == teams[k] && !third) {
+                    list.add(r);
+                }
+            }
+            if (list.isEmpty()) {
+                continue;
+            }
+            int tc = k == 0 ? 0xFFC8372D : k == 1 ? 0xFF3F8F3A : 0xFFB8860B;
+            g.fill(x, y + 4, x + 3, y + 11, tc);
+            Ui.sans(g, titles[k], x + 6, y + 3, tc, 0.75f, -1);
+            y += 13;
+            for (int i = 0; i < list.size(); i++) {
+                Role r = list.get(i);
+                GameSettings.Def d = GameSettings.def("role." + r.id);
+                if (d == null) {
+                    continue;
+                }
+                int cx = x + (i % cols) * (cw + gap);
+                int cy = y + (i / cols) * (ch + 3);
+                int v = value(d);
+                g.fill(cx, cy, cx + cw, cy + ch, v > 0 ? 0x30000000 | (r.color & 0xFFFFFF) : 0x18000000);
+                g.fill(cx, cy, cx + 2, cy + ch, 0xFF000000 | r.color);
+                Ui.fitSans(g, r.name, cx + 6, cy + 5, cw - 62, v > 0 ? Ui.INK : Ui.INK_SOFT, 0.85f, -1);
+                int bx = cx + cw - 52;
+                boolean hm = in(mouseX, mouseY, bx, cy + 2, 14, 14);
+                boolean hp = in(mouseX, mouseY, bx + 36, cy + 2, 14, 14);
+                Ui.button(g, bx, cy + 2, 14, 14, "−", false, hm && edit, edit && v > d.min(), 0.9f);
+                Ui.button(g, bx + 36, cy + 2, 14, 14, "＋", false, hp && edit, edit && v < d.max(), 0.9f);
+                Ui.sans(g, v + "人", bx + 25, cy + 4.5f, v > 0 ? Ui.VERMILION : Ui.INK_SOFT, 0.85f, 0);
+                if (edit) {
+                    hits.add(new Hit(bx, cy + 2, 14, 14, () -> change(d, v - d.step())));
+                    hits.add(new Hit(bx + 36, cy + 2, 14, 14, () -> change(d, v + d.step())));
+                }
+                // マウスを乗せると説明
+                if (in(mouseX, mouseY, cx, cy, cw - 54, ch)) {
+                    hoverRole = r;
+                }
+            }
+            y += ((list.size() + cols - 1) / cols) * (ch + 3) + 2;
+        }
+        return y;
+    }
+
+    private Role hoverRole;
+
     /** フィニッシャーのタブ：自分の共通フィニッシャーを選ぶ・全部を見られる（だれでも使える） */
     private void finisherTab(GuiGraphics g, int x, int y, int w, int h, int mouseX, int mouseY) {
-        Ui.sans(g, "自分のフィニッシャー（設定が「各自が選んだもの」のときに使われます）", x, y, Ui.INK_SOFT, 0.75f, -1);
+        Ui.fitSans(g, "自分のフィニッシャー（設定が「各自が選んだもの」のときに使われます）", x, y, w, Ui.INK_SOFT, 0.75f, -1);
         String[] common = {"pingpong", "pillow", "fusuma", "seoi"};
         int bw = (w - 12) / 4;
         for (int i = 0; i < common.length; i++) {
@@ -281,7 +363,7 @@ public class SettingsScreen extends Screen {
             boolean hov = in(mouseX, mouseY, bx, by, bw, 34);
             g.fill(bx, by, bx + bw, by + 34, on ? 0xFFC8372D : hov ? 0x40C8372D : 0x20000000);
             String title = com.minpaku.client.scene.FinisherScenes.NAMES.get(id);
-            Ui.sans(g, title, bx + bw / 2f, by + 5, on ? 0xFFFFFFFF : Ui.INK, 0.72f, 0);
+            Ui.fitSans(g, title, bx + bw / 2f, by + 5, bw - 6, on ? 0xFFFFFFFF : Ui.INK, 0.72f, 0);
             Ui.sans(g, on ? "選択中" : "クリックで選ぶ", bx + bw / 2f, by + 18, on ? 0xFFFFE9B8 : Ui.INK_SOFT, 0.65f, 0);
             hits.add(new Hit(bx, by, bw, 26, () -> {
                 com.minpaku.client.ClientGame.myFinisher = id;
@@ -300,7 +382,7 @@ public class SettingsScreen extends Screen {
         for (int i = 0; i < list.length; i++) {
             int bx = x + (i % col) * (cw + 4);
             int by = ry + 12 + (i / col) * 22;
-            Ui.sans(g, list[i][2], bx + 4, by + 4, Ui.INK, 0.75f, -1);
+            Ui.fitSans(g, list[i][2], bx + 4, by + 4, cw - 48, Ui.INK, 0.75f, -1);
             previewButton(g, bx + cw - 40, by, list[i][0], Integer.parseInt(list[i][1]), mouseX, mouseY);
         }
     }
@@ -325,7 +407,7 @@ public class SettingsScreen extends Screen {
         int sel = s.settings().get("map");
         int listW = Math.min(150, w / 2 - 4);
         java.util.List<com.minpaku.game.MapPlan> all = com.minpaku.game.Plans.ALL;
-        int rowH = Math.max(14, Math.min(20, h / all.size()));
+        int rowH = Math.max(18, Math.min(26, h / all.size()));
         for (int i = 0; i < all.size(); i++) {
             com.minpaku.game.MapPlan p = all.get(i);
             int ry = y + i * rowH;
@@ -333,8 +415,8 @@ public class SettingsScreen extends Screen {
             boolean hov = in(mouseX, mouseY, x, ry, listW, rowH - 2);
             g.fill(x, ry, x + listW, ry + rowH - 2, on ? 0xFFC8372D : hov ? 0x40C8372D : 0x20000000);
             String size = p.w + "×" + p.d + (p.twoFloors() ? "・2階" : "");
-            Ui.sans(g, (i + 1) + ". " + p.name, x + 4, ry + 2, on ? 0xFFFFFFFF : Ui.INK, 0.85f, -1);
-            Ui.sans(g, p.players + "　" + size, x + listW - 4, ry + 3, on ? 0xFFFFE9B8 : Ui.INK_SOFT, 0.65f, 1);
+            Ui.fitSans(g, (i + 1) + ". " + p.name, x + 4, ry + 2, listW - 8, on ? 0xFFFFFFFF : Ui.INK, 0.85f, -1);
+            Ui.fitSans(g, p.players + "　" + size, x + 12, ry + rowH - 11, listW - 16, on ? 0xFFFFE9B8 : Ui.INK_SOFT, 0.65f, -1);
             if (canEdit()) {
                 final int value = i + 1;
                 hits.add(new Hit(x, ry, listW, rowH - 2, () -> {
@@ -366,8 +448,8 @@ public class SettingsScreen extends Screen {
         for (com.minpaku.game.MapPlan.Room r : p.rooms) {
             names.add(r.name());
         }
-        Ui.sans(g, "1階の間取り" + (p.twoFloors() ? "（2階あり）" : "") + "　部屋 " + names.size() + "　赤＝玄関・緑＝庭", mx, y,
-                Ui.INK_SOFT, 0.65f, -1);
+        Ui.fitSans(g, "1階の間取り" + (p.twoFloors() ? "（2階あり）" : "") + "　部屋 " + names.size() + "　赤＝玄関・緑＝庭", mx, y,
+                mw, Ui.INK_SOFT, 0.65f, -1);
     }
 
     @Override

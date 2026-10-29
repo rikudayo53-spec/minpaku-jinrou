@@ -26,7 +26,9 @@ import java.util.function.Consumer;
  * テスト用の世界を開き、古民家マップを建ててゲームを進め、要所でスクリーンショットを撮る。
  */
 public final class SelfTest {
-    public static final boolean ENABLED = "1".equals(System.getenv("MINPAKU_SELFTEST"));
+    /** "1" = 全部 / "ui" = 帳簿と手に持ったアイテムだけ / "fin" = フィニッシャーだけ */
+    public static final String MODE = System.getenv("MINPAKU_SELFTEST") == null ? "" : System.getenv("MINPAKU_SELFTEST");
+    public static final boolean ENABLED = MODE.equals("1") || MODE.equals("ui") || MODE.equals("fin");
     private static int t = -1;
     private static int menuTicks;
     private static boolean opened;
@@ -70,6 +72,14 @@ public final class SelfTest {
         }
         t++;
         try {
+            if (MODE.equals("ui")) {
+                stepUi(mc);
+                return;
+            }
+            if (MODE.equals("fin")) {
+                stepFin(mc);
+                return;
+            }
             step(mc);
         } catch (Exception e) {
             MinpakuJinrou.LOGGER.error("SELFTEST failed at {}", t, e);
@@ -78,6 +88,93 @@ public final class SelfTest {
 
     private static void tp(Minecraft mc, double dx, double dy, double dz, float yaw, float pitch) {
         server(mc, sp -> sp.teleportTo(sp.serverLevel(), spawn.getX() + 0.5 + dx, spawn.getY() + dy, spawn.getZ() + 0.5 + dz, yaw, pitch));
+    }
+
+    // ---------------------------------------------------------------- 短いテスト
+
+    private static final net.minecraft.world.item.Item[] ITEMS = {com.minpaku.registry.ModItems.KEY,
+            com.minpaku.registry.ModItems.CRYSTAL, com.minpaku.registry.ModItems.CHARM, com.minpaku.registry.ModItems.TALISMAN,
+            com.minpaku.registry.ModItems.LENS, com.minpaku.registry.ModItems.KEYRING, com.minpaku.registry.ModItems.ONIGIRI};
+
+    /** 帳簿の全タブと、手に持ったアイテム */
+    private static void stepUi(Minecraft mc) {
+        if (t == 60) {
+            server(mc, sp -> {
+                sp.setGameMode(GameType.CREATIVE);
+                sp.setYRot(180f);
+                GameManager.get(sp.server).buildMap(sp);
+                GameManager.get(sp.server).sendSettings(sp);
+            });
+        }
+        int n = com.minpaku.game.GameSettings.GROUPS.length;
+        if (t >= 120 && t < 120 + n * 20) {
+            int i = (t - 120) / 20;
+            int k = (t - 120) % 20;
+            if (k == 0) {
+                com.minpaku.client.screen.SettingsScreen.tab = i;
+                mc.setScreen(new SettingsScreen());
+            }
+            if (k == 10) {
+                shot(mc, "80_tab_" + i);
+            }
+            if (k == 12) {
+                // マウスを役職カードに乗せたときの説明
+                mc.setScreen(null);
+            }
+        }
+        int t2 = 120 + n * 20 + 10;
+        if (t >= t2 && t < t2 + ITEMS.length * 20) {
+            int i = (t - t2) / 20;
+            int k = (t - t2) % 20;
+            if (k == 0) {
+                net.minecraft.world.item.Item item = ITEMS[i];
+                server(mc, sp -> {
+                    sp.setGameMode(GameType.ADVENTURE);
+                    sp.getInventory().clearContent();
+                    sp.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(item));
+                    sp.getInventory().selected = 0;
+                    sp.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(0));
+                });
+            }
+            if (k == 12) {
+                shot(mc, "81_item_" + i);
+            }
+        }
+        if (t == t2 + ITEMS.length * 20 + 10) {
+            mc.stop();
+        }
+    }
+
+    /** フィニッシャーだけ（各フィニッシャーを数コマずつ） */
+    private static void stepFin(Minecraft mc) {
+        String[] ids = {"wolf", "shinobi", "kairiki", "juro", "pingpong", "pillow", "fusuma", "seoi", "neko", "wolf:guard", "wolf:counter"};
+        if (t == 60) {
+            server(mc, sp -> {
+                sp.setGameMode(GameType.CREATIVE);
+                sp.setYRot(180f);
+            });
+        }
+        int start = 100;
+        int per = 150;
+        int i = (t - start) / per;
+        int k = (t - start) % per;
+        if (t >= start && i < ids.length) {
+            String[] parts = ids[i].split(":");
+            int variant = parts.length > 1 ? (parts[1].equals("guard") ? 1 : 2) : 0;
+            int total = com.minpaku.client.scene.FinisherScenes.total(parts[0], variant);
+            if (k == 0) {
+                mc.setScreen(null);
+                ClientGame.startVictimFx("はなこ", UUID.fromString("00000000-0000-0000-0000-000000000005"), parts[0], variant);
+            }
+            for (int q = 0; q < 6; q++) {
+                if (k == 4 + q * (total - 6) / 5) {
+                    shot(mc, "90_" + String.format("%02d", i) + "_" + ids[i].replace(':', '_') + "_" + q);
+                }
+            }
+        }
+        if (t == start + ids.length * per) {
+            mc.stop();
+        }
     }
 
     /** マップを建てて、玄関に立つ */

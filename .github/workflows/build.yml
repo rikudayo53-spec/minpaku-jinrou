@@ -49,7 +49,7 @@ jobs:
 
   selftest:
     needs: build
-    if: contains(github.event.head_commit.message, '[test]') || github.event_name == 'workflow_dispatch'
+    if: contains(github.event.head_commit.message, '[test]') || contains(github.event.head_commit.message, '[ui]') || contains(github.event.head_commit.message, '[fin]') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,12 +65,15 @@ jobs:
           sudo apt-get install -y -qq xvfb > /dev/null 2>&1
           mkdir -p run && echo "eula=true" > run/eula.txt
           printf "online-mode=false\nlevel-type=minecraft\\\\:flat\nspawn-protection=0\n" > run/server.properties
+          MODE=1
+          echo "${{ github.event.head_commit.message }}" | grep -q "\[ui\]" && MODE=ui
+          echo "${{ github.event.head_commit.message }}" | grep -q "\[fin\]" && MODE=fin
           (sleep 150; echo stop) | timeout 300 ./gradlew runServer --console=plain > server.log 2>&1
           mkdir -p run/saves
           # 仮想画面のソフト描画がまれに固まるので、画面が1枚も撮れずに止まったらやり直す（最大3回）
           for try in 1 2 3; do
             rm -rf run/saves/selftest run/screenshots && cp -r run/world run/saves/selftest
-            MINPAKU_SELFTEST=1 timeout 600 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient --console=plain --args="--quickPlaySingleplayer selftest" > client.log 2>&1
+            MINPAKU_SELFTEST=$MODE timeout 600 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient --console=plain --args="--quickPlaySingleplayer selftest" > client.log 2>&1
             code=$?
             echo "client exit $code (try $try)" >> client.log
             ls run/screenshots/selftest_30_result.png > /dev/null 2>&1 && break

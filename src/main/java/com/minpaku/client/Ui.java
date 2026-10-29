@@ -73,6 +73,19 @@ public final class Ui {
         text(g, serif(s), x, y, color, scale, align, false);
     }
 
+    /** 幅 maxW に収まるように縮めて描く（scale は最大の大きさ） */
+    public static void fit(GuiGraphics g, Component c, float x, float y, float maxW, int color, float scale, int align) {
+        float w = width(c) * scale;
+        float s = w > maxW && w > 0 ? scale * maxW / w : scale;
+        // 縮めたぶん、文字の上下の位置をそろえる
+        float dy = (scale - s) * 4.5f;
+        text(g, c, x, y + dy, color, s, align, false);
+    }
+
+    public static void fitSans(GuiGraphics g, String s, float x, float y, float maxW, int color, float scale, int align) {
+        fit(g, sans(s), x, y, maxW, color, scale, align);
+    }
+
     /** drawCenteredString の代わり（同梱フォントで） */
     public static void sansCentered(GuiGraphics g, String s, int cx, int y, int color) {
         text(g, sans(s), cx, y, color, 0.9f, 0, false);
