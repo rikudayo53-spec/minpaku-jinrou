@@ -168,6 +168,9 @@ ITEMS = {"glock_black": glock_black}
 from furniture_hires import ALL as _FURN  # noqa: E402
 for _fn in _FURN.values():
     ITEMS[_fn.__name__] = _fn
+# 池の鯉（koi_hires.py）
+from koi_hires import ALL as _KOI  # noqa: E402
+ITEMS.update(_KOI)
 
 
 def main():

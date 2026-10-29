@@ -362,6 +362,13 @@ public final class EjectScene {
     }
 
     private static void koiPart(Scene3D s, String name) {
+        // Blockbench の高精細な鯉（なければ Blender の鯉）
+        com.minpaku.client.model.HiRes hr = com.minpaku.client.model.HiRes.get(name);
+        if (hr != null) {
+            hr.render(s.ps, s.buf, net.minecraft.client.renderer.LightTexture.FULL_BRIGHT,
+                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, com.minpaku.client.model.HiRes.STILL);
+            return;
+        }
         com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(name);
         if (m != null) {
             m.render(s.ps, s.buf, net.minecraft.client.renderer.LightTexture.FULL_BRIGHT,

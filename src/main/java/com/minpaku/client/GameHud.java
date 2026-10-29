@@ -26,6 +26,9 @@ public final class GameHud {
     public static KeyMapping LEDGER_KEY;
     public static KeyMapping VOTE_KEY;
     public static KeyMapping MAP_KEY;
+    /** 歩きながら見る見取り図（右上） */
+    public static boolean mapOpen;
+    private static final com.minpaku.client.screen.MapView MAP = new com.minpaku.client.screen.MapView(true, true);
     public static KeyMapping KILL_KEY;
 
     private GameHud() {
@@ -64,6 +67,9 @@ public final class GameHud {
             g.fill(w / 2 - 110, 4, w / 2 + 110, 22, 0xB0201410);
             Ui.sans(g, "井戸端会議中　" + ClientGame.currentMeeting.statusText() + "　［" + key + "］で投票画面", w / 2f, 9,
                     0xFFFFE0B2, 0.85f, 0);
+        }
+        if (mapOpen && !ClientGame.rooms.isEmpty() && !(mc.screen instanceof MeetingScreen)) {
+            MAP.render(g, w, h, -1, -1);
         }
         killFx(g, w, h, pt);
         evilGod(g, w, h, pt);

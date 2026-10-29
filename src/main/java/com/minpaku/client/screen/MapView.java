@@ -26,7 +26,15 @@ public final class MapView {
     }
 
     public MapView(boolean live) {
+        this(live, false);
+    }
+
+    /** overlay = 歩きながら見る小さい地図（画面の右上。暗くしない・閉じるボタンなし・階は自分のいる階） */
+    private final boolean overlay;
+
+    public MapView(boolean live, boolean overlay) {
         this.live = live;
+        this.overlay = overlay;
     }
 
     /** 今まさに直さないといけない設備か */
@@ -85,15 +93,29 @@ public final class MapView {
     }
 
     public void render(GuiGraphics g, int sw, int sh, int mouseX, int mouseY) {
-        w = Math.min(sw - 30, 520);
-        h = Math.min(sh - 30, 330);
-        x = (sw - w) / 2;
-        y = (sh - h) / 2;
-        g.fill(0, 0, sw, sh, 0xA0000000);
+        if (overlay) {
+            w = Math.min(sw * 45 / 100, 320);
+            h = Math.min(sh * 55 / 100, w * 2 / 3 + 40);
+            x = sw - w - 6;
+            y = 6;
+            floorPicked = false;   // いつも自分のいる階を出す
+        } else {
+            w = Math.min(sw - 30, 520);
+            h = Math.min(sh - 30, 330);
+            x = (sw - w) / 2;
+            y = (sh - h) / 2;
+            g.fill(0, 0, sw, sh, 0xA0000000);
+        }
         Ui.sprite(g, "panel", x, y, w, h);
-        Ui.serif(g, "見取り図", x + 12, y + 8, Ui.INK, 1.4f, -1);
-        boolean hc = inside(mouseX, mouseY, x + w - 58, y + 8, 48, 16);
-        Ui.button(g, x + w - 58, y + 8, 48, 16, "閉じる", false, hc, true, 0.85f);
+        Ui.serif(g, "見取り図", x + 12, y + 8, Ui.INK, overlay ? 1.1f : 1.4f, -1);
+        if (overlay) {
+            String key = com.minpaku.client.GameHud.MAP_KEY != null
+                    ? com.minpaku.client.GameHud.MAP_KEY.getTranslatedKeyMessage().getString() : "M";
+            Ui.sans(g, "［" + key + "］で閉じる", x + w - 10, y + 10, Ui.INK_SOFT, 0.7f, 1);
+        } else {
+            boolean hc = inside(mouseX, mouseY, x + w - 58, y + 8, 48, 16);
+            Ui.button(g, x + w - 58, y + 8, 48, 16, "閉じる", false, hc, true, 0.85f);
+        }
         List<Integer> fl = floors();
         if (ClientGame.rooms.isEmpty()) {
             Ui.sans(g, "見取り図がありません（基本マップを建てると出ます）", x + w / 2f, y + h / 2f, Ui.INK_SOFT, 1f, 0);
@@ -115,8 +137,11 @@ public final class MapView {
         }
         floor = Math.min(floor, fl.size() - 1);
         float pulse = (float) (Math.sin(System.currentTimeMillis() / 160.0) * 0.5 + 0.5);
-        // 階のボタン
-        for (int i = 0; i < fl.size(); i++) {
+        // 階のボタン（小さい地図では「n階」と表示だけ）
+        if (overlay && fl.size() > 1) {
+            Ui.sans(g, (floor + 1) + "階", x + 84, y + 10, Ui.INK, 0.8f, -1);
+        }
+        for (int i = 0; i < fl.size() && !overlay; i++) {
             boolean hv = inside(mouseX, mouseY, x + 110 + i * 52, y + 8, 48, 16);
             Ui.button(g, x + 110 + i * 52, y + 8, 48, 16, (i + 1) + "階", i == floor, hv, true, 0.85f);
             // ほかの階に直す場所があれば「！」
@@ -139,7 +164,7 @@ public final class MapView {
         int ax = x + 12;
         int ay = y + 32;
         int aw = w - 24;
-        int ah = h - 56;
+        int ah = overlay ? h - 40 : h - 56;
         float scale = Math.min(aw / (float) Math.max(1, maxX - minX), ah / (float) Math.max(1, maxZ - minZ));
         float ox = ax + (aw - (maxX - minX) * scale) / 2f;
         float oz = ay + (ah - (maxZ - minZ) * scale) / 2f;
@@ -223,8 +248,11 @@ public final class MapView {
             }
             Ui.sans(g, "あなた", px, pz - 14, 0xFFC8372D, 0.75f, 0);
         }
-        // 凡例
+        // 凡例（小さい地図では省く）
         int ly = y + h - 18;
+        if (overlay) {
+            ly = -1000;
+        }
         Ui.disc(g, x + 20, ly + 4, 3.5f, 0xFFFFC21F);
         Ui.sans(g, "自分のタスク", x + 27, ly, Ui.INK_SOFT, 0.75f, -1);
         Ui.disc(g, x + 100, ly + 4, 3.5f, 0xFF3FA34D);
@@ -238,7 +266,7 @@ public final class MapView {
         if (anyUrgent) {
             Packets.State s = ClientGame.state;
             String what = s.blackout() ? "停電中：配電盤へ！" : "ガス漏れ：元栓とボイラーへ！";
-            Ui.sans(g, what, x + w - 12, y + h - 30, Ui.alpha(0xFFE53935, 0.7f + 0.3f * pulse), 0.85f, 1);
+            Ui.sans(g, what, x + w - 12, overlay ? y + h - 16 : y + h - 30, Ui.alpha(0xFFE53935, 0.7f + 0.3f * pulse), 0.85f, 1);
         }
     }
 

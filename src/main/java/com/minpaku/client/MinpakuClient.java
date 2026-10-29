@@ -308,9 +308,10 @@ public class MinpakuClient implements ClientModInitializer {
         }
         // 見取り図（プレイ中も M で開ける）
         while (GameHud.MAP_KEY != null && GameHud.MAP_KEY.consumeClick()) {
+            // 画面を開かずに右上に出す（見ながら歩ける）。もう一度押すと消える
             if (mc.screen == null && mc.player != null && !ClientGame.rooms.isEmpty()) {
-                mc.setScreen(new com.minpaku.client.screen.MapScreen());
-                ClientGame.play(net.minecraft.sounds.SoundEvents.BOOK_PAGE_TURN, 1.0f);
+                GameHud.mapOpen = !GameHud.mapOpen;
+                ClientGame.play(net.minecraft.sounds.SoundEvents.BOOK_PAGE_TURN, GameHud.mapOpen ? 1.0f : 0.8f);
             }
         }
         Previews.tick();
