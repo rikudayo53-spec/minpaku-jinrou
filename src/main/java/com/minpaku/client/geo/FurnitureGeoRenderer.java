@@ -24,6 +24,13 @@ import java.util.Map;
 /** 家具を GeckoLib で描く（GeckoLib のモデルがない家具は今までの描き方） */
 public class FurnitureGeoRenderer extends GeoBlockRenderer<MarkerBlockEntity> {
     private final MarkerRenderer fallback;
+    /** その画面のカメラの視野（MinpakuClient が毎フレーム入れる）。視野の外の家具は描かない */
+    public static net.minecraft.client.renderer.culling.Frustum frustum;
+    /** 遠くの家具は描かない（ブロック） */
+    private static final int VIEW = 48;
+    /** 光る部分（もう一度モデルを描く）はこの距離まで */
+    private static final double GLOW_DIST2 = 24 * 24;
+    private static double lastDist2;
     private static final Map<ResourceLocation, Boolean> GLOW = new HashMap<>();
 
     public FurnitureGeoRenderer(BlockEntityRendererProvider.Context ctx) {
@@ -39,7 +46,7 @@ public class FurnitureGeoRenderer extends GeoBlockRenderer<MarkerBlockEntity> {
                 ResourceLocation mask = ResourceLocation.fromNamespaceAndPath(tex.getNamespace(),
                         tex.getPath().replace(".png", "_glowmask.png"));
                 boolean has = GLOW.computeIfAbsent(mask, m -> Minecraft.getInstance().getResourceManager().getResource(m).isPresent());
-                if (has) {
+                if (has && lastDist2 < GLOW_DIST2) {
                     super.render(ps, be, model, renderType, buf, vc, partial, light, overlay);
                 }
             }
@@ -52,6 +59,22 @@ public class FurnitureGeoRenderer extends GeoBlockRenderer<MarkerBlockEntity> {
         if (type == null || !FurnitureGeo.hasModel(type)) {
             fallback.render(be, partialTick, ps, buffers, light, overlay);
             return;
+        }
+        // 軽くする：視野の外・遠くの家具は描かない（大きい家具はブロックからはみ出すので、大きさのぶん広げて調べる）
+        float s0 = FurnitureArt.size(type);
+        net.minecraft.core.BlockPos bp = be.getBlockPos();
+        net.minecraft.world.phys.Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        lastDist2 = cam.distanceToSqr(bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5);
+        if (lastDist2 > VIEW * VIEW) {
+            return;
+        }
+        if (frustum != null) {
+            double r = 0.6 * s0 + 0.6;
+            net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(bp.getX() + 0.5 - r, bp.getY() - 0.2, bp.getZ() + 0.5 - r,
+                    bp.getX() + 0.5 + r, bp.getY() + 2.4 * s0, bp.getZ() + 0.5 + r);
+            if (!frustum.isVisible(box)) {
+                return;
+            }
         }
         super.render(be, partialTick, ps, buffers, light, overlay);
         // 湯気・煙など（今までと同じ描き方）
@@ -80,6 +103,11 @@ public class FurnitureGeoRenderer extends GeoBlockRenderer<MarkerBlockEntity> {
     public RenderType getRenderType(MarkerBlockEntity be, ResourceLocation texture, MultiBufferSource buf, float partial) {
         // 半透明（水・ガラス・ひれ）も描けるように
         return RenderType.entityTranslucent(texture);
+    }
+
+    @Override
+    public int getViewDistance() {
+        return VIEW;
     }
 
     @Override

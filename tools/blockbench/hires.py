@@ -270,6 +270,9 @@ class HiRes:
 
     def cyl(self, name, cx, cz, y0, y1, r, mat, sides=4, group=None, rx=None):
         """丸いもの（つぼ・鍋・柱など）。細長い板を sides 枚、向きを変えて重ねる → 正 2×sides 角形（4 なら八角形）"""
+        if getattr(self, "light", False):
+            # 軽くする：細いものは板を少なく（見た目はほとんど変わらない）
+            sides = min(sides, 2 if r < 0.8 else 3 if r < 1.8 else 4 if r < 3.2 else 6 if r < 5.5 else sides)
         half_w = r * math.tan(math.radians(90.0 / sides))
         for k in range(sides):
             ang = k * (180.0 / sides)

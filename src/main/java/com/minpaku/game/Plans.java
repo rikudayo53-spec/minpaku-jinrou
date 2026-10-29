@@ -855,7 +855,7 @@ public final class Plans {
                 .garden("蔵の庭", 144, 60, 166, 80, Blocks.GRASS_BLOCK)
                 .room("土蔵", 0, 122, 82, 140, 94, Blocks.POLISHED_ANDESITE)
                 .room("納屋", 0, 144, 82, 166, 94, Blocks.SPRUCE_PLANKS);
-        p.upper = new int[]{42, 1, 118, 40};
+        p.upper = new int[]{41, 0, 119, 41};   // 2階の外壁（部屋のまわり1マス）も含める
         p.stairs.add(new MapPlan.Stair(72, 73, 39));
         p.entranceX = 58;
         p.spawnX = 59;
@@ -866,9 +866,9 @@ public final class Plans {
             BlockState zabuton = Blocks.PURPLE_CARPET.defaultBlockState();
             // ---- 本館 1階
             // 厨房
-            m.marker(MarkerType.KAMADO, 44, a, 1, Direction.SOUTH);
-            m.marker(MarkerType.KAMADO, 48, a, 1, Direction.SOUTH);
-            m.marker(MarkerType.SINK, 53, a, 1, Direction.SOUTH);
+            m.marker(MarkerType.KAMADO, 44, a, 2, Direction.SOUTH);
+            m.marker(MarkerType.KAMADO, 48, a, 2, Direction.SOUTH);
+            m.marker(MarkerType.SINK, 53, a, 2, Direction.SOUTH);
             m.marker(MarkerType.GAS_VALVE, 56, a, 18, Direction.WEST);
             m.marker(MarkerType.CHOPPING, 45, a, 20, Direction.NORTH);
             m.marker(MarkerType.VENT, 54, a, 23, Direction.NORTH);
@@ -1011,7 +1011,7 @@ public final class Plans {
             m.marker(MarkerType.TEA, 102, a, 92, Direction.NORTH);
             m.marker(MarkerType.KAKEJIKU, 110, a, 94, Direction.NORTH);
             m.marker(MarkerType.VENT, 117, a, 93, Direction.NORTH);
-            m.marker(MarkerType.TANSU, 116, a, 79, Direction.SOUTH);
+            m.marker(MarkerType.TANSU, 117, a, 91, Direction.WEST);
             m.marker(MarkerType.HIBACHI, 104, a, 80, Direction.SOUTH);
 
             // ---- 今までの場所に飾りと新しいタスクを足す
@@ -1026,7 +1026,7 @@ public final class Plans {
             m.marker(MarkerType.HIBACHI, 92, b, 10, Direction.SOUTH);
             m.marker(MarkerType.TANSU, 117, b, 6, Direction.WEST);
             m.marker(MarkerType.CHABUDAI, 62, b, 32, Direction.SOUTH);
-            m.marker(MarkerType.TANSU, 72, b, 38, Direction.NORTH);
+            m.marker(MarkerType.TANSU, 94, b, 39, Direction.NORTH);
             m.marker(MarkerType.TSUBO, 110, b, 30, Direction.SOUTH);
             m.marker(MarkerType.MAILBOX, 64, a, 92, Direction.NORTH);
             m.marker(MarkerType.GOLDFISH, 60, a, 46, Direction.SOUTH);

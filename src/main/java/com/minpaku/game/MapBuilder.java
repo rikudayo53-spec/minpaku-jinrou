@@ -323,7 +323,7 @@ public final class MapBuilder {
         }
         // 階段の吹き抜け
         for (MapPlan.Stair s : plan.stairs) {
-            fill(s.x1(), F2, s.zStart() - 3, s.x2(), F2, s.zStart() + 3, Blocks.AIR);
+            fill(s.x1(), F2, s.zStart() - 3, s.x2(), F2, s.zStart() + 1, Blocks.AIR);
         }
     }
 

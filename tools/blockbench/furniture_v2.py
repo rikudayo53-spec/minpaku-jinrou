@@ -38,6 +38,12 @@ MATS.update({
 
 
 def F(name, d=6):
+    m = _F(name, d)
+    m.light = True
+    return m
+
+
+def _F(name, d=6):
     return HiRes(name, density=d, real=True)
 
 
@@ -1734,23 +1740,23 @@ def shogi_board():
         pz = 1.2 + row * 1.55
         g = m.group(f"piece{i}", (px, 9, pz))
         cx, cz = px + 0.575, pz + 0.65
-        m.cube("koma", (px, 9, pz + 0.35), (px + 1.15, 9.5, pz + 1.3), "koma", group=g, decal=_koma_text)
-        m.cube("koma_head", (cx - 0.42, 9, cz - 0.62), (cx + 0.42, 9.45, cz - 0.1), "koma", rot=[0, 45, 0], pivot=[cx, 9, cz - 0.3],
+        # とがった頭は相手（奥）の方を向く
+        m.cube("koma", (px, 9, pz), (px + 1.15, 9.5, pz + 0.95), "koma", group=g, decal=_koma_text)
+        m.cube("koma_head", (cx - 0.42, 9, cz + 0.1), (cx + 0.42, 9.45, cz + 0.62), "koma", rot=[0, 45, 0], pivot=[cx, 9, cz + 0.3],
                group=g)
-    # 駒台と、駒箱（ふた付き）
-    for x in (17.2, -5.2):
-        bevel(m, "komadai", (x, 4.6, 4), (x + 4, 5.2, 12), "kaya", b=0.15)
-        m.cyl("komadai_leg", x + 2, 8, 0, 4.6, 0.7, "kaya", sides=4)
-        bevel(m, "komadai_foot", (x + 0.6, 0, 6.6), (x + 3.4, 0.5, 9.4), "kaya", b=0.15)
+    # 対局者の座布団は盤の手前と奥（駒の並びの正面）。駒台はそれぞれの右手側、駒箱は横
+    for (z0, kx) in ((-12.6, 17.4), (22.6, -5.4)):
+        bevel(m, "zabuton", (3, 0, z0), (13, 1.4, z0 + 6.0), "zabuton_n", b=0.45)
+        bevel(m, "zabuton_top", (3.5, 1.4, z0 + 0.5), (12.5, 1.7, z0 + 5.5), "zabuton_n", b=0.3)
+        kz = z0 + 1.0 if z0 < 0 else z0 + 1.0
+        bevel(m, "komadai", (kx, 4.6, kz), (kx + 4, 5.2, kz + 4), "kaya", b=0.15)
+        m.cyl("komadai_leg", kx + 2, kz + 2, 0, 4.6, 0.7, "kaya", sides=4)
+        bevel(m, "komadai_foot", (kx + 0.6, 0, kz + 0.6), (kx + 3.4, 0.5, kz + 3.4), "kaya", b=0.15)
     for k in range(3):
-        m.cube("koma", (17.6 + k * 1.2, 5.2, 5 + k * 1.6), (18.6 + k * 1.2, 5.6, 6.2 + k * 1.6), "koma")
-    bevel(m, "box", (17.6, 0, -4.4), (21.6, 2.2, -0.4), "urushi_k", b=0.2)
-    bevel(m, "box_lid", (17.4, 2.2, -4.6), (21.8, 2.7, -0.2), "urushi_k", b=0.15)
-    m.cube("box_kamon", (18.9, 2.7, -3.1), (20.3, 2.75, -1.7), "natsume_gold")
-    # 座布団
-    for x0 in (-11, 23):
-        bevel(m, "zabuton", (x0, 0, 3), (x0 + 5.6, 1.4, 13), "zabuton_n", b=0.45)
-        bevel(m, "zabuton_top", (x0 + 0.5, 1.4, 3.5), (x0 + 5.1, 1.7, 12.5), "zabuton_n", b=0.3)
+        m.cube("koma", (17.8 + k * 1.2, 5.2, -11.2 + (k % 2) * 1.4), (18.8 + k * 1.2, 5.6, -10.0 + (k % 2) * 1.4), "koma")
+    bevel(m, "box", (17.6, 0, 6.0), (21.6, 2.2, 10.0), "urushi_k", b=0.2)
+    bevel(m, "box_lid", (17.4, 2.2, 5.8), (21.8, 2.7, 10.2), "urushi_k", b=0.15)
+    m.cube("box_kamon", (18.9, 2.7, 7.3), (20.3, 2.75, 8.7), "natsume_gold")
     return m
 
 
@@ -1802,8 +1808,9 @@ MATS.update({
     "post_red": Mat((196, 34, 30), "metal", accent=(160, 22, 20), noise=6),
     "post_red_d": Mat((150, 24, 22), "metal", noise=6),
     "post_plate": Mat((240, 238, 230), "plain", noise=2),
-    "glass_rim": Mat((190, 225, 250), "plain", noise=1, alpha=60),
-    "glass_clear": Mat((235, 248, 255), "plain", noise=1, alpha=20),
+    "glass_rim": Mat((180, 220, 248), "plain", noise=1, alpha=120),
+    "glass_clear": Mat((225, 242, 255), "plain", noise=1, alpha=48),
+    "glass_edge": Mat((200, 232, 255), "plain", noise=1, alpha=110),
     "water_thin": Mat((170, 215, 245), "plain", noise=1, alpha=30),
     "fish_fin": Mat((250, 170, 110), "paper", noise=4, alpha=200),
     "goldfish_b": Mat((255, 96, 24), "metal", accent=(255, 180, 60), noise=6),
@@ -1913,6 +1920,10 @@ def goldfish_bowl():
             x, z = 8 + r * math.cos(a), 8 + r * math.sin(a)
             m.cube("glass_bowl", (x - 0.03, y0, z - ln / 2), (x + 0.03, y1, z + ln / 2), "glass_clear",
                    rot=[0, -math.degrees(a), 0], pivot=[x, y0, z], skip=("west", "north", "south", "up", "down"))
+    # ガラスの縁どり：上の口と、底のふちに少し濃い輪（形がわかるように）
+    ring(m, "glass_lip", 8, 14.8, 8, 3.8, 0.25, 0.25, "glass_edge", seg=18, plane="xz")
+    ring(m, "glass_base", 8, 7.1, 8, 3.8, 0.25, 0.2, "glass_edge", seg=18, plane="xz")
+    ring(m, "glass_belly", 8, 11.3, 8, 5.42, 0.08, 0.15, "glass_edge", seg=20, plane="xz")
     # 口のひだ（波うつ縁）
     for k in range(12):
         a = 2 * math.pi * k / 12
@@ -2357,15 +2368,15 @@ def sake_barrel():
 def kasa_tate():
     m = F("kasa_tate", 6)
     # 信楽焼の壺：ふくらんで口が広がる、釉がたれる
-    prof = [(0, 0.8, 3.6), (0.8, 3.0, 4.2), (3.0, 6.0, 4.5), (6.0, 8.4, 4.2), (8.4, 9.4, 4.0), (9.4, 10.2, 4.4)]
+    prof = [(0, 1.0, 3.6), (1.0, 4.0, 4.2), (4.0, 9.0, 4.5), (9.0, 14.0, 4.4), (14.0, 16.6, 4.1), (16.6, 18.0, 4.5)]
     for (ya, yb, r) in prof:
         m.cyl("pot", 8, 8, ya, yb, r, "shigaraki", sides=6)
-    m.cyl("pot_glaze", 8, 8, 8.4, 10.2, 4.5, "glaze_g", sides=6)
+    m.cyl("pot_glaze", 8, 8, 14.6, 18.0, 4.6, "glaze_g", sides=6)
     for k in range(6):
         a = math.radians(k * 60 + 15)
-        x, z = 8 + 4.55 * math.cos(a), 8 + 4.55 * math.sin(a)
-        m.cube("drip", (x - 0.3, 6.0 + (k % 3) * 0.6, z - 0.3), (x + 0.3, 8.6, z + 0.3), "glaze_g")
-    m.cyl("pot_inside", 8, 8, 10.15, 10.25, 3.6, "deep_dark", sides=6)
+        x, z = 8 + 4.62 * math.cos(a), 8 + 4.62 * math.sin(a)
+        m.cube("drip", (x - 0.3, 11.4 + (k % 3) * 0.9, z - 0.3), (x + 0.3, 14.8, z + 0.3), "glaze_g")
+    m.cyl("pot_inside", 8, 8, 17.95, 18.05, 3.8, "deep_dark", sides=6)
     # すぼめた傘を3本：先（石突き）を壺に入れ、柄が上。布はひだになって巻かれ、留めバンドでとめる
     umbs = ((-1.6, -1.0, (6, 0, -9), "kasa_black", "crook"), (1.6, -0.4, (-4, 0, 10), "janome_b", "crook"),
             (0.0, 1.8, (-9, 0, 2), "janome_r", "wagasa"))
@@ -2373,7 +2384,7 @@ def kasa_tate():
         cx, cz = 8 + dx, 8 + dz
 
         def Y(v):
-            return 1.0 + (v - 1.0) * 1.45
+            return 1.0 + (v - 1.0) * 1.95
         g = m.group(f"umb{k}", (cx, 1.0, cz), rot=rot)
         m.cyl("ishizuki", cx, cz, 1.0, Y(2.8), 0.25, "steel_light" if kind == "crook" else "hinoki_dark", sides=2, group=g)
         # 布：ひだ（放射状の薄い板）＋芯。下（先）が細く、上にいくほどだんだん広がる

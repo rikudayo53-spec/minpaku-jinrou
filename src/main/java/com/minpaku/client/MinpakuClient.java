@@ -58,6 +58,7 @@ public class MinpakuClient implements ClientModInitializer {
                 new net.minecraft.client.KeyMapping("key.minpaku.vote", org.lwjgl.glfw.GLFW.GLFW_KEY_V, "key.categories.minpaku"));
         GameHud.MAP_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
                 new net.minecraft.client.KeyMapping("key.minpaku.map", org.lwjgl.glfw.GLFW.GLFW_KEY_M, "key.categories.minpaku"));
+        WorldRenderEvents.AFTER_SETUP.register(ctx -> com.minpaku.client.geo.FurnitureGeoRenderer.frustum = ctx.frustum());
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
         WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.RoleTags::render);
 
