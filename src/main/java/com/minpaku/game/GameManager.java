@@ -1182,7 +1182,7 @@ public final class GameManager {
     }
 
     private final List<ClosedDoor> closedDoors = new ArrayList<>();
-    private int doorsOpenAt = -1;
+    private long doorsOpenAt = -1;
 
     public void useOkami(ServerPlayer p) {
         PlayerState ps = players.get(p.getUUID());
