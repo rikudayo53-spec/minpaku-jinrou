@@ -28,6 +28,7 @@ from mathutils import Vector, Matrix, Euler
 EXPORT = False
 OUTPUT_DIR = ""        # 空ならデスクトップ/minpaku_models
 ONLY = []              # 例: ["call_bell"] でそれだけ作り直す
+FONT_PATH = ""         # 文字に使うフォント（空なら mod の ui_serif.ttf を探す）
 SPACING = 1.6
 
 R = random.Random(11)
@@ -105,6 +106,15 @@ def palette():
         "claw": material("claw", (0.90, 0.86, 0.74), rough=0.4),
         "tooth": material("tooth", (0.98, 0.96, 0.89), rough=0.3),
         "gum": material("gum", (0.42, 0.06, 0.09)),
+        "lacquer": material("lacquer", (0.05, 0.04, 0.04), rough=0.25),
+        "brass": material("brass", (0.86, 0.66, 0.30), rough=0.3, metal=1.0),
+        "koi_white": material("koi_white", (0.97, 0.96, 0.93), rough=0.35),
+        "koi_red": material("koi_red", (0.90, 0.26, 0.10), rough=0.35),
+        "koi_gold": material("koi_gold", (1.0, 0.72, 0.20), rough=0.25, metal=0.4),
+        "koi_fin": material("koi_fin", (0.98, 0.92, 0.86), alpha=0.8, rough=0.4),
+        "koi_eye": material("koi_eye", (0.05, 0.05, 0.06), rough=0.1),
+        "kiku_white": material("kiku_white", (0.97, 0.97, 0.94)),
+        "kiku_yellow": material("kiku_yellow", (0.98, 0.84, 0.22)),
     }
 
 
@@ -302,6 +312,63 @@ class Model:
                 bm.faces.new((r0[k], r0[(k + 1) % 4], r1[(k + 1) % 4], r1[k]))
         bm.faces.new(list(reversed(rows[0])))
         bm.faces.new(rows[-1])
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        return self._obj(bm, mat, smooth=False)
+
+    def text(self, body, size, loc, mat, rotm, extrude=0.004):
+        """文字（フォントは FONT_PATH か mod の ui_serif.ttf）。rotm = 回転の行列（文字は +Z 向きが表）"""
+        path = FONT_PATH
+        if not path or not os.path.isfile(path):
+            here = os.path.dirname(os.path.abspath(bpy.data.filepath or __file__))
+            for c in (os.path.join(here, "..", "..", "src/main/resources/assets/minpaku/font/ui_serif.ttf"),
+                      os.path.join(os.getcwd(), "src/main/resources/assets/minpaku/font/ui_serif.ttf")):
+                if os.path.isfile(c):
+                    path = c
+                    break
+        self.n += 1
+        cu = bpy.data.curves.new(f"MP_{self.name}_t{self.n}", 'FONT')
+        cu.body = body
+        cu.size = size
+        cu.extrude = extrude
+        cu.align_x = 'CENTER'
+        cu.align_y = 'CENTER'
+        if path and os.path.isfile(path):
+            cu.font = bpy.data.fonts.load(path, check_existing=True)
+        ob = bpy.data.objects.new(f"MP_{self.name}_t{self.n}", cu)
+        self.coll.objects.link(ob)
+        ob.parent = self.root
+        ob.matrix_basis = Matrix.Translation(Vector(loc)) @ rotm.to_4x4()
+        cu.materials.append(mat)
+        return ob
+
+    def loft(self, sections, mat, ring=16, smooth_angle=80):
+        """sections = [(y, cx, cz, rx, rz), ...]：Y 方向に並んだ楕円の輪をつないだ形（魚の体など）"""
+        bm = bmesh.new()
+        rings = []
+        for (y, cx, cz, rx, rz) in sections:
+            rr = []
+            for i in range(ring):
+                a = 2 * math.pi * i / ring
+                rr.append(bm.verts.new((cx + math.cos(a) * max(rx, 1e-4), y, cz + math.sin(a) * max(rz, 1e-4))))
+            rings.append(rr)
+        for k in range(len(rings) - 1):
+            for i in range(ring):
+                bm.faces.new((rings[k][i], rings[k][(i + 1) % ring], rings[k + 1][(i + 1) % ring], rings[k + 1][i]))
+        bm.faces.new(list(reversed(rings[0])))
+        bm.faces.new(rings[-1])
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        return self._obj(bm, mat, angle=smooth_angle)
+
+    def fin(self, pts, mat, thick=0.004):
+        """平たいひれ（XYZ の点の多角形を少し厚くした板）"""
+        bm = bmesh.new()
+        n = len(pts)
+        top = [bm.verts.new((x, y, z + thick / 2)) for x, y, z in pts]
+        bot = [bm.verts.new((x, y, z - thick / 2)) for x, y, z in pts]
+        bm.faces.new(top)
+        bm.faces.new(list(reversed(bot)))
+        for i in range(n):
+            bm.faces.new((top[i], bot[i], bot[(i + 1) % n], top[(i + 1) % n]))
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
         return self._obj(bm, mat, smooth=False)
 
@@ -580,8 +647,18 @@ def manager_key(m, P):
     m.box((0.12, 0.04, 0.05), (0.06, 0, 0.17), P["gold"], bevel=0.01)
     m.box((0.08, 0.04, 0.05), (0.05, 0, 0.27), P["gold"], bevel=0.01)
     m.torus(0.045, 0.012, (0, 0, 0.65), P["gold"], seg=16, ring=8)
-    m.box((0.16, 0.025, 0.24), (-0.26, 0, 0.62), P["wood_light"], rot=(0, -15, 0), bevel=0.012)
-    m.tube([(-0.12, 0, 0.88), (-0.18, 0, 0.82), (-0.24, 0, 0.75)], 0.008, P["red"])
+    # 名札（木の札に「民泊」の焼き印）
+    tilt = -15
+    m.box((0.17, 0.026, 0.27), (-0.26, 0, 0.61), P["wood_light"], rot=(0, tilt, 0), bevel=0.012)
+    m.box((0.19, 0.03, 0.02), (-0.26, 0, 0.61), P["wood"], rot=(0, tilt, 0), bevel=0.0)
+    tm = Matrix.Rotation(math.radians(tilt), 3, 'Y')
+    for side in (-1, 1):
+        face = Matrix.Rotation(math.radians(90), 3, 'X') if side < 0 else \
+            Matrix.Rotation(math.radians(180), 3, 'Z') @ Matrix.Rotation(math.radians(90), 3, 'X')
+        for k, ch in enumerate("民泊"):
+            off = tm @ Vector((0, side * 0.0145, 0.065 - k * 0.12))
+            m.text(ch, 0.1, (-0.26 + off.x, off.y, 0.61 + off.z), P["wood_dark"], tm @ face, extrude=0.002)
+    m.tube([(-0.12, 0, 0.88), (-0.18, 0, 0.82), (-0.24, 0, 0.76)], 0.008, P["red"])
 
 
 def seer_crystal(m, P):
@@ -709,10 +786,134 @@ def itamae_onigiri(m, P):
         m.ico(0.014, (R.uniform(-0.08, 0.08), -0.115, R.uniform(0.22, 0.34)), P["white"], smooth=False)
 
 
+
+def sheriff_gun(m, P):
+    """シェリフの短筒（和風の火縄の短銃）。銃口は -Y（前）"""
+    m.cyl(0.035, 0.62, (0, 0.02, 0.44), P["iron"], rot=(90, 0, 0), verts=18, bevel=0.004)
+    m.cyl(0.05, 0.03, (0, -0.58, 0.44), P["iron"], rot=(90, 0, 0), verts=18, bevel=0.004)      # 銃口
+    m.cyl(0.018, 0.04, (0, -0.62, 0.44), P["dark"], rot=(90, 0, 0), verts=12, bevel=0)
+    for y in (-0.42, -0.2, 0.0):
+        m.cyl(0.042, 0.025, (0, y, 0.44), P["brass"], rot=(90, 0, 0), verts=18, bevel=0.003)
+    # 銃床（木）：銃身の下から、にぎりへ曲がる
+    m.box((0.07, 0.5, 0.06), (0, -0.16, 0.395), P["wood_dark"], bevel=0.015)
+    m.seg((0, 0.06, 0.40), (0, 0.22, 0.14), 0.05, 0.065, P["wood_dark"], verts=16)
+    m.sphere(0.07, (0, 0.23, 0.12), P["wood_dark"], scale=(0.9, 1.1, 0.8))
+    m.cyl(0.072, 0.02, (0, 0.24, 0.08), P["brass"], verts=16, bevel=0.004)
+    # 火ばさみ・引き金・用心金
+    m.box((0.015, 0.08, 0.02), (0.045, 0.05, 0.49), P["brass"], rot=(30, 0, 0), bevel=0.003)
+    m.box((0.02, 0.02, 0.06), (0, 0.04, 0.34), P["brass"], rot=(-15, 0, 0), bevel=0.003)
+    m.torus(0.05, 0.008, (0, 0.03, 0.33), P["brass"], rot=(0, 90, 0), seg=16, ring=6, arc=200)
+    m.cyl(0.012, 0.3, (0, -0.32, 0.38), P["wood"], rot=(90, 0, 0), verts=8, bevel=0)          # さく杖
+    m.cyl(0.03, 0.006, (0.037, -0.1, 0.395), P["gold"], rot=(0, 90, 0), verts=16, bevel=0)     # 金の飾り
+
+
+def buttoner_bell(m, P):
+    """ナイスボタナーの呼び鈴（手のひらにのる卓上ベル）"""
+    m.cyl(0.24, 0.05, (0, 0, 0.0), P["wood_dark"], verts=32, bevel=0.012)
+    m.cyl(0.21, 0.02, (0, 0, 0.05), P["red"], verts=32, bevel=0.004)
+    m.lathe([(0.0, 0.07), (0.2, 0.07), (0.2, 0.09), (0.18, 0.15), (0.14, 0.22), (0.08, 0.26), (0.0, 0.27)],
+            (0, 0, 0), P["brass"], seg=36)
+    m.cyl(0.02, 0.06, (0, 0, 0.26), P["iron"], verts=12, bevel=0)
+    m.sphere(0.045, (0, 0, 0.33), P["red"], scale=(1, 1, 0.7))
+    m.torus(0.2, 0.008, (0, 0, 0.09), P["gold"], seg=32, ring=6)
+
+
+def iei(m, P):
+    """遺影：黒い額に黒いリボン、小さな台。両わきに白と黄色の菊の花瓶。前面の白い板にゲームで顔が入る"""
+    m.box((1.1, 0.42, 0.24), (0, 0.05, 0.12), P["lacquer"], bevel=0.015)
+    m.box((1.14, 0.44, 0.02), (0, 0.05, 0.25), P["white"], bevel=0.004)
+    m.box((0.5, 0.05, 0.62), (0, 0.1, 0.6), P["lacquer"], rot=(-8, 0, 0), bevel=0.012)
+    m.box((0.4, 0.012, 0.5), (0, 0.065, 0.6), P["paper"], rot=(-8, 0, 0), bevel=0.0)
+    m.box((0.04, 0.12, 0.3), (0, 0.18, 0.42), P["lacquer"], rot=(25, 0, 0), bevel=0.006)
+    for sx in (-1, 1):
+        m.box((0.2, 0.02, 0.04), (sx * 0.19, 0.06, 0.87), P["dark"], rot=(-8, sx * -45, 0), bevel=0.003)
+    m.sphere(0.04, (0, 0.06, 0.92), P["dark"], scale=(1.4, 0.6, 0.8))
+    m.box((0.05, 0.015, 0.14), (-0.04, 0.055, 0.86), P["dark"], rot=(-8, 0, 20), bevel=0.003)
+    m.box((0.05, 0.015, 0.14), (0.04, 0.055, 0.86), P["dark"], rot=(-8, 0, -20), bevel=0.003)
+    for sx in (-1, 1):
+        x = sx * 0.42
+        m.lathe([(0.0, 0.0), (0.07, 0.0), (0.09, 0.08), (0.06, 0.2), (0.045, 0.24), (0.06, 0.26), (0.0, 0.26)],
+                (x, -0.02, 0.26), P["white"], seg=24)
+        for k in range(7):
+            a = k / 7 * math.pi * 2
+            r = 0.06 if k else 0.0
+            fx = x + math.cos(a) * r
+            fy = -0.02 + math.sin(a) * r * 0.7
+            top = 0.66 + (0.06 if k == 0 else (k % 3) * 0.03)
+            m.seg((x, -0.02, 0.5), (fx, fy, top), 0.008, 0.006, P["leaf"], verts=6)
+            col = P["kiku_white"] if (k + (sx > 0)) % 2 else P["kiku_yellow"]
+            for j in range(10):
+                b = j / 10 * math.pi * 2
+                m.sphere(0.022, (fx + math.cos(b) * 0.03, fy + math.sin(b) * 0.03, top), col, scale=(1.4, 0.6, 0.5),
+                         rot=(0, 0, math.degrees(b)), seg=8, rings=5)
+            m.sphere(0.022, (fx, fy, top + 0.01), col, seg=8, rings=6)
+        m.box((0.04, 0.02, 0.07), (x + sx * 0.04, -0.02, 0.56), P["leaf"], rot=(0, sx * 35, 0), bevel=0)
+    m.cyl(0.07, 0.07, (0, -0.1, 0.26), P["brass"], verts=20, bevel=0.006)
+    for dx in (-0.015, 0.015):
+        m.cyl(0.004, 0.18, (dx, -0.1, 0.32), P["leaf"], verts=6, bevel=0)
+        m.sphere(0.006, (dx, -0.1, 0.5), P["fire"])
+
+
+def _koi(m, P, part, pattern):
+    """鯉（全長 0.6、頭が -Y）。part = front / mid / tail（泳ぐときに曲げるため3つに分ける）"""
+    def width(t):
+        return 0.062 * math.sin(min(1.0, t * 1.25 + 0.08) * math.pi) ** 0.6 + 0.008
+
+    def height(t):
+        return 0.07 * math.sin(min(1.0, t * 1.15 + 0.1) * math.pi) ** 0.7 + 0.008
+    L0, L1 = -0.3, 0.2
+    cuts = {"front": (0.0, 0.42), "mid": (0.42, 0.72), "tail": (0.72, 1.0)}
+    a, b = cuts[part]
+    secs = []
+    n = 10
+    for i in range(n + 1):
+        t = a + (b - a) * i / n
+        y = L0 + (L1 - L0) * t
+        cz = 0.08 + 0.01 * math.sin(t * math.pi)
+        secs.append((y, 0.0, cz, width(t), height(t)))
+    base = P["koi_gold"] if pattern == "gold" else P["koi_white"]
+    m.loft(secs, base, ring=18)
+    if pattern == "kohaku":
+        patches = {"front": [(0.04, 0.30)], "mid": [(0.46, 0.64)], "tail": [(0.76, 0.86)]}[part]
+        for (p0, p1) in patches:
+            ps = []
+            for i in range(7):
+                t = p0 + (p1 - p0) * i / 6
+                y = L0 + (L1 - L0) * t
+                k = math.sin(i / 6 * math.pi)
+                cz = 0.08 + 0.01 * math.sin(t * math.pi) + height(t) * 0.32
+                ps.append((y, 0.0, cz, width(t) * (0.6 + 0.4 * k) + 0.001, height(t) * (0.5 + 0.32 * k) + 0.001))
+            m.loft(ps, P["koi_red"], ring=18)
+    if part == "front":
+        for sx in (-1, 1):
+            m.sphere(0.009, (sx * 0.03, -0.25, 0.095), P["koi_eye"], seg=10, rings=6)
+            m.seg((sx * 0.012, -0.295, 0.07), (sx * 0.04, -0.33, 0.055), 0.003, 0.0015, base, verts=5)
+            m.fin([(sx * 0.04, -0.17, 0.05), (sx * 0.13, -0.11, 0.035), (sx * 0.12, -0.07, 0.04), (sx * 0.04, -0.12, 0.055)],
+                  P["koi_fin"])
+        m.fin([(0.0, -0.08, 0.14), (0.0, 0.0, 0.2), (0.0, 0.06, 0.15)], P["koi_fin"])
+    if part == "mid":
+        m.fin([(0.0, -0.02, 0.15), (0.0, 0.04, 0.19), (0.0, 0.1, 0.15)], P["koi_fin"])
+        for sx in (-1, 1):
+            m.fin([(sx * 0.03, 0.02, 0.05), (sx * 0.08, 0.07, 0.03), (sx * 0.03, 0.08, 0.05)], P["koi_fin"])
+    if part == "tail":
+        m.fin([(0.0, 0.17, 0.085), (0.0, 0.30, 0.17), (0.0, 0.27, 0.085), (0.0, 0.30, 0.0), (0.0, 0.17, 0.075)],
+              P["koi_fin"] if pattern != "gold" else P["koi_gold"], thick=0.006)
+
+
+def koi_kohaku_front(m, P): _koi(m, P, "front", "kohaku")
+def koi_kohaku_mid(m, P): _koi(m, P, "mid", "kohaku")
+def koi_kohaku_tail(m, P): _koi(m, P, "tail", "kohaku")
+def koi_gold_front(m, P): _koi(m, P, "front", "gold")
+def koi_gold_mid(m, P): _koi(m, P, "mid", "gold")
+def koi_gold_tail(m, P): _koi(m, P, "tail", "gold")
+
+
 BLOCKS = [call_bell, floor_hatch, breaker, gas_valve, boiler, wiring_panel, ledger, futon, kamado, bath_stove,
           chopping_block, vegetable_patch, dust_pile, entrance_mat, laundry_pole, flower_vase, kitchen_sink,
           shoe_rack, shoji_screen]
-ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman, detective_lens, okami_keyring, itamae_onigiri]
+ITEMS = [manager_key, seer_crystal, knight_charm, sabotage_talisman, detective_lens, okami_keyring, itamae_onigiri,
+         sheriff_gun, buttoner_bell, iei, koi_kohaku_front, koi_kohaku_mid, koi_kohaku_tail,
+         koi_gold_front, koi_gold_mid, koi_gold_tail]
 
 
 # ============================================================ 書き出し
@@ -735,7 +936,7 @@ def export_all(out_dir):
         inv = root.matrix_world.inverted() if root else Matrix.Identity(4)
         parts = {}
         for ob in coll.all_objects:
-            if ob.type not in {'MESH', 'CURVE'}:
+            if ob.type not in {'MESH', 'CURVE', 'FONT'}:
                 continue
             ev = ob.evaluated_get(dg)
             mesh = ev.to_mesh()

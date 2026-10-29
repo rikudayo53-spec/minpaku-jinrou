@@ -38,6 +38,10 @@ public class MapData extends SavedData {
         setDirty();
     }
 
+    public List<Room> rooms() {
+        return rooms;
+    }
+
     /** その場所の部屋の名前（なければ空文字） */
     public String roomAt(BlockPos pos) {
         for (Room r : rooms) {

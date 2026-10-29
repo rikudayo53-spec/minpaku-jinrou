@@ -49,6 +49,8 @@ public class MinpakuClient implements ClientModInitializer {
                 new net.minecraft.client.KeyMapping("key.minpaku.ledger", org.lwjgl.glfw.GLFW.GLFW_KEY_J, "key.categories.minpaku"));
         GameHud.KILL_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
                 new net.minecraft.client.KeyMapping("key.minpaku.kill", org.lwjgl.glfw.GLFW.GLFW_KEY_R, "key.categories.minpaku"));
+        GameHud.VOTE_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
+                new net.minecraft.client.KeyMapping("key.minpaku.vote", org.lwjgl.glfw.GLFW.GLFW_KEY_V, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
         WorldRenderEvents.AFTER_TRANSLUCENT.register(com.minpaku.client.render.Distortion::render);
         WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.RoleTags::render);
@@ -158,8 +160,11 @@ public class MinpakuClient implements ClientModInitializer {
             ClientGame.onState(p);
             Minecraft mc = Minecraft.getInstance();
             // 会議が終わったのに画面が残っていたら閉じる
-            if (before == 2 && p.phase() == 1 && mc.screen instanceof MeetingScreen) {
-                mc.setScreen(null);
+            if (before == 2 && p.phase() != 2) {
+                if (mc.screen instanceof MeetingScreen) {
+                    mc.setScreen(null);
+                }
+                ClientGame.currentMeeting = null;
             }
             if (p.phase() == 0 && (mc.screen instanceof MeetingScreen || mc.screen instanceof RevealScreen)) {
                 mc.setScreen(null);
@@ -175,21 +180,26 @@ public class MinpakuClient implements ClientModInitializer {
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Meeting.TYPE, (p, ctx) -> ctx.client().execute(() -> {
             ClientGame.talk.clear();
+            ClientGame.currentMeeting = new MeetingScreen(p);
             if (ClientGame.killFxKind == 0 && ClientGame.killFxTicks > 0) {
                 // 襲われた演出の途中なら、終わってから会議画面を開く
                 pendingMeeting = p;
             } else {
-                Minecraft.getInstance().setScreen(new MeetingScreen(p));
+                Minecraft.getInstance().setScreen(ClientGame.currentMeeting);
             }
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Voted.TYPE, (p, ctx) -> ctx.client().execute(() -> {
-            if (Minecraft.getInstance().screen instanceof MeetingScreen m) {
-                m.onVoted(p.voters());
+            if (ClientGame.currentMeeting != null) {
+                ClientGame.currentMeeting.onVoted(p.voters());
             }
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.MeetingResult.TYPE, (p, ctx) -> ctx.client().execute(() -> {
-            if (Minecraft.getInstance().screen instanceof MeetingScreen m) {
-                m.onResult(p);
+            if (ClientGame.currentMeeting != null) {
+                ClientGame.currentMeeting.onResult(p);
+                // 井戸端会議で画面を閉じていても、結果と追放はみんなに見せる
+                if (Minecraft.getInstance().screen != ClientGame.currentMeeting) {
+                    Minecraft.getInstance().setScreen(ClientGame.currentMeeting);
+                }
             }
         }));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Preview.TYPE, (p, ctx) -> ctx.client().execute(() ->
@@ -264,12 +274,22 @@ public class MinpakuClient implements ClientModInitializer {
 
     private static void tick(Minecraft mc) {
         if (pendingMeeting != null && (ClientGame.killFxTicks <= 0 || ClientGame.killFxKind != 0)) {
-            if (ClientGame.state.phase() == 2) {
-                mc.setScreen(new MeetingScreen(pendingMeeting));
+            if (ClientGame.state.phase() == 2 && ClientGame.currentMeeting != null) {
+                mc.setScreen(ClientGame.currentMeeting);
             }
             pendingMeeting = null;
         }
         ClientGame.tick();
+        // 井戸端会議：会議の画面を閉じていても時間は進む。V でまた開く
+        MeetingScreen cm = ClientGame.currentMeeting;
+        if (cm != null && mc.screen != cm) {
+            cm.tick();
+        }
+        while (GameHud.VOTE_KEY != null && GameHud.VOTE_KEY.consumeClick()) {
+            if (cm != null && mc.screen == null && ClientGame.state.phase() == 2) {
+                mc.setScreen(cm);
+            }
+        }
         Previews.tick();
         SelfTest.tick(mc);
         // 人狼の能力：キルキーで近くの相手をキル

@@ -44,6 +44,10 @@ public class MeetingScreen extends Screen {
     private final Set<UUID> deadNow = new HashSet<>();
     private String deathText = "";
     private int deathAge = 999;
+    /** 見取り図（会議中に開ける） */
+    @Nullable
+    private MapView mapView;
+
     /** ゲッサー：当てる相手を選んでいるところ／役職を選んでいるところ */
     private boolean guessMode;
     @Nullable
@@ -170,7 +174,10 @@ public class MeetingScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float pt) {
-        g.fill(0, 0, width, height, 0xC0100C08);
+        g.fill(0, 0, width, height, ClientGame.meetingFree && result == null ? 0x90100C08 : 0xC0100C08);
+        if (ClientGame.meetingFree && result == null && age >= SPLASH) {
+            Ui.sans(g, "Esc で閉じると、歩きながら話せます（V でまた開く）", width / 2f, height - 10, 0xFFFFE0B2, 0.75f, 0);
+        }
     }
 
     @Override
@@ -195,6 +202,9 @@ public class MeetingScreen extends Screen {
         }
         if (guessTarget != null) {
             guessPicker(g, mouseX, mouseY);
+        }
+        if (mapView != null) {
+            mapView.render(g, width, height, mouseX, mouseY);
         }
     }
 
@@ -293,6 +303,8 @@ public class MeetingScreen extends Screen {
             Ui.sans(g, String.valueOf(Math.max(0, remain / 20 + 1)), tx, ty - 5, Ui.INK, 1.1f, 0);
         }
         Ui.sans(g, head, tx - 22, ty - 4, Ui.VERMILION, 0.85f, 1);
+        boolean hm = inside(mouseX, mouseY, px + pw - 150, py + 14, 46, 16);
+        Ui.button(g, px + pw - 150, py + 14, 46, 16, "マップ", false, hm, true, 0.85f);
 
         // 参加者のカード
         List<Packets.Participant> ps = meeting.participants();
@@ -489,6 +501,17 @@ public class MeetingScreen extends Screen {
             return true;
         }
         input.setFocused(false);
+        if (mapView != null) {
+            if (mapView.click(mx, my)) {
+                mapView = null;
+            }
+            return true;
+        }
+        if (age >= SPLASH && result == null && inside(mx, my, px + pw - 150, py + 14, 46, 16)) {
+            mapView = new MapView();
+            ClientGame.play(SoundEvents.BOOK_PAGE_TURN, 1.0f);
+            return true;
+        }
         List<Packets.Participant> ps = meeting.participants();
         // ゲッサー：役職えらび
         if (guessTarget != null) {
@@ -585,7 +608,20 @@ public class MeetingScreen extends Screen {
 
     @Override
     public boolean shouldCloseOnEsc() {
-        return false;
+        // 井戸端会議では閉じて歩き回れる（結果が出たら閉じられない）
+        return ClientGame.meetingFree && result == null && age >= SPLASH && guessTarget == null && mapView == null;
+    }
+
+    /** 画面を閉じているときの上の表示（残り時間） */
+    public String statusText() {
+        if (result != null) {
+            return "結果発表";
+        }
+        if (!votingOpen()) {
+            return "議論 あと" + Math.max(0, (meeting.discussionTicks() - SPLASH - meetingTime()) / 20 + 1) + "秒";
+        }
+        return "投票 あと" + Math.max(0, (meeting.discussionTicks() + meeting.votingTicks() - SPLASH - meetingTime()) / 20 + 1) + "秒"
+                + (myVoteSent ? "（投票済み）" : "");
     }
 
     @Override
@@ -595,6 +631,9 @@ public class MeetingScreen extends Screen {
 
     @Override
     public void onClose() {
+        if (result != null && resultAge >= RESULT_SHOW + EJECT_LEN) {
+            ClientGame.currentMeeting = null;
+        }
         Minecraft.getInstance().setScreen(null);
     }
 }

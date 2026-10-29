@@ -24,6 +24,7 @@ import net.minecraft.world.entity.player.Player;
  */
 public final class GameHud {
     public static KeyMapping LEDGER_KEY;
+    public static KeyMapping VOTE_KEY;
     public static KeyMapping KILL_KEY;
 
     private GameHud() {
@@ -52,6 +53,13 @@ public final class GameHud {
             }
             topBar(g, s, w);
             center(g, s, w, h, mc);
+        }
+        // 井戸端会議：画面を閉じて歩いているとき
+        if (ClientGame.state.phase() == 2 && ClientGame.currentMeeting != null && mc.screen == null) {
+            String key = VOTE_KEY != null ? VOTE_KEY.getTranslatedKeyMessage().getString() : "V";
+            g.fill(w / 2 - 110, 4, w / 2 + 110, 22, 0xB0201410);
+            Ui.sans(g, "井戸端会議中　" + ClientGame.currentMeeting.statusText() + "　［" + key + "］で投票画面", w / 2f, 9,
+                    0xFFFFE0B2, 0.85f, 0);
         }
         killFx(g, w, h, pt);
         evilGod(g, w, h, pt);

@@ -55,6 +55,8 @@ public final class FinisherScenes {
         add(new Fusuma());
         add(new Seoi());
         add(new Neko());
+        // Blockbench だけで作ったフィニッシャー（コードの版はない）
+        NAMES.put("sheriff", "シェリフ ― 早撃ち");
     }
 
     private static void add(Finisher f) {

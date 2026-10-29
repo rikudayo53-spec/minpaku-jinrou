@@ -1010,8 +1010,74 @@ def neko():
     return p
 
 
+# ================================================================ シェリフ：早撃ち（短筒で一発）
+
+def sheriff():
+    p = base("sheriff", 2.8)
+    g = hand_group(p, "killer", "r", "gun")
+    p.cube(g, "grip", [5.3, 9.5, -0.9], [6.7, 12.6, 0.9], "dark_oak_planks")
+    p.cube(g, "barrel", [5.5, 2.5, -2.4], [6.5, 11.0, -1.4], "iron_block")
+    p.cube(g, "band1", [5.35, 4.0, -2.55], [6.65, 4.6, -1.25], "gold_block")
+    p.cube(g, "band2", [5.35, 7.5, -2.55], [6.65, 8.1, -1.25], "gold_block")
+    p.cube(g, "stock", [5.4, 8.0, -1.5], [6.6, 11.5, -0.8], "dark_oak_planks")
+    fl = p.group("muzzle_flash", [6, 2.5, -1.9], "gun")
+    p.cube(fl, "flash", [4.5, 0.0, -3.4], [7.5, 2.5, -0.4], "glow_orange_concrete")
+    p.cube(fl, "flash2", [5.2, -1.5, -2.6], [6.8, 0.2, -1.2], "glow_yellow_concrete")
+    show(p, "muzzle_flash", 0.0, False)
+    show(p, "muzzle_flash", 0.85, True)
+    show(p, "muzzle_flash", 0.97, False)
+    smoke = p.group("smoke", [6, 2.5, -1.9], "gun")
+    for k in range(3):
+        p.cube(smoke, f"puff{k}", [5.2 - k * 0.3, -1 - k * 2.2, -2.6 - k * 0.2], [6.8 + k * 0.3, 0.6 - k * 2.2, -1.2 + k * 0.2],
+               "glass_white_concrete")
+    show(p, "smoke", 0.0, False)
+    show(p, "smoke", 1.7, True)
+
+    KX, VX = -2.4, 1.2
+    # シェリフ：腰に手 → 早撃ち → 銃を上に向けて煙をふっと吹く
+    K(p, "killer", 0.0, at=(KX, 0, 0), root=(0, 90, 0), head=(5, 0, 0), ra=(-10, 0, 12), la=(-10, 0, -12),
+      rl=(0, 0, 6), ll=(0, 0, -6))
+    K(p, "killer", 0.55, at=(KX, 0, 0), root=(4, 90, 0), head=(8, 0, 0), ra=(-20, 0, 18), la=(-15, 0, -12))
+    K(p, "killer", 0.72, ra=(-92, -8, 0), root=(2, 90, 0), head=(0, -5, 0), i="linear")
+    K(p, "killer", 0.85, ra=(-92, -8, 0), la=(-30, 0, -10))
+    K(p, "killer", 0.92, ra=(-120, -8, 0), root=(-4, 90, 0))
+    K(p, "killer", 1.2, ra=(-95, -8, 0), root=(0, 90, 0))
+    K(p, "killer", 1.6, ra=(-150, 0, -25), la=(-10, 0, -10), head=(-10, 0, 0))
+    K(p, "killer", 2.8, at=(KX, 0, 0), root=(0, 90, 0), ra=(-152, 0, -28), head=(-12, -10, 0))
+    # 自分：撃たれて後ろへ倒れる
+    K(p, "victim", 0.0, at=(VX, 0, 0), root=(0, -90, 0), head=(0, 0, 0), ra=(-15, 0, 10), la=(-15, 0, -10), rl=(0, 0, 0), ll=(0, 0, 0))
+    K(p, "victim", 0.7, at=(VX, 0, 0), root=(5, -90, 0), head=(5, 0, 0), ra=(-60, 0, 10), la=(-60, 0, -10))
+    K(p, "victim", 0.85, at=(VX, 0, 0), root=(5, -90, 0), head=(5, 0, 0), ra=(-60, 0, 10), la=(-60, 0, -10))
+    K(p, "victim", 0.95, at=(VX + 0.2, 0.1, 0), root=(-25, -90, 0), head=(-30, 0, 0), ra=(-150, 0, 40), la=(-150, 0, -40),
+      rl=(-25, 0, 0), ll=(0, 0, 0))
+    K(p, "victim", 1.25, at=(VX + 0.55, 0.13, 0), root=(-90, -90, 0), head=(-5, 0, 0), ra=(-175, 0, 60), la=(-175, 0, -60),
+      rl=(-10, 0, 8), ll=(-5, 0, -8))
+    K(p, "victim", 2.8, at=(VX + 0.55, 0.13, 0), root=(-90, -90, 0), head=(0, 30, 0), ra=(-178, 0, 72), la=(-178, 0, -72),
+      rl=(-3, 0, 8), ll=(-3, 0, -8))
+    p.timeline(0.85, "hit")
+    p.timeline(0.86, "text:バーン！！:screen:FFE08A:3.4")
+    p.timeline(1.75, "text:フッ…:killer_head:FFFFFF:1.8")
+    p.sound(0.1, "minecraft:entity.phantom.flap", 0.5)
+    p.sound(0.7, "minecraft:item.armor.equip_iron", 1.4)
+    p.sound(0.85, "minecraft:entity.generic.explode", 1.8)
+    p.sound(0.85, "minecraft:entity.firework_rocket.blast", 0.6)
+    p.sound(0.9, "minecraft:entity.player.hurt", 0.8)
+    p.sound(1.25, "minecraft:entity.player.big_fall", 0.8)
+    p.sound(1.75, "minecraft:block.fire.extinguish", 1.6)
+
+    cam(p, 0.0, (KX - 1.0, 1.75, 1.3), (VX, 1.2, 0), 48)                # 肩ごしに相手を見る
+    cam(p, 0.6, (KX - 0.8, 1.75, 1.1), (VX, 1.25, 0), 42)
+    cut(p, 0.65, (KX + 1.2, 1.5, 1.1), (KX + 0.6, 1.35, 0), 40)         # 早撃ち
+    cam(p, 0.88, (KX + 1.3, 1.45, 1.0), (KX + 0.8, 1.4, 0), 44)
+    cut(p, 0.9, (VX - 0.6, 1.1, 3.0), (VX + 0.6, 0.8, 0), 52)           # 倒れる
+    cam(p, 1.5, (VX - 0.4, 1.3, 2.7), (VX + 0.9, 0.4, 0), 50)
+    cut(p, 1.55, (KX + 2.4, 0.7, 2.8), (KX + 0.3, 1.5, 0), 55)          # 下から決め
+    cam(p, 2.8, (KX + 2.1, 0.65, 2.5), (KX + 0.2, 1.6, 0), 52)
+    return p
+
+
 SCENES = {"wolf": wolf, "shinobi": shinobi, "kairiki": kairiki, "juro": juro, "pingpong": pingpong,
-          "pillow": pillow, "fusuma": fusuma, "seoi": seoi, "neko": neko}
+          "pillow": pillow, "fusuma": fusuma, "seoi": seoi, "neko": neko, "sheriff": sheriff}
 
 
 def main():

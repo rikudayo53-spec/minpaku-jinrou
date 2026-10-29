@@ -61,6 +61,21 @@ public final class ClientGame {
     /** 自分が選んだ共通フィニッシャー */
     public static String myFinisher = "pingpong";
 
+    /** 見取り図の部屋（名前と範囲） */
+    public record MapRoom(String name, int x1, int y1, int z1, int x2, int y2, int z2) {
+    }
+
+    public static final java.util.List<MapRoom> rooms = new java.util.ArrayList<>();
+    /** 会議の前（ゲーム中）に最後にいた場所 */
+    @Nullable
+    public static net.minecraft.world.phys.Vec3 lastPlayPos;
+
+    /** 井戸端会議（会議中も自由に動ける）か */
+    public static boolean meetingFree;
+    /** 今の会議の画面（井戸端会議では閉じても裏で進む） */
+    @Nullable
+    public static com.minpaku.client.screen.MeetingScreen currentMeeting;
+
     /** ゲーム前にベントに入っている（お試し） */
     public static boolean lobbyVent;
     /** 役職が見える人（神）：UUID → 役職 */
@@ -76,6 +91,20 @@ public final class ClientGame {
     public static void onInfo(Packets.Info p) {
         switch (p.kind()) {
             case "lobby_vent" -> lobbyVent = p.data().equals("1");
+            case "meeting_free" -> meetingFree = p.data().equals("1");
+            case "rooms" -> {
+                rooms.clear();
+                for (String part : p.data().split(";")) {
+                    String[] v = part.split("\\|");
+                    if (v.length == 7) {
+                        try {
+                            rooms.add(new MapRoom(v[0], Integer.parseInt(v[1]), Integer.parseInt(v[2]), Integer.parseInt(v[3]),
+                                    Integer.parseInt(v[4]), Integer.parseInt(v[5]), Integer.parseInt(v[6])));
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
             case "roles" -> {
                 knownRoles.clear();
                 for (String part : p.data().split(";")) {
@@ -107,8 +136,8 @@ public final class ClientGame {
             }
             case "meeting_death" -> {
                 String[] v = p.data().split(";", 3);
-                if (v.length == 3 && Minecraft.getInstance().screen instanceof com.minpaku.client.screen.MeetingScreen m) {
-                    m.onDeath(UUID.fromString(v[0]), v[2]);
+                if (v.length == 3 && currentMeeting != null) {
+                    currentMeeting.onDeath(UUID.fromString(v[0]), v[2]);
                 }
             }
             default -> {
@@ -165,6 +194,10 @@ public final class ClientGame {
     }
 
     public static void tick() {
+        Minecraft mc0 = Minecraft.getInstance();
+        if (state.phase() == 1 && mc0.player != null) {
+            lastPlayPos = mc0.player.position();
+        }
         if (evilGodTicks > 0) {
             evilGodTicks--;
         }
@@ -192,6 +225,7 @@ public final class ClientGame {
     public static void reset() {
         state = Packets.State.lobby();
         lobbyVent = false;
+        currentMeeting = null;
         knownRoles.clear();
         bounds = null;
         announceTicks = 0;

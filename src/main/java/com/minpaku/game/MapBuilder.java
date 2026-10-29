@@ -220,6 +220,19 @@ public final class MapBuilder {
         fixShapes();
         registerRooms();
         setupWorld();
+        clearDrops(level);
+    }
+
+    /** 建てるときにこわれたブロックから落ちたアイテムを消す（少しあとにもう一度呼ぶ） */
+    public static void clearDrops(ServerLevel level) {
+        int[] b = MapData.get(level).lastBuilt;
+        if (b.length != 6) {
+            return;
+        }
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(b[0] - 8, b[1] - 8, b[2] - 8, b[3] + 9, b[4] + 16, b[5] + 9);
+        for (net.minecraft.world.entity.item.ItemEntity e : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
+            e.discard();
+        }
     }
 
     /** 前に建てたマップを片づける（小さいマップに建て直したときに古い建物が残らないように） */

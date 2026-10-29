@@ -32,7 +32,7 @@ public final class GameCommands {
     private GameCommands() {
     }
 
-    private static final String[] FINISHERS = {"wolf", "shinobi", "kairiki", "juro", "pingpong", "pillow", "fusuma", "seoi", "neko"};
+    private static final String[] FINISHERS = {"wolf", "shinobi", "kairiki", "juro", "pingpong", "pillow", "fusuma", "seoi", "neko", "sheriff"};
 
     private static SuggestionProvider<CommandSourceStack> words(String... w) {
         return (c, sb) -> {

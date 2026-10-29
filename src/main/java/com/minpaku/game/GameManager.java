@@ -287,8 +287,10 @@ public final class GameManager {
         p.sendSystemMessage(Component.literal("「" + plan.name + "」（" + plan.players + "）を建てています…").withStyle(ChatFormatting.GOLD));
         exitAllLobbyVents();
         BlockPos spawn = MapBuilder.build(p, plan);
+        dropClearTimer = 60;
         for (ServerPlayer o : level.players()) {
             sendBounds(o);
+            sendRooms(o);
         }
         p.teleportTo(p.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, p.getYRot(), 0f);
         p.sendSystemMessage(Component.literal("完成！ 玄関がスタート地点です。管理人の鍵でゲームを始めよう。")
@@ -426,6 +428,14 @@ public final class GameManager {
         phase = Phase.PLAYING;
         ticks = 0;
         lobbyVents.clear();
+        // 祠を元どおりに（前のゲームで壊れていたら直す）
+        for (BlockPos hp : map().get(MarkerType.HOKORA)) {
+            if (level.getBlockEntity(hp) instanceof com.minpaku.block.MarkerBlockEntity be) {
+                be.work = 0;
+                be.setChanged();
+                level.sendBlockUpdated(hp, level.getBlockState(hp), level.getBlockState(hp), 3);
+            }
+        }
         // 祠の悪神：起きるかどうかと、いつ起きるか
         int ev = s.get("evil_god");
         boolean happen = map().count(MarkerType.HOKORA) > 0 && (ev == 3 || (ev == 2 && random.nextBoolean()));
@@ -437,6 +447,10 @@ public final class GameManager {
         }
         syncAll();
         sendRoles();
+        for (ServerPlayer p : humans) {
+            sendRooms(p);
+            sendBounds(p);
+        }
         if (botCount > 0) {
             starter.sendSystemMessage(Component.literal("ボット " + botCount + " 人が参加しています。会議ではチャットで名前を出すと、ボットが参考にします。")
                     .withStyle(ChatFormatting.AQUA));
@@ -1775,7 +1789,7 @@ public final class GameManager {
             }
             if (center != null) {
                 double a = i / (double) living.size() * Math.PI * 2;
-                double r = tables.isEmpty() ? 2.5 : 2.2;
+                double r = freeMeeting() ? 3.4 : tables.isEmpty() ? 2.5 : 2.7;
                 double x = center.x + Math.cos(a) * r;
                 double z = center.z + Math.sin(a) * r;
                 float yaw = (float) (Mth.atan2(center.z - z, center.x - x) * Mth.RAD_TO_DEG) - 90f;
@@ -1803,6 +1817,7 @@ public final class GameManager {
         }
 
         List<Packets.Participant> parts = participants(false);
+        sendAll(new Packets.Info("meeting_free", freeMeeting() ? "1" : "0"));
         for (ServerPlayer p : online()) {
             PlayerState ps = players.get(p.getUUID());
             send(p, new Packets.Meeting(reason, caller.name, bodyName, parts, discussionTicks, votingTicks, ps.alive));
@@ -1821,10 +1836,15 @@ public final class GameManager {
         return parts;
     }
 
+    /** 会議の方式：井戸端会議（集まったあと自由に動ける）か */
+    boolean freeMeeting() {
+        return settings().get("meeting_style") == 2;
+    }
+
     private void tickMeeting() {
         meetingTicks++;
-        // 席から動けない
-        for (PlayerState ps : living()) {
+        // 席から動けない（アモアス式のとき）
+        for (PlayerState ps : freeMeeting() ? List.<PlayerState>of() : living()) {
             LivingEntity e = entityOf(ps);
             if (e == null || ps.seat == null) {
                 continue;
@@ -2104,7 +2124,12 @@ public final class GameManager {
         }
     }
 
+    private int dropClearTimer;
+
     private void tickLobby() {
+        if (dropClearTimer > 0 && --dropClearTimer % 20 == 0) {
+            MapBuilder.clearDrops(level);
+        }
         if (lobbyVents.isEmpty()) {
             return;
         }
@@ -2168,6 +2193,19 @@ public final class GameManager {
     }
 
     // ================================================================= マップの範囲（外は時空のゆがみで見えない）
+
+    /** 見取り図（会議中のマップ）用の部屋の一覧 */
+    public void sendRooms(ServerPlayer p) {
+        StringBuilder sb = new StringBuilder();
+        for (MapData.Room r : map().rooms()) {
+            if (sb.length() > 0) {
+                sb.append(';');
+            }
+            sb.append(r.name()).append('|').append(r.x1()).append('|').append(r.y1()).append('|').append(r.z1())
+                    .append('|').append(r.x2()).append('|').append(r.y2()).append('|').append(r.z2());
+        }
+        send(p, new Packets.Info("rooms", sb.toString()));
+    }
 
     public void sendBounds(ServerPlayer p) {
         int[] b = map().lastBuilt;
@@ -2451,6 +2489,7 @@ public final class GameManager {
 
     public void onJoin(ServerPlayer p) {
         sendBounds(p);
+        sendRooms(p);
         PlayerState ps = players.get(p.getUUID());
         if (ps != null && running()) {
             ps.left = false;

@@ -22,8 +22,9 @@ public final class Plans {
     public static final MapPlan YASHIKI = yashiki();
     public static final MapPlan RYOKAN = ryokan();
     public static final MapPlan SHUKUBO = shukubo();
+    public static final MapPlan GRAND = grand();
 
-    public static final List<MapPlan> ALL = List.of(MACHIYA, HIRAYA, KOMINKA, YASHIKI, RYOKAN, SHUKUBO);
+    public static final List<MapPlan> ALL = List.of(MACHIYA, HIRAYA, KOMINKA, YASHIKI, RYOKAN, SHUKUBO, GRAND);
 
     /** 設定の値（1〜6）からマップ */
     public static MapPlan byIndex(int i) {
@@ -793,5 +794,304 @@ public final class Plans {
             m.set(72, a + 1, 60, Blocks.LANTERN);
         };
         return p;
+    }
+
+    // ================================================================ 特大：大旅館（敷地まるごと）
+    /**
+     * バカでかい和風の宿。建物の中だけでなく、敷地の中すべてが舞台。120 × 96
+     *   北：本館（2階建て。1階に大広間＝会議の間、玄関に呼び鈴）／ 北西：神社の境内
+     *   中：中庭（池）／ 西：鎮守の森（悪神を封じた祠）／ 南西：庭園（井戸・畑）
+     *   南：前庭（門＝スタート）／ 南東：別館（小さい宿）
+     */
+    private static MapPlan grand() {
+        MapPlan p = new MapPlan("grand", "大旅館（敷地）", "12人〜・特大", 120, 96)
+                // 本館 1階（北の部屋・廊下・南の部屋）
+                .room("厨房", 0, 42, 1, 56, 24, Blocks.SMOOTH_STONE)
+                .room("大広間", 0, 58, 1, 84, 24, Blocks.BAMBOO_PLANKS)
+                .room("食事処", 0, 86, 1, 102, 24, Blocks.BAMBOO_PLANKS)
+                .room("布団部屋", 0, 104, 1, 118, 12, Blocks.SPRUCE_PLANKS)
+                .room("機械室", 0, 104, 14, 118, 24, Blocks.POLISHED_ANDESITE)
+                .room("本館の廊下", 0, 42, 26, 118, 28, Blocks.DARK_OAK_PLANKS)
+                .room("売店", 0, 42, 30, 54, 40, Blocks.OAK_PLANKS)
+                .room("茶室", 0, 56, 30, 68, 40, Blocks.BAMBOO_PLANKS)
+                .room("玄関", 0, 70, 30, 84, 40, Blocks.OAK_PLANKS)
+                .room("帳場", 0, 86, 30, 96, 40, Blocks.SPRUCE_PLANKS)
+                .room("大浴場", 0, 98, 30, 118, 40, Blocks.CALCITE)
+                // 本館 2階（客室）
+                .room("客室「松」", 1, 42, 1, 60, 18, Blocks.BAMBOO_PLANKS)
+                .room("客室「竹」", 1, 62, 1, 80, 18, Blocks.BAMBOO_PLANKS)
+                .room("客室「梅」", 1, 82, 1, 100, 18, Blocks.BAMBOO_PLANKS)
+                .room("客室「桜」", 1, 102, 1, 118, 18, Blocks.BAMBOO_PLANKS)
+                .room("二階の廊下", 1, 42, 20, 118, 22, Blocks.DARK_OAK_PLANKS)
+                .room("客室「月」", 1, 42, 24, 70, 40, Blocks.BAMBOO_PLANKS)
+                .room("客室「雪」", 1, 72, 24, 96, 40, Blocks.BAMBOO_PLANKS)
+                .room("客室「花」", 1, 98, 24, 118, 40, Blocks.BAMBOO_PLANKS)
+                // 外（屋根のない所）
+                .garden("神社の境内", 1, 1, 40, 34, Blocks.GRAVEL)
+                .garden("鎮守の森", 1, 36, 40, 70, Blocks.PODZOL)
+                .garden("庭園", 1, 72, 40, 94, Blocks.GRASS_BLOCK)
+                .garden("中庭", 42, 42, 118, 58, Blocks.MOSS_BLOCK)
+                .garden("前庭", 42, 60, 78, 94, Blocks.GRASS_BLOCK)
+                // 別館（小さい宿）
+                .room("別館・客室一", 0, 80, 60, 98, 72, Blocks.BAMBOO_PLANKS)
+                .room("別館・客室二", 0, 100, 60, 118, 72, Blocks.BAMBOO_PLANKS)
+                .room("別館の廊下", 0, 80, 74, 118, 76, Blocks.DARK_OAK_PLANKS)
+                .room("離れの湯", 0, 80, 78, 96, 94, Blocks.CALCITE)
+                .room("囲炉裏の間", 0, 98, 78, 118, 94, Blocks.SPRUCE_PLANKS);
+        p.upper = new int[]{42, 1, 118, 40};
+        p.stairs.add(new MapPlan.Stair(72, 73, 39));
+        p.entranceX = 58;
+        p.spawnX = 59;
+        p.spawnZ = 91;
+        p.furnish = m -> {
+            int a = 1;
+            int b = m.y(1);
+            BlockState zabuton = Blocks.PURPLE_CARPET.defaultBlockState();
+            // ---- 本館 1階
+            // 厨房
+            m.marker(MarkerType.KAMADO, 44, a, 1, Direction.SOUTH);
+            m.marker(MarkerType.KAMADO, 48, a, 1, Direction.SOUTH);
+            m.marker(MarkerType.SINK, 53, a, 1, Direction.SOUTH);
+            m.marker(MarkerType.GAS_VALVE, 56, a, 18, Direction.WEST);
+            m.marker(MarkerType.CHOPPING, 45, a, 20, Direction.NORTH);
+            m.marker(MarkerType.VENT, 54, a, 23, Direction.NORTH);
+            m.fill(42, a, 10, 42, a + 1, 14, Blocks.BARREL);
+            // 大広間（会議の間）
+            m.marker(MarkerType.MEETING, 71, a, 12, Direction.NORTH);
+            m.marker(MarkerType.KAKEJIKU, 66, a, 24, Direction.NORTH);
+            m.marker(MarkerType.KAKEJIKU, 76, a, 24, Direction.NORTH);
+            m.marker(MarkerType.SHOJI, 58, a, 8, Direction.EAST);
+            m.marker(MarkerType.DUST, 81, a, 20, Direction.NORTH);
+            m.marker(MarkerType.VENT, 60, a, 23, Direction.NORTH);
+            for (int i = 0; i < 16; i++) {
+                double ang = i / 16.0 * Math.PI * 2;
+                int cx = 71 + (int) Math.round(Math.cos(ang) * 4.5);
+                int cz = 12 + (int) Math.round(Math.sin(ang) * 4.5);
+                if (m.isAir(cx, a, cz)) {
+                    m.set(cx, a, cz, zabuton);
+                }
+            }
+            // 食事処
+            m.marker(MarkerType.TEA, 90, a, 5, Direction.SOUTH);
+            m.marker(MarkerType.SHOGI, 97, a, 12, Direction.NORTH);
+            m.marker(MarkerType.DUST, 100, a, 21, Direction.NORTH);
+            m.marker(MarkerType.VENT, 88, a, 23, Direction.NORTH);
+            for (int z = 4; z <= 20; z += 4) {
+                m.fill(92, a, z, 95, a, z, Blocks.SPRUCE_FENCE);
+                m.fill(92, a + 1, z, 95, a + 1, z, Blocks.SPRUCE_PRESSURE_PLATE);
+            }
+            // 布団部屋・機械室
+            m.marker(MarkerType.FUTON, 107, a, 2, Direction.SOUTH);
+            m.marker(MarkerType.FUTON, 113, a, 2, Direction.SOUTH);
+            m.fill(104, a, 11, 110, a + 2, 12, Blocks.WHITE_WOOL);
+            m.marker(MarkerType.BREAKER, 118, a + 1, 18, Direction.WEST);
+            m.marker(MarkerType.BOILER, 106, a, 23, Direction.NORTH);
+            m.marker(MarkerType.WIRING, 112, a, 24, Direction.NORTH);
+            m.marker(MarkerType.VENT, 116, a, 15, Direction.NORTH);
+            // 廊下
+            m.marker(MarkerType.ANDON, 50, a, 27, Direction.SOUTH);
+            m.marker(MarkerType.ANDON, 100, a, 27, Direction.SOUTH);
+            // 売店・茶室
+            m.marker(MarkerType.LEDGER, 48, a, 30, Direction.SOUTH);
+            m.marker(MarkerType.VASE, 53, a, 39, Direction.NORTH);
+            m.marker(MarkerType.VENT, 43, a, 39, Direction.NORTH);
+            m.fill(44, a, 34, 52, a, 34, Blocks.SPRUCE_SLAB);
+            m.marker(MarkerType.TEA, 62, a, 34, Direction.SOUTH);
+            m.marker(MarkerType.KAKEJIKU, 62, a, 40, Direction.NORTH);
+            m.marker(MarkerType.BONSAI, 57, a, 39, Direction.NORTH);
+            // 玄関（呼び鈴＝緊急招集）・帳場
+            m.marker(MarkerType.BELL, 78, a, 32, Direction.SOUTH);
+            m.marker(MarkerType.SHOE_RACK, 84, a, 38, Direction.WEST);
+            m.fill(75, MapBuilder.F1, 39, 84, MapBuilder.F1, 40, Blocks.POLISHED_ANDESITE);
+            m.marker(MarkerType.LEDGER, 90, a, 31, Direction.SOUTH);
+            m.marker(MarkerType.WIRING, 96, a, 35, Direction.WEST);
+            m.marker(MarkerType.ANDON, 87, a, 39, Direction.NORTH);
+            // 大浴場
+            m.marker(MarkerType.BATH, 104, a, 31, Direction.SOUTH);
+            m.marker(MarkerType.VASE, 99, a, 39, Direction.NORTH);
+            m.fill(108, MapBuilder.F1, 33, 116, MapBuilder.F1, 38, Blocks.WATER);
+            m.marker(MarkerType.VENT, 117, a, 39, Direction.NORTH);
+            // ---- 本館 2階（客室）
+            m.marker(MarkerType.FUTON, 46, b, 2, Direction.SOUTH);
+            m.marker(MarkerType.SHOJI, 60, b, 10, Direction.WEST);
+            m.marker(MarkerType.FUTON, 66, b, 2, Direction.SOUTH);
+            m.marker(MarkerType.BONSAI, 78, b, 17, Direction.NORTH);
+            m.marker(MarkerType.FUTON, 86, b, 2, Direction.SOUTH);
+            m.marker(MarkerType.DUST, 96, b, 15, Direction.NORTH);
+            m.marker(MarkerType.VENT, 98, b, 17, Direction.NORTH);
+            m.marker(MarkerType.FUTON, 106, b, 2, Direction.SOUTH);
+            m.marker(MarkerType.ANDON, 116, b, 16, Direction.NORTH);
+            m.marker(MarkerType.VENT, 104, b, 17, Direction.NORTH);
+            m.marker(MarkerType.DUST, 80, b, 21, Direction.NORTH);
+            m.marker(MarkerType.SHOGI, 50, b, 30, Direction.NORTH);
+            m.marker(MarkerType.KAKEJIKU, 56, b, 40, Direction.NORTH);
+            m.marker(MarkerType.VENT, 44, b, 38, Direction.NORTH);
+            m.marker(MarkerType.TEA, 84, b, 28, Direction.SOUTH);
+            m.marker(MarkerType.IRORI, 90, b, 34, Direction.NORTH);
+            m.marker(MarkerType.FUTON, 104, b, 26, Direction.SOUTH);
+            m.marker(MarkerType.ANDON, 116, b, 38, Direction.NORTH);
+            m.marker(MarkerType.VENT, 100, b, 38, Direction.NORTH);
+            // ---- 中庭（池と鹿威し）
+            m.pond(66, 46, 80, 54);
+            m.marker(MarkerType.LAUNDRY, 100, a, 50, Direction.NORTH);
+            m.marker(MarkerType.BONSAI, 56, a, 44, Direction.NORTH);
+            m.marker(MarkerType.FIELD, 108, a, 46, Direction.NORTH);
+            m.marker(MarkerType.VENT, 116, a, 56, Direction.NORTH);
+            stoneLantern(m, 64, 44);
+            stoneLantern(m, 82, 56);
+            m.fill(84, a, 50, 84, a + 1, 50, Blocks.BAMBOO_BLOCK);
+            for (int x = 46; x <= 116; x += 10) {
+                tree(m, x, 57, x % 20 == 6 ? 2 : 0);
+            }
+            // ---- 神社の境内
+            shrine(m);
+            m.marker(MarkerType.BONSAI, 8, a, 30, Direction.NORTH);
+            m.marker(MarkerType.VENT, 36, a, 32, Direction.NORTH);
+            // ---- 鎮守の森（祠）
+            for (int[] t : new int[][]{{5, 39}, {12, 42}, {28, 38}, {35, 44}, {6, 50}, {33, 54}, {9, 60}, {16, 66}, {27, 64},
+                    {36, 67}, {3, 68}, {23, 41}}) {
+                tree(m, t[0], t[1], (t[0] + t[1]) % 3);
+            }
+            hokora(m, 20, 52);
+            m.marker(MarkerType.CHOPPING, 8, a, 64, Direction.NORTH);
+            m.marker(MarkerType.DUST, 30, a, 58, Direction.NORTH);
+            m.marker(MarkerType.VENT, 37, a, 40, Direction.NORTH);
+            // ---- 庭園（井戸・畑・物干し）
+            m.marker(MarkerType.WELL, 10, a, 80, Direction.SOUTH);
+            m.marker(MarkerType.FIELD, 24, a, 76, Direction.NORTH);
+            m.marker(MarkerType.FIELD, 30, a, 76, Direction.NORTH);
+            m.marker(MarkerType.LAUNDRY, 8, a, 90, Direction.NORTH);
+            m.marker(MarkerType.VENT, 38, a, 92, Direction.NORTH);
+            tree(m, 34, 86, 1);
+            tree(m, 18, 92, 1);
+            stoneLantern(m, 16, 80);
+            // ---- 前庭（門・スタート）
+            m.marker(MarkerType.SPAWN, 59, a, 91, Direction.NORTH);
+            m.fill(58, MapBuilder.F1, 60, 59, MapBuilder.F1, 95, Blocks.SMOOTH_STONE);
+            for (int z = 64; z <= 90; z += 8) {
+                stoneLantern(m, 55, z);
+                stoneLantern(m, 62, z);
+            }
+            tree(m, 48, 70, 1);
+            tree(m, 70, 80, 1);
+            tree(m, 46, 88, 2);
+            m.marker(MarkerType.VENT, 44, a, 62, Direction.NORTH);
+            m.marker(MarkerType.SHOE_RACK, 76, a, 92, Direction.WEST);
+            gate(m);
+            // ---- 別館
+            m.marker(MarkerType.FUTON, 84, a, 61, Direction.SOUTH);
+            m.marker(MarkerType.SHOJI, 98, a, 66, Direction.WEST);
+            m.marker(MarkerType.DUST, 90, a, 70, Direction.NORTH);
+            m.marker(MarkerType.FUTON, 104, a, 61, Direction.SOUTH);
+            m.marker(MarkerType.BONSAI, 116, a, 70, Direction.NORTH);
+            m.marker(MarkerType.VENT, 117, a, 62, Direction.NORTH);
+            m.marker(MarkerType.ANDON, 100, a, 75, Direction.SOUTH);
+            m.marker(MarkerType.BATH, 86, a, 80, Direction.SOUTH);
+            m.marker(MarkerType.VASE, 95, a, 93, Direction.NORTH);
+            m.fill(88, MapBuilder.F1, 86, 94, MapBuilder.F1, 92, Blocks.WATER);
+            m.marker(MarkerType.IRORI, 108, a, 86, Direction.NORTH);
+            m.marker(MarkerType.SHOGI, 114, a, 80, Direction.NORTH);
+            m.marker(MarkerType.TEA, 102, a, 92, Direction.NORTH);
+            m.marker(MarkerType.KAKEJIKU, 110, a, 94, Direction.NORTH);
+            m.marker(MarkerType.VENT, 117, a, 93, Direction.NORTH);
+        };
+        return p;
+    }
+
+    /** 石灯籠 */
+    private static void stoneLantern(MapBuilder m, int x, int z) {
+        m.set(x, 1, z, Blocks.STONE_BRICK_WALL);
+        m.set(x, 2, z, Blocks.LANTERN);
+        m.set(x, 3, z, Blocks.SMOOTH_STONE_SLAB);
+    }
+
+    /** 木（kind 0 = 杉、1 = 桜、2 = 楓） */
+    private static void tree(MapBuilder m, int x, int z, int kind) {
+        BlockState log = kind == 0 ? Blocks.SPRUCE_LOG.defaultBlockState() : kind == 1 ? Blocks.CHERRY_LOG.defaultBlockState()
+                : Blocks.DARK_OAK_LOG.defaultBlockState();
+        BlockState leaf = (kind == 0 ? Blocks.SPRUCE_LEAVES : kind == 1 ? Blocks.CHERRY_LEAVES : Blocks.ACACIA_LEAVES)
+                .defaultBlockState().setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
+        int h = kind == 0 ? 7 : 5;
+        for (int y = 1; y <= h; y++) {
+            m.set(x, y, z, log);
+        }
+        int r = kind == 0 ? 2 : 3;
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dz = -r; dz <= r; dz++) {
+                for (int dy = -1; dy <= 2; dy++) {
+                    int rr = kind == 0 ? Math.max(0, r - (dy + 1) / 2) : r;
+                    if (dx * dx + dz * dz + dy * dy * (kind == 0 ? 0 : 2) <= rr * rr + 1 && m.isAir(x + dx, h + dy, z + dz)) {
+                        m.set(x + dx, h + dy, z + dz, leaf);
+                    }
+                }
+            }
+        }
+        m.set(x, h + 3, z, leaf);
+    }
+
+    /** 神社：参道・鳥居・狛犬・拝殿 */
+    private static void shrine(MapBuilder m) {
+        int a = 1;
+        BlockState red = Blocks.RED_TERRACOTTA.defaultBlockState();
+        BlockState black = Blocks.BLACKSTONE.defaultBlockState();
+        // 参道
+        m.fill(19, MapBuilder.F1, 12, 21, MapBuilder.F1, 34, Blocks.SMOOTH_STONE);
+        // 鳥居
+        for (int z : new int[]{26, 18}) {
+            m.fill(17, a, z, 17, a + 4, z, red);
+            m.fill(23, a, z, 23, a + 4, z, red);
+            m.fill(16, a + 4, z, 24, a + 4, z, red);
+            m.fill(15, a + 5, z, 25, a + 5, z, black);
+            m.set(20, a + 4, z, Blocks.GOLD_BLOCK);
+        }
+        // 狛犬
+        for (int x : new int[]{16, 24}) {
+            m.set(x, a, 22, Blocks.CHISELED_STONE_BRICKS);
+            m.set(x, a + 1, 22, Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.StairBlock.FACING, Direction.SOUTH));
+        }
+        stoneLantern(m, 16, 15);
+        stoneLantern(m, 24, 15);
+        // 拝殿（石の台に柱と屋根。中は掃除できる）
+        m.fill(13, a, 3, 27, a, 11, Blocks.STONE_BRICKS);
+        m.fill(14, a + 1, 4, 26, a + 1, 10, Blocks.SPRUCE_PLANKS);
+        for (int[] c : new int[][]{{14, 4}, {26, 4}, {14, 10}, {26, 10}, {20, 4}}) {
+            m.fill(c[0], a + 2, c[1], c[0], a + 5, c[1], Blocks.DARK_OAK_LOG);
+        }
+        m.fill(15, a + 2, 4, 25, a + 5, 4, Blocks.DARK_OAK_PLANKS);
+        m.fill(12, a + 6, 2, 28, a + 6, 12, Blocks.DEEPSLATE_TILES);
+        m.fill(14, a + 7, 4, 26, a + 7, 10, Blocks.DEEPSLATE_TILES);
+        m.fill(16, a + 8, 6, 24, a + 8, 8, Blocks.DEEPSLATE_TILE_SLAB);
+        m.set(20, a + 5, 10, Blocks.BELL);
+        m.marker(MarkerType.DUST, 18, a + 2, 7, Direction.SOUTH);
+        m.marker(MarkerType.VASE, 24, a + 2, 5, Direction.SOUTH);
+        m.marker(MarkerType.KAKEJIKU, 20, a + 2, 5, Direction.SOUTH);
+        m.set(20, a + 2, 9, Blocks.CHEST);
+    }
+
+    /** 鎮守の森の祠（悪神を封じている）。小さな赤い鳥居と石の道 */
+    private static void hokora(MapBuilder m, int x, int z) {
+        int a = 1;
+        m.marker(MarkerType.HOKORA, x, a, z, Direction.SOUTH);
+        m.fill(x, MapBuilder.F1, z + 1, x, MapBuilder.F1, z + 8, Blocks.MOSSY_COBBLESTONE);
+        BlockState red = Blocks.RED_TERRACOTTA.defaultBlockState();
+        m.fill(x - 1, a, z + 4, x - 1, a + 2, z + 4, red);
+        m.fill(x + 1, a, z + 4, x + 1, a + 2, z + 4, red);
+        m.fill(x - 2, a + 3, z + 4, x + 2, a + 3, z + 4, Blocks.BLACKSTONE);
+        stoneLantern(m, x - 2, z + 1);
+        stoneLantern(m, x + 2, z + 1);
+    }
+
+    /** 敷地の門（南の土塀。追放の場面でもここから追い出される） */
+    private static void gate(MapBuilder m) {
+        int z = 96;
+        for (int x : new int[]{56, 61}) {
+            m.fill(x, 1, z, x, 4, z, Blocks.DARK_OAK_LOG);
+        }
+        m.fill(57, 1, z, 57, 3, z, Blocks.AIR);
+        m.fill(60, 1, z, 60, 3, z, Blocks.AIR);
+        m.fill(55, 5, z - 1, 62, 5, z + 1, Blocks.DEEPSLATE_TILES);
+        m.fill(56, 6, z, 61, 6, z, Blocks.DEEPSLATE_TILE_SLAB);
+        m.fill(56, 4, z, 61, 4, z, Blocks.DARK_OAK_PLANKS);
     }
 }

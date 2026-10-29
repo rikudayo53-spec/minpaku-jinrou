@@ -72,6 +72,8 @@ public final class GameSettings {
         DEFS.add(new Def("kill_range", "キルできる距離（ブロック）", "人狼", Kind.NUMBER, 1, 4, 1, 2));
         DEFS.add(new Def("sabotage_cooldown", "妨害のクールダウン", "人狼", Kind.SECONDS, 10, 90, 5, 30));
         DEFS.add(new Def("gas_time", "ガス漏れの制限時間", "人狼", Kind.SECONDS, 20, 90, 5, 45));
+        DEFS.add(new Def("meeting_style", "会議の方式", "会議", Kind.CHOICE, 1, 2, 1, 1,
+                new String[]{"アモアス式（席について話し合う）", "井戸端会議（集まって自由に動ける）"}));
         DEFS.add(new Def("discussion_time", "議論の時間", "会議", Kind.SECONDS, 0, 180, 15, 45));
         DEFS.add(new Def("voting_time", "投票の時間", "会議", Kind.SECONDS, 15, 300, 15, 60));
         DEFS.add(new Def("emergency_uses", "緊急ボタンの回数（1人あたり）", "会議", Kind.NUMBER, 0, 5, 1, 1));

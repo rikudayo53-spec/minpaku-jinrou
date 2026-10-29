@@ -13,7 +13,7 @@ public final class ModEntities {
     public static final EntityType<BodyEntity> BODY = Registry.register(BuiltInRegistries.ENTITY_TYPE,
             MinpakuJinrou.id("body"),
             EntityType.Builder.<BodyEntity>of(BodyEntity::new, MobCategory.MISC)
-                    .sized(1.2f, 0.35f)
+                    .sized(1.0f, 0.9f)
                     .clientTrackingRange(10)
                     .build("body"));
 

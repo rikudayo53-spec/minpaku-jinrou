@@ -131,6 +131,8 @@ public final class FurnitureArt {
             case DUST, SHOE_RACK, LEDGER, GAS_VALVE -> 1.2f;
             case SINK, BREAKER, WIRING -> 1.15f;
             case KAMADO, BATH, FUTON -> 1.1f;
+            case BONSAI, TEA, SHOGI, ANDON -> 1.2f;
+            case IRORI, WELL -> 1.15f;
             default -> 1f;
         };
     }
@@ -171,6 +173,15 @@ public final class FurnitureArt {
             case SINK -> sink(a, w, act, t);
             case SHOE_RACK -> shoes(a, w, an);
             case SHOJI -> shoji(a, w, act, t);
+            case MEETING -> meetingTable(a, t);
+            case HOKORA -> hokora(a, w, act, t);
+            case ANDON -> andon(a, w, act, t);
+            case IRORI -> irori(a, w, act, t);
+            case BONSAI -> bonsai(a, w, an);
+            case TEA -> tea(a, w, act, t);
+            case WELL -> well(a, w, an, t);
+            case SHOGI -> shogi(a, w, an);
+            case KAKEJIKU -> kakejiku(a, w, an, t);
         }
     }
 
@@ -714,5 +725,317 @@ public final class FurnitureArt {
                 a.pop();
             }
         }
+    }
+
+    // ================================================================ 第3弾
+
+    /** 会議の座卓（大きな黒い座卓に湯のみと急須。会議はここに集まる） */
+    private static void meetingTable(Art a, float t) {
+        a.box("dark_oak_planks", -12, 6, -12, 28, 8, 28);
+        a.box("black_concrete", -12.3f, 5.6f, -12.3f, 28.3f, 6.2f, 28.3f);
+        for (float[] l : new float[][]{{-10, -10}, {24, -10}, {-10, 24}, {24, 24}}) {
+            a.box("dark_oak_log", l[0], 0, l[1], l[0] + 3, 6, l[1] + 3);
+        }
+        // 真ん中に囲炉裏風の炭（ほんのり光る）
+        a.box("polished_blackstone", 3, 8, 3, 13, 9, 13);
+        a.glow("magma", 4.5f, 8.6f, 4.5f, 11.5f, 9.3f, 11.5f, 0xC0FFFFFF);
+        // 湯のみ
+        float[][] cups = {{-8, -8}, {20, -8}, {-8, 20}, {20, 20}, {6, -9}, {6, 21}, {-9, 6}, {21, 6}};
+        for (float[] c : cups) {
+            a.box("white_terracotta", c[0], 8, c[1], c[0] + 2.5f, 10.5f, c[1] + 2.5f);
+            a.box("green_terracotta", c[0] + 0.4f, 10.2f, c[1] + 0.4f, c[0] + 2.1f, 10.4f, c[1] + 2.1f);
+        }
+        a.box("cut_copper", 14, 8, 14, 19, 12, 19);
+        a.box("cut_copper", 18.5f, 10, 16, 21, 10.8f, 17);
+        steam(a, t, 16.5f, 12, 16.5f, 0.4f);
+    }
+
+    /** 祠：石の台に小さな社。しめ縄と紙垂。work が 1 になると封印が解けて壊れる */
+    private static void hokora(Art a, float w, boolean act, float t) {
+        boolean broken = w >= 0.99f;
+        a.box("stone_bricks", -2, 0, -2, 18, 4, 18);
+        a.box("mossy_stone_bricks", 0, 4, 0, 16, 6, 16);
+        // 社（壊れると傾く）
+        a.push();
+        if (broken) {
+            a.rot('z', 14, 2, 6, 8);
+            a.rot('x', -8, 8, 6, 2);
+        }
+        a.box("spruce_planks", 2, 6, 3, 14, 18, 14);
+        a.box("dark_oak_log", 1.5f, 6, 2.5f, 3, 19, 4);
+        a.box("dark_oak_log", 13, 6, 2.5f, 14.5f, 19, 4);
+        // 扉（壊れると開く）
+        float open = broken ? 70 : (act ? (float) Math.sin(t * 0.8f) * 4 : 0);
+        a.push();
+        a.rot('y', -open, 3, 8, 2.8f);
+        a.box("dark_oak_planks", 3, 7, 2.6f, 8, 17, 3.2f);
+        a.pop();
+        a.push();
+        a.rot('y', open, 13, 8, 2.8f);
+        a.box("dark_oak_planks", 8, 7, 2.6f, 13, 17, 3.2f);
+        a.pop();
+        if (broken) {
+            // 中から紫の瘴気
+            float pulse = 0.6f + 0.4f * (float) Math.sin(t * 0.3f);
+            a.glow("purple_concrete", 4, 7, 3.2f, 12, 16, 12, ((int) (pulse * 200) << 24) | 0xC060FF);
+            for (int k = 0; k < 5; k++) {
+                float ph = ((t * 0.6f + k * 7) % 36f) / 36f;
+                float sz = 1.5f + ph * 3;
+                int al = (int) ((1 - ph) * 170);
+                a.glow("purple_concrete", 8 - sz / 2 + (float) Math.sin(t * 0.1f + k) * 2, 14 + ph * 20, 8 - sz / 2, 8 + sz / 2,
+                        14 + ph * 20 + sz, 8 + sz / 2, (al << 24) | 0xA040FF);
+            }
+        }
+        // 屋根
+        a.push();
+        if (broken) {
+            a.move(4, -1, 0);
+            a.rot('z', 32, 8, 19, 8);
+        }
+        a.box("deepslate_tiles", -0.5f, 18, 0.5f, 16.5f, 19.5f, 16);
+        a.box("deepslate_tiles", 1, 19.5f, 1.5f, 15, 21, 15);
+        a.box("deepslate_tiles", 3, 21, 3, 13, 22, 13);
+        a.box("gold_block", 7, 22, 7, 9, 23, 9);
+        a.pop();
+        // しめ縄と紙垂（壊れると切れて垂れる）
+        if (!broken) {
+            a.box("birch_planks", 1, 16, 1.6f, 15, 17.2f, 2.4f);
+            for (float x : new float[]{4, 8, 12}) {
+                a.box("white_concrete", x - 0.8f, 13, 1.7f, x + 0.8f, 16, 1.9f);
+            }
+        } else {
+            a.push();
+            a.rot('z', -60, 1, 16.5f, 2);
+            a.box("birch_planks", 1, 16, 1.6f, 9, 17.2f, 2.4f);
+            a.pop();
+        }
+        a.pop();
+        // お供え（割れた皿）
+        a.box("white_terracotta", 6, 6, -1.5f, 10, 6.5f, 1.5f);
+    }
+
+    /** 行灯：木の枠に和紙。火を入れるとだんだん明るく */
+    private static void andon(Art a, float w, boolean act, float t) {
+        a.box("dark_oak_planks", 3, 0, 3, 13, 1.5f, 13);
+        for (float[] c : new float[][]{{3, 3}, {12, 3}, {3, 12}, {12, 12}}) {
+            a.box("dark_oak_log", c[0], 1.5f, c[1], c[0] + 1, 20, c[1] + 1);
+        }
+        a.box("dark_oak_planks", 3, 19.5f, 3, 13, 20.5f, 13);
+        a.box("dark_oak_planks", 3, 9, 3, 13, 9.6f, 13);
+        // 火皿と炎
+        a.box("iron_block", 6.5f, 9.6f, 6.5f, 9.5f, 10.3f, 9.5f);
+        float lit = smooth(w);
+        float flick = act ? 0.85f + 0.15f * (float) Math.sin(t * 2.3f) : 1f;
+        if (lit > 0.05f) {
+            float fh = 1 + lit * 2.5f * flick;
+            a.glow("fire_0", 7.3f, 10.3f, 7.3f, 8.7f, 10.3f + fh, 8.7f, ((int) (255 * Math.max(0.3f, lit)) << 24) | 0xFFFFFF);
+        }
+        // 和紙（明るさで色が変わる）
+        int c = (int) (150 + 105 * lit * flick);
+        int paper = 0xD0000000 | (Math.min(255, c + 40) << 16) | (Math.min(255, c + 20) << 8) | Math.max(0, c - 60);
+        if (lit > 0.3f) {
+            a.glow("white_concrete", 4, 10, 3.8f, 12, 19.5f, 12.2f, paper);
+        } else {
+            a.glass("white_concrete", 4, 10, 3.8f, 12, 19.5f, 12.2f, 0xD0F0EAD8);
+        }
+        // 取っ手
+        a.box("dark_oak_planks", 7.5f, 20.5f, 3.5f, 8.5f, 24, 12.5f);
+        a.box("dark_oak_planks", 7.5f, 23.5f, 3.5f, 8.5f, 24.5f, 12.5f);
+    }
+
+    /** 囲炉裏：床に埋めた木の枠に灰と炭。自在鉤で鉄瓶をつるす */
+    private static void irori(Art a, float w, boolean act, float t) {
+        a.box("spruce_planks", -6, 0, -6, 22, 2, -3);
+        a.box("spruce_planks", -6, 0, 19, 22, 2, 22);
+        a.box("spruce_planks", -6, 0, -3, -3, 2, 19);
+        a.box("spruce_planks", 19, 0, -3, 22, 2, 19);
+        a.box("light_gray_concrete_powder", -3, 0, -3, 19, 1.2f, 19);
+        // 炭（火をおこすほど赤く光る）
+        float fire = Math.max(smooth(w), act ? 0.5f : 0f);
+        float[][] coals = {{4, 5}, {8, 4}, {11, 6}, {6, 9}, {10, 10}, {5, 12}};
+        for (float[] c : coals) {
+            a.box("black_concrete", c[0], 1.2f, c[1], c[0] + 2.5f, 2.6f, c[1] + 2.5f);
+            if (fire > 0.05f) {
+                a.glow("magma", c[0] + 0.2f, 2.5f, c[1] + 0.2f, c[0] + 2.3f, 2.7f, c[1] + 2.3f,
+                        ((int) (255 * fire) << 24) | 0xFFFFFF);
+            }
+        }
+        if (fire > 0.3f) {
+            float fh = (2 + fire * 4) * (act ? 0.8f + 0.2f * (float) Math.sin(t * 2f) : 1f);
+            a.glow("fire_0", 6, 2.6f, 7, 10, 2.6f + fh, 7.2f, ((int) (230 * fire) << 24) | 0xFFFFFF);
+            a.glow("fire_0", 7.9f, 2.6f, 5, 8.1f, 2.6f + fh, 9.5f, ((int) (230 * fire) << 24) | 0xFFFFFF);
+        }
+        // 自在鉤と鉄瓶
+        a.box("bamboo_block", 7.4f, 12, 7.4f, 8.6f, 36, 8.6f);
+        a.box("spruce_planks", 4, 16, 7.5f, 12, 18, 8.5f);
+        a.box("polished_blackstone", 4.5f, 6, 4.5f, 11.5f, 11, 11.5f);
+        a.box("polished_blackstone", 5.5f, 11, 5.5f, 10.5f, 12, 10.5f);
+        a.box("polished_blackstone", 11.5f, 8, 7.5f, 14, 9, 8.5f);
+        steam(a, t, 8, 12, 8, fire > 0.6f ? fire : 0f);
+        // 座布団
+        a.box("purple_wool", -12, 0, 4, -7, 1.2f, 12);
+        a.box("purple_wool", 23, 0, 4, 28, 1.2f, 12);
+    }
+
+    /** 盆栽：手入れするほど枝ぶりが整う（はみ出した葉が引っこむ）。ハサミが動く */
+    private static void bonsai(Art a, float w, Anim an) {
+        a.box("dark_oak_planks", 1, 0, 3, 15, 4, 13);
+        a.box("dark_oak_planks", 2, 0, 4, 3, 1, 12);
+        a.box("blue_terracotta", 2.5f, 4, 4.5f, 13.5f, 8, 11.5f);
+        a.box("coarse_dirt", 3, 7.8f, 5, 13, 8.2f, 11);
+        a.box("moss_block", 3, 8.2f, 5, 13, 8.5f, 11);
+        // 幹（くねっとした松）
+        a.box("spruce_log", 7, 8.5f, 7, 9, 12, 9);
+        a.push();
+        a.rot('z', -20, 8, 12, 8);
+        a.box("spruce_log", 7, 12, 7.2f, 8.8f, 16, 8.8f);
+        a.pop();
+        a.box("spruce_log", 4, 15, 7.4f, 9, 16.4f, 8.6f);
+        a.box("spruce_log", 8, 16, 7.4f, 12, 17.4f, 8.6f);
+        // 葉の雲（整うほど平らでまるく）
+        float neat = smooth(w);
+        float snip = an.hit(6);
+        int leaf = 0xFF3C7A2A;
+        float[][] clouds = {{2, 15.5f, 5}, {10, 17, 6}, {5, 19, 5.5f}};
+        for (int i = 0; i < clouds.length; i++) {
+            float[] c = clouds[i];
+            a.tint("spruce_leaves", c[0], c[1], 5.5f, c[0] + c[2], c[1] + 2.4f, 10.5f, leaf);
+            // はみ出した枝葉（手入れで消える）
+            float wild = (1 - neat) * (3 + i);
+            if (wild > 0.2f) {
+                a.tint("spruce_leaves", c[0] + 1, c[1] + 2.4f, 6.5f, c[0] + 2.5f, c[1] + 2.4f + wild, 8, leaf);
+                a.tint("spruce_leaves", c[0] + c[2] - 1, c[1], 8, c[0] + c[2] + wild * 0.6f, c[1] + 1.5f, 9.5f, leaf);
+            }
+        }
+        // 剪定ばさみ
+        a.push();
+        a.rot('z', 20 + snip * 25, 16, 14, 8);
+        a.box("iron_block", 13, 14, 7.6f, 19, 14.6f, 8.4f);
+        a.pop();
+        a.push();
+        a.rot('z', 20 - snip * 25, 16, 14, 8);
+        a.box("iron_block", 13, 13.4f, 7.6f, 19, 14, 8.4f);
+        a.pop();
+        a.box("red_concrete", 18.5f, 12.5f, 7.5f, 21, 15.5f, 8.5f);
+    }
+
+    /** 茶道具：茶碗の中で茶筅を振ると、だんだん泡が立つ。釜から湯気 */
+    private static void tea(Art a, float w, boolean act, float t) {
+        a.box("red_wool", -4, 0, -2, 20, 0.6f, 18);
+        // 風炉と釜
+        a.box("polished_blackstone", -2, 0.6f, 9, 6, 6, 17);
+        a.box("cut_copper", -1, 6, 10, 5, 10, 16);
+        a.box("cut_copper", 0, 10, 11, 4, 11, 15);
+        steam(a, t, 2, 11, 13, 0.7f);
+        // 茶碗（黒楽）
+        a.box("black_terracotta", 8, 0.6f, 2, 15, 5, 9);
+        a.box("black_terracotta", 7.5f, 3, 1.5f, 15.5f, 5.2f, 9.5f);
+        float foam = smooth(w);
+        a.box("lime_terracotta", 8.5f, 3.5f, 2.5f, 14.5f, 4.6f, 8.5f);
+        if (foam > 0.05f) {
+            a.box("lime_concrete_powder", 8.6f, 4.6f, 2.6f, 14.4f, 4.6f + foam * 0.6f, 8.4f);
+        }
+        // 茶筅（作業中は左右にシャカシャカ）
+        float shake = act ? (float) Math.sin(t * 3.1f) * 2.2f : 0f;
+        a.push();
+        a.move(shake, act ? 0 : 6, 0);
+        if (!act) {
+            a.move(4, -6, 4);
+        }
+        a.box("bamboo_planks", 10.7f, 4, 4.7f, 12.3f, 7, 6.3f);
+        a.box("bamboo_block", 11.2f, 7, 5.2f, 11.8f, 12, 5.8f);
+        a.pop();
+        // 茶杓となつめ
+        a.box("black_concrete", 16, 0.6f, 3, 19, 4, 6);
+        a.box("bamboo_planks", 15, 0.6f, 9, 20, 1, 9.6f);
+    }
+
+    /** 井戸：石の井筒に屋根と滑車。くむたびに釣瓶が上下して、たらいに水がたまる */
+    private static void well(Art a, float w, Anim an, float t) {
+        for (int k = 0; k < 8; k++) {
+            a.push();
+            a.rot('y', k * 45, 8, 0, 8);
+            a.box(k % 2 == 0 ? "cobblestone" : "mossy_cobblestone", 3, 0, -1, 13, 9, 2);
+            a.pop();
+        }
+        a.glass("water_still", 1, 3, 1, 15, 4, 15, 0xC03F76E4);
+        a.box("black_concrete", 2, 0.5f, 2, 14, 3, 14);
+        // 柱と屋根
+        a.box("spruce_log", -2, 0, 7, 0, 26, 9);
+        a.box("spruce_log", 16, 0, 7, 18, 26, 9);
+        a.box("spruce_planks", -3, 24, 6, 19, 25.5f, 10);
+        a.box("deepslate_tiles", -4, 26, 2, 20, 27.5f, 8.2f);
+        a.box("deepslate_tiles", -4, 26, 7.8f, 20, 27.5f, 14);
+        // 滑車
+        a.box("iron_block", 7, 21, 7, 9, 24, 9);
+        // 釣瓶（くんだ直後は上がってくる）
+        float up = an.hit(16);
+        float by = 5 + up * 12;
+        a.box("iron_block", 7.8f, by + 4, 7.8f, 8.2f, 21, 8.2f);
+        a.box("spruce_planks", 6, by, 6, 10, by + 4, 10);
+        if (up > 0.2f) {
+            a.glass("water_still", 6.3f, by + 3, 6.3f, 9.7f, by + 3.6f, 9.7f, 0xC03F76E4);
+        }
+        // たらい（くむほど満ちる）
+        a.box("spruce_planks", 18, 0, -6, 26, 4, 2);
+        float lvl = 0.6f + smooth(w) * 3f;
+        a.glass("water_still", 18.5f, 0.5f, -5.5f, 25.5f, lvl, 1.5f, 0xC03F76E4);
+    }
+
+    /** 将棋盤：散らばった駒が、ならべるほど盤の上の正しい位置へ */
+    private static void shogi(Art a, float w, Anim an) {
+        a.box("birch_planks", 0, 4, 0, 16, 9, 16);
+        for (float[] l : new float[][]{{1, 1}, {13, 1}, {1, 13}, {13, 13}}) {
+            a.box("dark_oak_planks", l[0], 0, l[1], l[0] + 2, 4, l[1] + 2);
+        }
+        for (int i = 0; i <= 9; i++) {
+            float p = 1 + i * 1.55f;
+            a.box("black_concrete", p - 0.06f, 9, 1, p + 0.06f, 9.05f, 15);
+            a.box("black_concrete", 1, 9, p - 0.06f, 15, 9.05f, p + 0.06f);
+        }
+        int total = 18;
+        int placed = Math.round(smooth(w) * total);
+        for (int i = 0; i < total; i++) {
+            int row = i < 9 ? 0 : 2;
+            int col = i % 9;
+            float px;
+            float pz;
+            float py = 9;
+            if (i < placed) {
+                px = 1.2f + col * 1.55f;
+                pz = 1.2f + row * 1.55f;
+            } else {
+                // 盤の横に散らばっている
+                px = 17 + (i * 37 % 7) * 1.2f;
+                pz = (i * 53 % 13) * 1.1f;
+                py = 0;
+            }
+            float pop = i == placed - 1 ? an.hit(6) * 1.5f : 0f;
+            a.box("birch_planks", px, py + pop, pz, px + 1.15f, py + 0.6f + pop, pz + 1.3f);
+            a.box("black_concrete", px + 0.4f, py + 0.6f + pop, pz + 0.4f, px + 0.75f, py + 0.62f + pop, pz + 0.9f);
+        }
+        a.box("purple_wool", -6, 0, 3, -1, 1.2f, 13);
+    }
+
+    /** 掛け軸（壁は +Z 側）：曲がっているのを直すほどまっすぐ。触ると少しゆれる */
+    private static void kakejiku(Art a, float w, Anim an, float t) {
+        float tilt = (1 - smooth(w)) * 18f + an.hit(14) * (float) Math.sin(an.since() * 1.2f) * 6f;
+        a.box("iron_block", 7.6f, 30, 15.2f, 8.4f, 31, 16);
+        a.push();
+        a.rot('z', tilt, 8, 30, 15);
+        a.box("dark_oak_planks", 1, 28, 14.6f, 15, 29, 15.4f);
+        a.box("brown_wool", 2, 6, 14.7f, 14, 28, 15.1f);
+        a.box("white_concrete", 3.5f, 9, 14.6f, 12.5f, 26, 14.7f);
+        // 墨絵（山と赤い日）
+        a.box("gray_concrete", 4, 11, 14.55f, 9, 15, 14.6f);
+        a.box("gray_concrete", 6, 15, 14.55f, 8, 17, 14.6f);
+        a.box("light_gray_concrete", 8, 11, 14.55f, 12, 14, 14.6f);
+        a.box("red_concrete", 9.5f, 20, 14.55f, 11.5f, 22, 14.6f);
+        a.box("black_concrete", 5, 23, 14.55f, 5.6f, 25.5f, 14.6f);
+        a.box("dark_oak_planks", 0.5f, 5, 14.4f, 15.5f, 6.2f, 15.6f);
+        a.pop();
+        // 床の間の台と香炉
+        a.box("dark_oak_planks", -2, 0, 9, 18, 2, 16);
+        a.box("gold_block", 6, 2, 11, 10, 4, 14);
     }
 }
