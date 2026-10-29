@@ -218,23 +218,22 @@ public final class HiRes {
     // ------------------------------------------------------------ 描く（座標はピクセル、1ブロック = 16）
 
     public void render(PoseStack ps, MultiBufferSource buf, int light, int overlay, Animator anim) {
-        VertexConsumer solid = buf.getBuffer(RenderType.entityCutoutNoCull(texture));
-        VertexConsumer clear = buf.getBuffer(RenderType.entityTranslucent(texture));
-        drawGroup(root, ps, solid, clear, light, overlay, anim);
+        // バッファはその場で取りに行く（2つ同時に取ると、インベントリ表示などで先に取った方が閉じられて落ちる）
+        drawGroup(root, ps, buf, light, overlay, anim);
     }
 
-    private void drawGroup(Group g, PoseStack ps, VertexConsumer solid, VertexConsumer clear, int light, int overlay,
-                           Animator anim) {
+    private void drawGroup(Group g, PoseStack ps, MultiBufferSource buf, int light, int overlay, Animator anim) {
         ps.pushPose();
         if (!g.name.isEmpty() && !anim.apply(g.name, ps, g.origin.x / 16f, g.origin.y / 16f, g.origin.z / 16f)) {
             ps.popPose();
             return;
         }
         for (Cube c : g.cubes) {
-            drawCube(c, ps, c.glass ? clear : solid, c.glow ? LightTexture.FULL_BRIGHT : light, overlay);
+            VertexConsumer vc = buf.getBuffer(c.glass ? RenderType.entityTranslucent(texture) : RenderType.entityCutoutNoCull(texture));
+            drawCube(c, ps, vc, c.glow ? LightTexture.FULL_BRIGHT : light, overlay);
         }
         for (Group ch : g.groups) {
-            drawGroup(ch, ps, solid, clear, light, overlay, anim);
+            drawGroup(ch, ps, buf, light, overlay, anim);
         }
         ps.popPose();
     }

@@ -41,15 +41,22 @@ public final class FurnitureArt {
     /** 描くための道具 */
     static final class Art {
         final PoseStack ps;
-        final VertexConsumer solid;
-        final VertexConsumer clear;
+        final MultiBufferSource buf;
         final int light;
 
         Art(PoseStack ps, MultiBufferSource buf, int light) {
             this.ps = ps;
-            this.solid = buf.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
-            this.clear = buf.getBuffer(RenderType.entityTranslucentCull(TextureAtlas.LOCATION_BLOCKS));
+            this.buf = buf;
             this.light = light;
+        }
+
+        // 使うたびに取りに行く（同時に2つ取ると先の方が閉じられることがある）
+        VertexConsumer solid() {
+            return buf.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS));
+        }
+
+        VertexConsumer clear() {
+            return buf.getBuffer(RenderType.entityTranslucentCull(TextureAtlas.LOCATION_BLOCKS));
         }
 
         void box(String tex, float x0, float y0, float z0, float x1, float y1, float z1) {
@@ -57,17 +64,17 @@ public final class FurnitureArt {
         }
 
         void tint(String tex, float x0, float y0, float z0, float x1, float y1, float z1, int argb) {
-            Cubes.box(ps.last(), solid, Cubes.sprite(tex), x0 / 16f, y0 / 16f, z0 / 16f, x1 / 16f, y1 / 16f, z1 / 16f, argb, light);
+            Cubes.box(ps.last(), solid(), Cubes.sprite(tex), x0 / 16f, y0 / 16f, z0 / 16f, x1 / 16f, y1 / 16f, z1 / 16f, argb, light);
         }
 
         /** 半透明（水・湯気など） */
         void glass(String tex, float x0, float y0, float z0, float x1, float y1, float z1, int argb) {
-            Cubes.box(ps.last(), clear, Cubes.sprite(tex), x0 / 16f, y0 / 16f, z0 / 16f, x1 / 16f, y1 / 16f, z1 / 16f, argb, light);
+            Cubes.box(ps.last(), clear(), Cubes.sprite(tex), x0 / 16f, y0 / 16f, z0 / 16f, x1 / 16f, y1 / 16f, z1 / 16f, argb, light);
         }
 
         /** 光る（火など） */
         void glow(String tex, float x0, float y0, float z0, float x1, float y1, float z1, int argb) {
-            Cubes.box(ps.last(), clear, Cubes.sprite(tex), x0 / 16f, y0 / 16f, z0 / 16f, x1 / 16f, y1 / 16f, z1 / 16f, argb,
+            Cubes.box(ps.last(), clear(), Cubes.sprite(tex), x0 / 16f, y0 / 16f, z0 / 16f, x1 / 16f, y1 / 16f, z1 / 16f, argb,
                     LightTexture.FULL_BRIGHT);
         }
 
