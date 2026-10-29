@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/chabudai"
+  },
+  "facing=east": {
+   "model": "minpaku:block/chabudai",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/chabudai",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/chabudai",
+   "y": 270
+  }
+ }
+}

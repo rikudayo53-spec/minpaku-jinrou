@@ -1312,7 +1312,7 @@ public final class GameManager {
     }
 
     private void useMarker(ServerPlayer p, PlayerState ps, BlockPos pos, MarkerType type, boolean alive) {
-        if (ps.vent != null) {
+        if (ps.vent != null || type.isDecor()) {
             return;
         }
         switch (type) {

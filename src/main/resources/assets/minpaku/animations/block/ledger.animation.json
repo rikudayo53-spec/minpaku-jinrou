@@ -1,0 +1,1 @@
+{"format_version":"1.8.0","animations":{"work":{"animation_length":1.1,"bones":{"flip":{"rotation":{"0.0":[0.0,0.0,0.0],"0.2":{"vector":[0.0,0.0,10.0],"easing":"easeInSine"},"0.8":{"vector":[0.0,0.0,175.0],"easing":"easeInOutCubic"},"1.1":{"vector":[0.0,0.0,180.0],"easing":"easeOutSine"}}}},"loop":true}},"geckolib_format_version":2}

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/maneki_neko"
+  },
+  "facing=east": {
+   "model": "minpaku:block/maneki_neko",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/maneki_neko",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/maneki_neko",
+   "y": 270
+  }
+ }
+}

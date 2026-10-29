@@ -202,7 +202,7 @@ public final class FurnitureHiRes {
                         HiRes.rotate(ps, ox, oy, oz, 0, 0, -open * 70f);
                     } else if (g.equals("axe")) {
                         float sw = s < 4 ? sm(s / 4f) : s < 14 ? 1f - sm((s - 4) / 10f) : 0f;
-                        HiRes.rotate(ps, ox, oy, oz, 0, 0, 50 + sw * 24);
+                        HiRes.rotate(ps, ox, oy, oz, 0, 0, sw * 24);
                     }
                 }
                 case FIELD -> {
@@ -250,7 +250,7 @@ public final class FurnitureHiRes {
                         if (!act) {
                             return false;
                         }
-                        HiRes.rotate(ps, ox, oy, oz, 0, 0, 25 + hit(an, 12) * 15f);
+                        HiRes.rotate(ps, ox, oy, oz, 0, 0, hit(an, 12) * 15f);
                     }
                 }
                 case SINK -> {
@@ -318,9 +318,9 @@ public final class FurnitureHiRes {
                         }
                         HiRes.scale(ps, ox, oy, oz, k, k, k);
                     } else if (g.equals("blade_a")) {
-                        HiRes.rotate(ps, ox, oy, oz, 0, 0, 20 + snip * 25);
+                        HiRes.rotate(ps, ox, oy, oz, 0, 0, snip * 25);
                     } else if (g.equals("blade_b")) {
-                        HiRes.rotate(ps, ox, oy, oz, 0, 0, 20 - snip * 25);
+                        HiRes.rotate(ps, ox, oy, oz, 0, 0, -snip * 25);
                     }
                 }
                 case TEA -> {
@@ -373,7 +373,7 @@ public final class FurnitureHiRes {
     }
 
     /** モデルのほかに足すもの（湯気・煙など） */
-    private static void extras(MarkerType type, FurnitureArt.Anim an, PoseStack ps, MultiBufferSource buf, int light) {
+    public static void extras(MarkerType type, FurnitureArt.Anim an, PoseStack ps, MultiBufferSource buf, int light) {
         FurnitureArt.Art a = new FurnitureArt.Art(ps, buf, light);
         float t = an.time();
         float w = an.work();

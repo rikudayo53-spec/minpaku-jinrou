@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/mochi_mortar"
+  },
+  "facing=east": {
+   "model": "minpaku:block/mochi_mortar",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/mochi_mortar",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/mochi_mortar",
+   "y": 270
+  }
+ }
+}

@@ -371,7 +371,7 @@ def chopping_block():
     m.cube("log", (5, 8, 5), (8, 16, 11), "wood_light", group="half_l")
     m.group("half_r", (11, 8, 8))
     m.cube("log", (8, 8, 5), (11, 16, 11), "wood_light", group="half_r")
-    m.group("axe", (21, 9, 8))
+    m.group("axe", (21, 9, 8), rot=(0, 0, 50))
     m.cube("handle", (20.4, 9, 7.4), (21.6, 23, 8.6), "wood", group="axe")
     m.cube("head", (16.5, 19.5, 7.2), (21.5, 23.5, 8.8), "steel", group="axe")
     m.cube("edge", (15.5, 20.2, 7.5), (16.5, 22.8, 8.5), "steel_light", group="axe")
@@ -449,7 +449,7 @@ def flower_vase():
                rot=(0, 0, (i - 1) * 12), pivot=(x, 15, z))
         m.cube("head", (x - 1.8 + (i - 1) * 2, 15 + ln - 0.5, z - 1.8), (x + 1.8 + (i - 1) * 2, 15 + ln + 2, z + 1.8),
                heads[i], group="flowers")
-    m.group("can", (16, 22, 8))
+    m.group("can", (16, 22, 8), rot=(0, 0, 25))
     m.cube("can", (13, 19, 6), (19, 24, 10), "copper", group="can")
     m.cube("spout", (9, 21, 7.4), (13, 22.2, 8.6), "copper", group="can")
     return m
@@ -577,9 +577,9 @@ def bonsai():
         m.group(f"wild{i}", (x + 1, y + 2.4, 7))
         m.cube("wild", (x + 1, y + 2.4, 6.5), (x + 2.5, y + 2.4 + 3 + i, 8), "pine", group=f"wild{i}")
         m.cube("wild2", (x + w - 1, y, 8), (x + w + 2, y + 1.5, 9.5), "pine", group=f"wild{i}")
-    m.group("blade_a", (16, 14, 8))
+    m.group("blade_a", (16, 14, 8), rot=(0, 0, 20))
     m.cube("blade", (13, 14, 7.6), (19, 14.6, 8.4), "steel_light", group="blade_a")
-    m.group("blade_b", (16, 14, 8))
+    m.group("blade_b", (16, 14, 8), rot=(0, 0, 20))
     m.cube("blade", (13, 13.4, 7.6), (19, 14, 8.4), "steel_light", group="blade_b")
     m.cube("grip", (18.5, 12.5, 7.5), (21, 15.5, 8.5), "red_cloth")
     return m
@@ -702,3 +702,359 @@ ALL = {
     "SHOJI": shoji_screen, "ANDON": andon, "IRORI": irori, "BONSAI": bonsai, "TEA": tea_set, "WELL": well,
     "SHOGI": shogi_board, "KAKEJIKU": kakejiku,
 }
+
+
+# ================================================================ 第4弾のタスク
+MATS.update({
+    "letter": Mat((246, 240, 226), "paper", noise=4),
+    "letter_pink": Mat((246, 214, 222), "paper", noise=4),
+    "letter_blue": Mat((214, 230, 246), "paper", noise=4),
+    "red_post": Mat((176, 38, 30), "metal", noise=5),
+    "glass_bowl": Mat((210, 236, 255), "water", accent=(240, 250, 255), alpha=90),
+    "water_clear": Mat((120, 180, 230), "water", accent=(170, 215, 250), alpha=150),
+    "goldfish": Mat((236, 92, 30), "metal", noise=6),
+    "goldfish_tail": Mat((246, 150, 90), "paper", noise=4, alpha=210),
+    "food": Mat((150, 96, 50), "stipple", noise=8),
+    "glass_chime": Mat((220, 240, 255), "water", accent=(250, 252, 255), alpha=150),
+    "chime_paint": Mat((200, 60, 60), "plain", noise=4),
+    "tanzaku": Mat((232, 214, 140), "paper", noise=4),
+    "mochi": Mat((250, 248, 240), "plaster", noise=4),
+    "sand": Mat((214, 206, 186), "stipple", noise=8),
+    "sand_line": Mat((180, 170, 146), "plain", noise=4),
+    "rock": Mat((112, 110, 104), "stone", noise=10),
+    "soap": Mat((240, 246, 252), "stipple", noise=6, alpha=200),
+    "washboard": Mat((200, 162, 108), "wood", accent=(164, 124, 76), noise=5),
+    "cloth_blue": Mat((70, 96, 170), "stipple", noise=8),
+})
+
+
+def mailbox():
+    m = F("mailbox")
+    m.cube("post", (6.5, 0, 9), (9.5, 12, 12), "wood_dark")
+    m.cube("box", (2, 12, 5), (14, 22, 13), "red_post")
+    m.cube("roof", (1.4, 22, 4.4), (14.6, 23.2, 13.6), "red_post")
+    m.cube("roof2", (2.4, 23.2, 5.4), (13.6, 24, 12.6), "red_post")
+    m.cube("slot", (4.5, 19.5, 4.8), (11.5, 20.3, 5.1), "black")
+    m.cube("plate", (5, 14.5, 4.8), (11, 17.5, 5.1), "white", decal=_text("郵便"))
+    m.group("lid", (8, 21, 4.8))
+    m.cube("lid", (4.2, 20.4, 4.4), (11.8, 21.6, 4.9), "red_post", group="lid")
+    # 仕分ける前の手紙の山（台の上）と、仕分けた手紙（箱の中→少しのぞく）
+    for k in range(4):
+        m.group(f"pile{k}", (19, 10 + k * 0.5, 8))
+        m.cube("letter", (17, 10 + k * 0.5, 6.5 + (k % 2) * 0.6), (21.5, 10.4 + k * 0.5, 9.5 + (k % 2) * 0.6),
+               ("letter", "letter_pink", "letter_blue", "letter")[k], group=f"pile{k}", rot=(0, (k - 1.5) * 8, 0))
+        m.group(f"sorted{k}", (5 + k * 2, 22, 9))
+        m.cube("letter", (4.3 + k * 2, 21.6, 7.5), (5.6 + k * 2, 24.6, 10.5), ("letter", "letter_pink", "letter_blue", "letter")[k],
+               group=f"sorted{k}")
+    m.cube("stand", (16, 0, 5.5), (22.5, 10, 11), "wood")
+    return m
+
+
+def _text(chars, faces=("north",)):
+    from items_hires import text_decal
+    return text_decal(chars, color=(40, 30, 24, 255), faces=faces, vertical=False, size=0.5)
+
+
+def goldfish_bowl():
+    m = F("goldfish_bowl")
+    m.cube("stand", (2, 0, 2), (14, 6, 14), "wood_dark")
+    m.cube("stand_top", (1.4, 6, 1.4), (14.6, 7, 14.6), "wood_dark")
+    # 金魚（鉢のまん中を中心にぐるぐる泳ぐ）
+    for k in range(2):
+        g = m.group(f"fish{k}", (8, 9.5 + k * 1.6, 8))
+        r = 2.4 if k == 0 else 1.6
+        y = 9.5 + k * 1.6
+        m.cube("fish", (8 + r - 0.5, y - 0.6, 7.0), (8 + r + 0.5, y + 0.6, 9.0), "goldfish", group=g)
+        m.cube("tail", (8 + r - 0.05, y - 0.8, 9.0), (8 + r + 0.05, y + 0.8, 10.4), "goldfish_tail", group=g)
+        m.cube("eye", (8 + r - 0.55, y + 0.1, 7.2), (8 + r + 0.55, y + 0.4, 7.5), "black", group=g)
+    m.cyl("glass_water", 8, 8, 7.4, 13.2, 4.6, "water_clear", sides=6)
+    for (y0, y1, r) in ((7, 8, 3.6), (8, 10, 5.0), (10, 12.6, 5.3), (12.6, 14, 4.6), (14, 14.8, 3.6)):
+        m.cyl("glass_bowl", 8, 8, y0, y1, r, "glass_bowl", sides=6)
+    m.cube("weed", (5.5, 7.4, 9), (6.3, 12, 9.8), "green_cloth", rot=(0, 0, 8), pivot=(6, 7.4, 9.4))
+    m.cube("pebbles", (5, 7.2, 5), (11, 7.8, 11), "rock")
+    # えさ（上から落ちる）
+    m.group("food", (8, 16, 8))
+    for k in range(5):
+        m.cube("food", (7 + (k % 3) * 0.8, 15.5 + (k // 3) * 0.7, 7.3 + (k % 2) * 1.0), (7.4 + (k % 3) * 0.8, 15.9 + (k // 3) * 0.7, 7.7 + (k % 2) * 1.0),
+               "food", group="food")
+    m.cube("can", (14, 7, 3), (17, 11, 6), "yellow_cloth")
+    return m
+
+
+def wind_chime():
+    m = F("wind_chime")
+    m.cube("post_l", (0, 0, 13), (2, 26, 15), "wood_dark")
+    m.cube("post_r", (14, 0, 13), (16, 26, 15), "wood_dark")
+    m.cube("beam", (-1, 24, 12), (17, 26, 16), "wood_dark")
+    m.cube("hook", (7.6, 21.5, 13.6), (8.4, 24, 14.4), "iron_black")
+    m.cube("shelf", (1, 0, 3), (15, 4, 9), "wood")
+    m.cube("box", (4, 4, 4), (11, 7, 8), "wood_light")
+    # 吊るした風鈴（終わると現れる）と、箱の中の風鈴
+    m.group("hung", (8, 21.5, 14))
+    m.cube("string", (7.85, 17, 13.85), (8.15, 21.5, 14.15), "white", group="hung")
+    for (y0, y1, r) in ((14.2, 15.2, 1.7), (15.2, 16.4, 1.5), (16.4, 17.2, 0.9)):
+        m.cyl("glass_bell", 8, 14, y0, y1, r, "glass_chime", sides=4, group="hung")
+    m.cube("paint", (6.4, 14.6, 12.4), (9.6, 15.6, 12.6), "chime_paint", group="hung")
+    m.cube("clapper", (7.8, 11, 13.8), (8.2, 14.6, 14.2), "white", group="hung")
+    m.cube("tanzaku", (7, 6, 13.95), (9, 11, 14.05), "tanzaku", group="hung")
+    m.group("boxed", (7.5, 7, 6))
+    m.cyl("glass_bell", 7.5, 6, 7, 8.6, 1.5, "glass_chime", sides=4, group="boxed")
+    m.cube("tanzaku", (8.5, 7, 4.5), (11, 7.3, 6.5), "tanzaku", group="boxed")
+    return m
+
+
+def mochi_mortar():
+    m = F("mochi_mortar")
+    m.cyl("usu", 8, 8, 0, 9, 6.2, "wood", sides=6)
+    m.cyl("usu_rim", 8, 8, 9, 10, 6.4, "wood_dark", sides=6)
+    m.cyl("bowl", 8, 8, 9.2, 10.05, 4.6, "wood_dark", sides=6)
+    m.group("mochi", (8, 10, 8))
+    m.cyl("mochi", 8, 8, 9.6, 11.6, 3.6, "mochi", sides=6, group="mochi")
+    m.cyl("mochi_top", 8, 8, 11.6, 12.4, 2.6, "mochi", sides=4, group="mochi")
+    # 杵（きね）：手前に立てかけて、つくときに振り下ろす
+    m.group("kine", (8, 12, 18), rot=(-35, 0, 0))
+    m.cube("handle", (7.4, 12, 10), (8.6, 13.2, 22), "wood", group="kine")
+    m.cyl("head", 8, 10, 10.5, 16.5, 2.4, "wood_dark", sides=4, group="kine")
+    m.cube("bucket", (17, 0, 2), (22, 5, 7), "wood")
+    m.cube("glass_water", (17.5, 0.5, 2.5), (21.5, 4.4, 6.5), "water")
+    return m
+
+
+def zen_garden():
+    m = F("zen_garden")
+    m.cube("frame_n", (-4, 0, -4), (20, 2, -3), "wood_dark")
+    m.cube("frame_s", (-4, 0, 19), (20, 2, 20), "wood_dark")
+    m.cube("frame_w", (-4, 0, -3), (-3, 2, 19), "wood_dark")
+    m.cube("frame_e", (19, 0, -3), (20, 2, 19), "wood_dark")
+    m.cube("sand", (-3, 0, -3), (19, 1.2, 19), "sand")
+    m.cube("rock1", (2, 1.2, 3), (6, 4.5, 6.5), "rock", rot=(0, 20, 0), pivot=(4, 1.2, 4.7))
+    m.cube("rock2", (11, 1.2, 10), (14, 3, 12.5), "moss_stone")
+    m.cube("rock3", (12.5, 1.2, 2), (14, 2.2, 3.5), "rock")
+    # 砂紋（進むと1本ずつ現れる）
+    for k in range(6):
+        z = -1.5 + k * 3.4
+        m.group(f"line{k}", (8, 1.2, z))
+        m.cube("ripple", (-2.5, 1.2, z - 0.25), (18.5, 1.32, z + 0.25), "sand_line", group=f"line{k}")
+    # 熊手（作業中に左右へ動く）
+    m.group("rake", (8, 1.2, 8))
+    m.cube("rake_head", (6, 1.3, 7.5), (10, 2.2, 8.3), "bamboo", group="rake")
+    for k in range(5):
+        m.cube("tine", (6.2 + k * 0.85, 1.2, 7.3), (6.5 + k * 0.85, 1.5, 7.7), "bamboo", group="rake")
+    m.cube("rake_handle", (7.6, 1.8, 8.3), (8.4, 2.6, 22), "bamboo", group="rake", rot=(-20, 0, 0), pivot=(8, 2.2, 8.3))
+    return m
+
+
+def washtub():
+    m = F("washtub")
+    m.cyl("tub", 8, 8, 0, 5, 6.6, "wood", sides=6)
+    m.cyl("hoop", 8, 8, 1.2, 2, 6.8, "steel", sides=6)
+    m.cyl("hoop2", 8, 8, 3.6, 4.4, 6.8, "steel", sides=6)
+    m.cyl("glass_water", 8, 8, 0.5, 4.2, 6.0, "water", sides=6)
+    m.cube("washboard", (3, 1, 9), (13, 14, 10), "washboard", rot=(-25, 0, 0), pivot=(8, 1, 9.5), decal=_ridges)
+    m.group("cloth", (8, 7, 9))
+    m.cube("cloth", (4, 5.5, 7.6), (12, 9.5, 8.6), "cloth_blue", group="cloth", rot=(-25, 0, 0), pivot=(8, 7, 8))
+    m.group("bubbles", (8, 4.4, 8))
+    for k, (x, z, r) in enumerate(((5, 5, 1.0), (10, 6, 0.8), (7, 11, 1.2), (11, 10, 0.7), (4.5, 9, 0.6))):
+        m.cube("soap", (x - r, 4.2, z - r), (x + r, 4.2 + r * 1.4, z + r), "soap", group="bubbles")
+    m.cube("bar", (13.5, 0, 13), (16.5, 1.4, 15), "white")
+    return m
+
+
+def _ridges(draw, face, x0, y0, w, h):
+    if face not in ("north", "south"):
+        return
+    for k in range(4, h - 4, 4):
+        draw.line([(x0 + 2, y0 + k), (x0 + w - 3, y0 + k)], fill=(150, 112, 66, 255), width=1)
+
+
+# ================================================================ 飾りの家具（タスクなし）
+MATS.update({
+    "kiri": Mat((214, 180, 132), "wood", accent=(186, 150, 104), noise=5),
+    "iron_fitting": Mat((40, 38, 40), "metal", noise=5),
+    "lacquer_black": Mat((28, 24, 24), "metal", noise=4),
+    "gold_leaf": Mat((222, 182, 86), "metal", noise=8),
+    "byobu_paint": Mat((236, 222, 176), "paper", noise=4),
+    "stone_lantern": Mat((150, 148, 140), "stone", noise=10),
+    "glow_light": Mat((255, 214, 130), "paper", noise=4, glow=True),
+    "sake_wood": Mat((214, 186, 140), "wood", accent=(186, 156, 112), noise=5),
+    "straw": Mat((206, 180, 110), "rope", accent=(170, 146, 80)),
+    "ceramic": Mat((160, 114, 70), "plaster", noise=8),
+    "ceramic_dark": Mat((96, 66, 44), "plaster", noise=8),
+    "tanuki": Mat((128, 92, 60), "plaster", noise=8),
+    "tanuki_belly": Mat((216, 190, 150), "plaster", noise=6),
+    "neko_white": Mat((246, 244, 238), "plaster", noise=4),
+    "umbrella_red": Mat((190, 40, 36), "paper", noise=5),
+    "umbrella_blue": Mat((50, 70, 130), "paper", noise=5),
+    "zabuton": Mat((150, 60, 90), "stipple", noise=6),
+    "pottery": Mat((70, 90, 120), "plaster", noise=8),
+})
+
+
+def tansu():
+    m = F("tansu")
+    m.cube("body", (0.5, 0, 3), (15.5, 26, 15), "kiri")
+    for k, (y0, y1) in enumerate(((1, 7), (7.5, 13.5), (14, 20), (20.5, 25.5))):
+        m.cube("drawer", (1.2, y0, 2.6), (14.8, y1, 3.1), "kiri")
+        for x in (4, 12):
+            m.cube("pull", (x - 1.2, (y0 + y1) / 2 - 0.4, 2.1), (x + 1.2, (y0 + y1) / 2 + 0.4, 2.6), "iron_fitting")
+    for (x, y) in ((0.3, 0), (0.3, 25), (14.7, 0), (14.7, 25)):
+        m.cube("corner", (x, y, 2.4), (x + 1, y + 1, 3.2), "iron_fitting")
+    m.cube("vase", (10, 26, 7), (13, 30, 10), "pottery")
+    m.cube("box", (2, 26, 6), (7, 28, 11), "lacquer_black")
+    return m
+
+
+def chabudai():
+    m = F("chabudai")
+    m.cyl("top", 8, 8, 6, 7.2, 8.5, "wood", sides=6)
+    m.cyl("rim", 8, 8, 5.4, 6.0, 8.2, "wood_dark", sides=6)
+    for (x, z) in ((3, 3), (12, 3), (3, 12), (12, 12)):
+        m.cube("leg", (x, 0, z), (x + 1.4, 5.4, z + 1.4), "wood_dark")
+    m.cyl("teapot", 6, 7, 7.2, 10, 1.8, "ceramic_dark", sides=4)
+    m.cube("spout", (7.6, 8.4, 6.6), (9.4, 9.0, 7.4), "ceramic_dark")
+    for (x, z) in ((10, 5), (10.5, 10)):
+        m.cyl("cup", x, z, 7.2, 8.8, 0.9, "white", sides=4)
+    for (x0, z0, x1, z1) in ((-6, 3, -1, 13), (17, 3, 22, 13), (3, -6, 13, -1)):
+        m.cube("zabuton", (x0, 0, z0), (x1, 1.4, z1), "zabuton")
+    return m
+
+
+def byobu():
+    m = F("byobu")
+    for k in range(4):
+        x0 = -6 + k * 7
+        ang = 18 if k % 2 == 0 else -18
+        m.cube("panel", (x0, 0.5, 9), (x0 + 7, 22, 9.6), "byobu_paint", rot=(0, ang, 0), pivot=(x0 + 3.5, 0, 9.3),
+               decal=_byobu_art(k))
+        m.cube("frame", (x0, 22, 8.8), (x0 + 7, 23, 9.8), "lacquer_black", rot=(0, ang, 0), pivot=(x0 + 3.5, 0, 9.3))
+        m.cube("foot", (x0, 0, 8.8), (x0 + 7, 0.6, 9.8), "lacquer_black", rot=(0, ang, 0), pivot=(x0 + 3.5, 0, 9.3))
+    return m
+
+
+def _byobu_art(k):
+    def decal(draw, face, x0, y0, w, h):
+        if face != "north":
+            return
+        draw.rectangle([x0, y0, x0 + w - 1, y0 + int(h * 0.25)], fill=(222, 182, 86, 255))     # 金雲
+        draw.ellipse([x0 - w * 0.3 + k * 3, y0 + h * 0.15, x0 + w * 0.7 + k * 3, y0 + h * 0.35], fill=(232, 196, 100, 255))
+        # 松の枝と、遠くの山
+        draw.polygon([(x0, y0 + h - 1), (x0 + w * 0.5, y0 + h * (0.55 + 0.05 * k)), (x0 + w, y0 + h - 1)], fill=(110, 130, 120, 255))
+        if k in (1, 2):
+            draw.line([(x0, y0 + h * 0.45), (x0 + w, y0 + h * 0.4)], fill=(70, 50, 30, 255), width=3)
+            for j in range(3):
+                cx = x0 + w * (0.2 + 0.3 * j)
+                draw.ellipse([cx - 6, y0 + h * 0.36, cx + 6, y0 + h * 0.44], fill=(50, 96, 60, 255))
+    return decal
+
+
+def tourou():
+    m = F("tourou")
+    m.cube("base", (3, 0, 3), (13, 2, 13), "stone_lantern")
+    m.cyl("pillar", 8, 8, 2, 12, 1.8, "stone_lantern", sides=4)
+    m.cube("platform", (3.5, 12, 3.5), (12.5, 14, 12.5), "stone_lantern")
+    m.cube("firebox", (4.5, 14, 4.5), (11.5, 20, 11.5), "stone_lantern")
+    m.cube("glow_window", (6, 15.2, 4.3), (10, 18.8, 11.7), "glow_light")
+    m.cube("glow_window2", (4.3, 15.2, 6), (11.7, 18.8, 10), "glow_light")
+    m.cube("roof", (2, 20, 2), (14, 22, 14), "stone_lantern")
+    m.cube("roof2", (4, 22, 4), (12, 23.5, 12), "stone_lantern")
+    m.cube("jewel", (6.8, 23.5, 6.8), (9.2, 26, 9.2), "stone_lantern")
+    m.group("flame", (8, 15.5, 8))
+    m.cube("glow_flame", (7.4, 15.2, 7.4), (8.6, 17.4, 8.6), "glow_fire", group="flame")
+    return m
+
+
+def sake_barrel():
+    m = F("sake_barrel")
+    m.cyl("barrel", 8, 8, 0, 16, 6.8, "sake_wood", sides=6)
+    m.cyl("straw", 8, 8, 2, 14, 7.0, "straw", sides=6)
+    m.cyl("rope", 8, 8, 3, 4, 7.2, "rope", sides=6)
+    m.cyl("rope2", 8, 8, 12, 13, 7.2, "rope", sides=6)
+    m.cube("label", (4, 5, 0.8), (12, 11.5, 1.2), "white", decal=_text("祝", faces=("north",)))
+    m.cyl("lid", 8, 8, 16, 16.6, 6.4, "sake_wood", sides=6)
+    m.cube("ladle", (11, 16.6, 6), (12, 17.4, 14), "bamboo")
+    return m
+
+
+def kasa_tate():
+    m = F("kasa_tate")
+    m.cyl("pot", 8, 8, 0, 9, 4.2, "ceramic", sides=6)
+    m.cyl("rim", 8, 8, 9, 10, 4.4, "ceramic_dark", sides=6)
+    for k, (dx, dz, ang, mat) in enumerate(((-1.2, -1, -8, "umbrella_red"), (1.4, 0.6, 10, "umbrella_blue"), (0, 1.6, 2, "umbrella_red"))):
+        m.cyl("umbrella", 8 + dx, 8 + dz, 3, 22, 1.3, mat, sides=4)
+        m.cube("tip", (7.7 + dx, 22, 7.7 + dz), (8.3 + dx, 25, 8.3 + dz), "bamboo")
+    return m
+
+
+def tanuki():
+    m = F("tanuki")
+    m.cyl("feet", 8, 8, 0, 2, 4.6, "tanuki", sides=6)
+    m.cyl("belly", 8, 8, 2, 11, 5.0, "tanuki", sides=6)
+    m.cube("belly_front", (5, 3, 3), (11, 10, 3.6), "tanuki_belly")
+    m.cyl("chest", 8, 8, 11, 14, 4.0, "tanuki", sides=6)
+    m.cyl("head", 8, 8, 14, 20, 3.6, "tanuki", sides=6)
+    m.cube("face", (5.5, 15, 4.2), (10.5, 18.5, 4.8), "tanuki_belly")
+    m.cube("nose", (7.3, 16.2, 3.8), (8.7, 17.2, 4.4), "black")
+    m.cube("eye", (5.8, 17.8, 4.0), (7.0, 18.6, 4.6), "black")
+    m.cube("eye", (9.0, 17.8, 4.0), (10.2, 18.6, 4.6), "black")
+    m.cube("ear", (5, 19.6, 6), (6.5, 21, 8), "tanuki")
+    m.cube("ear", (9.5, 19.6, 6), (11, 21, 8), "tanuki")
+    m.cube("hat", (3.5, 20, 4), (12.5, 21, 12), "straw")
+    m.cube("hat_top", (5.5, 21, 6), (10.5, 23, 10), "straw")
+    m.cube("bottle", (12, 3, 5), (15, 9, 8), "ceramic_dark")
+    m.cube("ledger_book", (1.5, 4, 5), (4, 9, 9), "white")
+    return m
+
+
+def maneki_neko():
+    m = F("maneki_neko")
+    m.cube("cushion", (2, 0, 2), (14, 2, 14), "red_cloth")
+    m.cyl("body", 8, 8.5, 2, 11, 4.2, "neko_white", sides=6)
+    m.cyl("head", 8, 8, 11, 17.5, 3.8, "neko_white", sides=6)
+    m.cube("ear", (4.6, 17, 6.5), (6.4, 19.4, 8.5), "neko_white")
+    m.cube("ear_in", (5.0, 17.3, 6.3), (6.0, 18.8, 6.5), "pink_cloth")
+    m.cube("ear", (9.6, 17, 6.5), (11.4, 19.4, 8.5), "neko_white")
+    m.cube("ear_in", (10.0, 17.3, 6.3), (11.0, 18.8, 6.5), "pink_cloth")
+    m.cube("eye", (5.8, 14.6, 4.1), (7.0, 15.2, 4.4), "black")
+    m.cube("eye", (9.0, 14.6, 4.1), (10.2, 15.2, 4.4), "black")
+    m.cube("nose", (7.5, 13.6, 4.1), (8.5, 14.2, 4.4), "pink_cloth")
+    m.cube("collar", (4.2, 10.5, 4.2), (11.8, 11.4, 12.4), "red_cloth")
+    m.cube("bell", (7.2, 9.4, 3.8), (8.8, 11, 4.6), "gold")
+    m.cube("koban", (5, 4, 3.8), (11, 8, 4.6), "gold", decal=_text("千万両"))
+    m.cube("paw_l", (3.4, 6, 5), (5.2, 9, 7), "neko_white")
+    # 招く手（ゆっくり手まねき）
+    m.group("paw", (11.5, 11, 7))
+    m.cube("arm", (10.5, 11, 6), (12.6, 17, 8), "neko_white", group="paw")
+    m.cube("pad", (10.8, 16, 5.8), (12.3, 17, 6.1), "pink_cloth", group="paw")
+    return m
+
+
+def hibachi():
+    m = F("hibachi")
+    m.cyl("pot", 8, 8, 0, 9, 6.2, "ceramic", sides=6)
+    m.cyl("rim", 8, 8, 9, 10, 6.4, "ceramic_dark", sides=6)
+    m.cyl("ash", 8, 8, 6, 9.6, 5.4, "ash", sides=6)
+    m.group("ember", (8, 9.6, 8))
+    for (x, z) in ((6, 6), (9, 7), (7, 10), (10, 10)):
+        m.cube("charcoal", (x - 1, 9.6, z - 0.8), (x + 1, 10.6, z + 0.8), "charcoal")
+        m.cube("glow_ember", (x - 0.8, 10.5, z - 0.6), (x + 0.8, 10.7, z + 0.6), "ember", group="ember")
+    m.cube("tongs", (11, 10, 4), (11.4, 10.4, 14), "iron_black", rot=(0, 0, 20), pivot=(11, 10, 9))
+    m.cube("tongs2", (11.8, 10, 4), (12.2, 10.4, 14), "iron_black", rot=(0, 0, 20), pivot=(11, 10, 9))
+    m.cyl("kettle", 6.5, 7.5, 10.6, 14, 2.6, "cast_iron", sides=6)
+    return m
+
+
+def tsubo():
+    m = F("tsubo")
+    m.cube("stand", (2, 0, 2), (14, 3, 14), "lacquer_black")
+    for (y0, y1, r) in ((3, 4, 3.0), (4, 7, 4.4), (7, 12, 5.2), (12, 15, 4.6), (15, 17, 3.0), (17, 19, 2.2), (19, 20, 2.8)):
+        m.cyl("pot", 8, 8, y0, y1, r, "pottery", sides=6)
+    m.cube("paint", (5, 9, 2.7), (11, 11, 3.0), "white", decal=None)
+    return m
+
+
+NEW_TASKS = {"MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar,
+             "ZEN": zen_garden, "WASHTUB": washtub}
+DECOR = {"TANSU": tansu, "CHABUDAI": chabudai, "BYOBU": byobu, "TOUROU": tourou, "SAKE": sake_barrel,
+         "KASA": kasa_tate, "TANUKI": tanuki, "MANEKI": maneki_neko, "HIBACHI": hibachi, "TSUBO": tsubo}
+ALL.update(NEW_TASKS)
+ALL.update(DECOR)

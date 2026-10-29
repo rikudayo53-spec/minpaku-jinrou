@@ -41,8 +41,10 @@ public class MinpakuClient implements ClientModInitializer {
         com.minpaku.client.model.MeshCache.register();
         com.minpaku.client.bb.BbCache.register();
         com.minpaku.client.model.HiRes.register();
+        // 家具は GeckoLib（Blockbench のアニメーション）で描く
+        com.minpaku.client.geo.FurnitureGeo.register();
         net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
-                com.minpaku.registry.ModBlockEntities.MARKER, com.minpaku.client.render.MarkerRenderer::new);
+                com.minpaku.registry.ModBlockEntities.MARKER, com.minpaku.client.geo.FurnitureGeoRenderer::new);
         registerItemModels();
         EntityRendererRegistry.register(ModEntities.BOT, com.minpaku.client.render.BotRenderer::new);
         HudRenderCallback.EVENT.register(GameHud::render);
@@ -157,13 +159,18 @@ public class MinpakuClient implements ClientModInitializer {
                     if (!roleItemVisible(item)) {
                         return;
                     }
-                    com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(mesh);
-                    if (m == null) {
-                        return;
-                    }
                     ps.pushPose();
                     ps.translate(0.5, 0.0, 0.5);
-                    m.render(ps, buffers, light, overlay);
+                    // Blockbench の高精細モデル（なければ Blender のモデル）
+                    com.minpaku.client.model.HiRes hr = com.minpaku.client.model.HiRes.get(mesh);
+                    if (hr != null) {
+                        hr.render(ps, buffers, light, overlay, com.minpaku.client.model.HiRes.STILL);
+                    } else {
+                        com.minpaku.client.model.StaticMesh m = com.minpaku.client.model.MeshCache.get(mesh);
+                        if (m != null) {
+                            m.render(ps, buffers, light, overlay);
+                        }
+                    }
                     ps.popPose();
                 });
     }

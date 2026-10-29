@@ -68,6 +68,7 @@ public final class HiRes {
     static final class Group {
         String name;
         Vector3f origin;
+        Vector3f rot = new Vector3f();
         final List<Cube> cubes = new ArrayList<>();
         final List<Group> groups = new ArrayList<>();
     }
@@ -207,6 +208,7 @@ public final class HiRes {
         Group g = new Group();
         g.name = GsonHelper.getAsString(o, "name", "");
         g.origin = v3(o, "origin");
+        g.rot = v3(o, "rotation");
         parent.groups.add(g);
         if (o.has("children")) {
             for (JsonElement ch : o.getAsJsonArray("children")) {
@@ -224,6 +226,10 @@ public final class HiRes {
 
     private void drawGroup(Group g, PoseStack ps, MultiBufferSource buf, int light, int overlay, Animator anim) {
         ps.pushPose();
+        if (g.rot.x != 0 || g.rot.y != 0 || g.rot.z != 0) {
+            // 元から傾けてあるグループ
+            rotate(ps, g.origin.x / 16f, g.origin.y / 16f, g.origin.z / 16f, g.rot.x, g.rot.y, g.rot.z);
+        }
         if (!g.name.isEmpty() && !anim.apply(g.name, ps, g.origin.x / 16f, g.origin.y / 16f, g.origin.z / 16f)) {
             ps.popPose();
             return;

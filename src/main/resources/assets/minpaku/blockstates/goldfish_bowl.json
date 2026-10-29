@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/goldfish_bowl"
+  },
+  "facing=east": {
+   "model": "minpaku:block/goldfish_bowl",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/goldfish_bowl",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/goldfish_bowl",
+   "y": 270
+  }
+ }
+}

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/zen_garden"
+  },
+  "facing=east": {
+   "model": "minpaku:block/zen_garden",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/zen_garden",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/zen_garden",
+   "y": 270
+  }
+ }
+}

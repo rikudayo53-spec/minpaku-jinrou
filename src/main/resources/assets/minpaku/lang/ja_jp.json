@@ -42,5 +42,21 @@
  "block.minpaku.shogi_board": "将棋盤（タスク）",
  "block.minpaku.kakejiku": "掛け軸（タスク）",
  "key.minpaku.vote": "会議の投票画面を開く（井戸端会議）",
- "key.minpaku.map": "見取り図（マップ）を開く"
+ "key.minpaku.map": "見取り図（マップ）を開く",
+ "block.minpaku.mailbox": "郵便受け（タスク）",
+ "block.minpaku.goldfish_bowl": "金魚鉢（タスク）",
+ "block.minpaku.wind_chime": "風鈴（タスク）",
+ "block.minpaku.mochi_mortar": "臼と杵（タスク）",
+ "block.minpaku.zen_garden": "枯山水（タスク）",
+ "block.minpaku.washtub": "たらい（タスク）",
+ "block.minpaku.tansu": "箪笥（飾り）",
+ "block.minpaku.chabudai": "ちゃぶ台（飾り）",
+ "block.minpaku.byobu": "屏風（飾り）",
+ "block.minpaku.tourou": "石灯籠（飾り）",
+ "block.minpaku.sake_barrel": "酒樽（飾り）",
+ "block.minpaku.kasa_tate": "傘立て（飾り）",
+ "block.minpaku.tanuki": "信楽たぬき（飾り）",
+ "block.minpaku.maneki_neko": "招き猫（飾り）",
+ "block.minpaku.hibachi": "火鉢（飾り）",
+ "block.minpaku.tsubo": "壺（飾り）"
 }

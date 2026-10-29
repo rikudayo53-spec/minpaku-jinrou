@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/wind_chime"
+  },
+  "facing=east": {
+   "model": "minpaku:block/wind_chime",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/wind_chime",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/wind_chime",
+   "y": 270
+  }
+ }
+}

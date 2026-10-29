@@ -26,6 +26,9 @@ public final class ModBlocks {
                     .strength(1.0f, 3600000f)
                     .noOcclusion()
                     .sound(soundFor(type));
+            if (type == MarkerType.TOUROU || type == MarkerType.HIBACHI) {
+                props = props.lightLevel(s -> 10);
+            }
             if (type == MarkerType.BOILER || type == MarkerType.KAMADO || type == MarkerType.BATH) {
                 props = props.lightLevel(s -> 7);
             }

@@ -42,7 +42,27 @@ public enum MarkerType {
     TEA("tea_set", "茶道具", Use.HOLD, "お茶をたてる", 80),
     WELL("well", "井戸", Use.CLICK, "井戸の水をくむ", 5),
     SHOGI("shogi_board", "将棋盤", Use.CLICK, "将棋の駒を並べる", 6),
-    KAKEJIKU("kakejiku", "掛け軸", Use.CLICK, "掛け軸をまっすぐにする", 3);
+    KAKEJIKU("kakejiku", "掛け軸", Use.CLICK, "掛け軸をまっすぐにする", 3),
+
+    // 第4弾で追加したタスク（GeckoLib のアニメーション）
+    MAILBOX("mailbox", "郵便受け", Use.CLICK, "手紙を仕分ける", 4),
+    GOLDFISH("goldfish_bowl", "金魚鉢", Use.CLICK, "金魚にえさをやる", 3),
+    FURIN("wind_chime", "風鈴", Use.CLICK, "風鈴を吊るす", 3),
+    MOCHI("mochi_mortar", "臼と杵", Use.CLICK, "餅をつく", 8),
+    ZEN("zen_garden", "枯山水", Use.HOLD, "砂紋を描く", 80),
+    WASHTUB("washtub", "たらい", Use.HOLD, "洗濯板で洗う", 80),
+
+    // 飾り（タスクではない。置くだけ）
+    TANSU("tansu", "箪笥（飾り）", Use.NONE, null, 0),
+    CHABUDAI("chabudai", "ちゃぶ台（飾り）", Use.NONE, null, 0),
+    BYOBU("byobu", "屏風（飾り）", Use.NONE, null, 0),
+    TOUROU("tourou", "石灯籠（飾り）", Use.NONE, null, 0),
+    SAKE("sake_barrel", "酒樽（飾り）", Use.NONE, null, 0),
+    KASA("kasa_tate", "傘立て（飾り）", Use.NONE, null, 0),
+    TANUKI("tanuki", "信楽たぬき（飾り）", Use.NONE, null, 0),
+    MANEKI("maneki_neko", "招き猫（飾り）", Use.NONE, null, 0),
+    HIBACHI("hibachi", "火鉢（飾り）", Use.NONE, null, 0),
+    TSUBO("tsubo", "壺（飾り）", Use.NONE, null, 0);
 
     public enum Use {
         /** 何もしない（設備） */
@@ -75,6 +95,11 @@ public enum MarkerType {
 
     public boolean isTask() {
         return taskName != null && this != GAS_VALVE && this != BOILER;
+    }
+
+    /** 飾りの家具（ゲームでは何もしない） */
+    public boolean isDecor() {
+        return ordinal() >= TANSU.ordinal();
     }
 
     public static MarkerType byOrdinal(int i) {

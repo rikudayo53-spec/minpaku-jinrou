@@ -261,6 +261,7 @@ class HiRes:
         self.D = density
         self.cubes = []          # dict(name, frm, to, mat, rot, pivot, decals, group)
         self.groups = {}         # name -> (origin, parent)
+        self.group_rot = {}      # name -> [rx, ry, rz]
         self.group_order = []
         self.rng = random.Random(seed)
         self.mc = mc
@@ -276,8 +277,11 @@ class HiRes:
             self.cube(name, (cx - r, y0 + e, cz - half_w), (cx + r, y1 - e, cz + half_w), mat,
                       rot=[0, ang, 0] if ang else None, pivot=[cx, y0, cz], group=group)
 
-    def group(self, name, origin=(0, 0, 0), parent=None):
+    def group(self, name, origin=(0, 0, 0), parent=None, rot=None):
+        """rot = 元から傾けておく角度（度）。アニメーションはこの傾きからの変化になる"""
         self.groups[name] = (list(origin), parent)
+        if rot:
+            self.group_rot[name] = list(rot)
         self.group_order.append(name)
         return name
 
@@ -378,6 +382,8 @@ class HiRes:
             origin, parent = self.groups[gname]
             node = {"name": gname, "origin": origin, "color": 0, "uuid": uid(), "export": True, "isOpen": True,
                     "locked": False, "visibility": True, "autouv": 0, "children": []}
+            if gname in self.group_rot:
+                node["rotation"] = self.group_rot[gname]
             gmap[gname] = node
             (gmap[parent]["children"] if parent else outl).append(node)
         loose = []
@@ -410,6 +416,9 @@ class HiRes:
             origin, parent = self.groups[gname]
             b = {"name": gname, "parent": parent or "root",
                  "pivot": [X(origin[0]), round(origin[1], 4), round(origin[2] - oz, 4)]}
+            if gname in self.group_rot:
+                r = self.group_rot[gname]
+                b["rotation"] = [-r[0], -r[1], r[2]]
             bones.append(b)
             index[gname] = b
         for ci, c in enumerate(self.cubes):
@@ -423,7 +432,11 @@ class HiRes:
             for f in FACES:
                 w, h = self._face_size(c, f)
                 x0, y0 = self.uv[(ci, f)]
-                cube["uv"][f] = {"uv": [x0, y0], "uv_size": [w, h]}
+                if f in ("up", "down"):
+                    # Blockbench の Bedrock 書き出しと同じ：上と下の面は UV を上下左右反転して書く
+                    cube["uv"][f] = {"uv": [x0 + w, y0 + h], "uv_size": [-w, -h]}
+                else:
+                    cube["uv"][f] = {"uv": [x0, y0], "uv_size": [w, h]}
             bone = index.get(c["group"]) if c["group"] else None
             if bone is None:
                 bone = bones[0]

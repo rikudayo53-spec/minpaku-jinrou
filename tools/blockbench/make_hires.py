@@ -168,6 +168,9 @@ ITEMS = {"glock_black": glock_black}
 from furniture_hires import ALL as _FURN  # noqa: E402
 for _fn in _FURN.values():
     ITEMS[_fn.__name__] = _fn
+# 能力アイテム（items_hires.py）
+from items_hires import ALL as _ITEMS  # noqa: E402
+ITEMS.update(_ITEMS)
 # 池の鯉（koi_hires.py）
 from koi_hires import ALL as _KOI  # noqa: E402
 ITEMS.update(_KOI)
@@ -176,10 +179,27 @@ ITEMS.update(_KOI)
 def main():
     os.makedirs(OUT, exist_ok=True)
     names = sys.argv[1:] or list(ITEMS)
+    import json
+    import furniture_anims
+    from furniture_hires import ALL as furn
+    furn_ids = {fn.__name__ for fn in furn.values()}
+    assets = os.path.dirname(OUT)
+    index_path = os.path.join(assets, "geo_furniture.json")
+    index = json.load(open(index_path, encoding="utf-8")) if os.path.exists(index_path) else {}
     for n in names:
         m = ITEMS[n]()
         m.save(os.path.join(OUT, n + ".bbmodel"))
-        print("書き出し:", n, f"テクスチャ {m.size}px")
+        msg = ""
+        if n in furn_ids:
+            # 家具は GeckoLib 用にも書き出す（形・絵・アニメーション）
+            m.save_geo(assets, "block")
+            a = furniture_anims.build(n)
+            a.save(os.path.join(assets, "animations", "block", n + ".animation.json"))
+            index[n] = sorted(a.clips)
+            msg = "  GeckoLib: " + (", ".join(sorted(a.clips)) or "動きなし")
+        print("書き出し:", n, f"テクスチャ {m.size}px" + msg)
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1, sort_keys=True)
 
 
 if __name__ == "__main__":

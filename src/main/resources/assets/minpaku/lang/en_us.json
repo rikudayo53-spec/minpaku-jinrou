@@ -42,5 +42,21 @@
  "block.minpaku.shogi_board": "Shogi Board (Task)",
  "block.minpaku.kakejiku": "Hanging Scroll (Task)",
  "key.minpaku.vote": "Open voting screen (free meeting)",
- "key.minpaku.map": "Open map"
+ "key.minpaku.map": "Open map",
+ "block.minpaku.mailbox": "Mailbox (task)",
+ "block.minpaku.goldfish_bowl": "Goldfish bowl (task)",
+ "block.minpaku.wind_chime": "Wind chime (task)",
+ "block.minpaku.mochi_mortar": "Mochi mortar (task)",
+ "block.minpaku.zen_garden": "Zen garden (task)",
+ "block.minpaku.washtub": "Washtub (task)",
+ "block.minpaku.tansu": "Tansu chest (decor)",
+ "block.minpaku.chabudai": "Chabudai table (decor)",
+ "block.minpaku.byobu": "Folding screen (decor)",
+ "block.minpaku.tourou": "Stone lantern (decor)",
+ "block.minpaku.sake_barrel": "Sake barrel (decor)",
+ "block.minpaku.kasa_tate": "Umbrella stand (decor)",
+ "block.minpaku.tanuki": "Tanuki statue (decor)",
+ "block.minpaku.maneki_neko": "Maneki-neko (decor)",
+ "block.minpaku.hibachi": "Hibachi (decor)",
+ "block.minpaku.tsubo": "Vase (decor)"
 }

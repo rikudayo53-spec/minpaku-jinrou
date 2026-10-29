@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/kasa_tate"
+  },
+  "facing=east": {
+   "model": "minpaku:block/kasa_tate",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/kasa_tate",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/kasa_tate",
+   "y": 270
+  }
+ }
+}

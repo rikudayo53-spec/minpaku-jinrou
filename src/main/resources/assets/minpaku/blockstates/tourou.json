@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/tourou"
+  },
+  "facing=east": {
+   "model": "minpaku:block/tourou",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/tourou",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/tourou",
+   "y": 270
+  }
+ }
+}

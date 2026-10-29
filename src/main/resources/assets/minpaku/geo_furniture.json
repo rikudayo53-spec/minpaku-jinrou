@@ -1,0 +1,105 @@
+{
+ "andon": [
+  "idle"
+ ],
+ "bath_stove": [
+  "idle",
+  "work"
+ ],
+ "boiler": [
+  "idle",
+  "work"
+ ],
+ "bonsai": [
+  "use"
+ ],
+ "breaker": [],
+ "byobu": [],
+ "call_bell": [
+  "use"
+ ],
+ "chabudai": [],
+ "chopping_block": [
+  "use"
+ ],
+ "dust_pile": [
+  "work"
+ ],
+ "entrance_mat": [],
+ "floor_hatch": [
+  "use"
+ ],
+ "flower_vase": [
+  "idle",
+  "use"
+ ],
+ "futon": [],
+ "gas_valve": [],
+ "goldfish_bowl": [
+  "idle",
+  "use"
+ ],
+ "hibachi": [
+  "idle"
+ ],
+ "hokora": [
+  "idle"
+ ],
+ "irori": [
+  "idle"
+ ],
+ "kakejiku": [],
+ "kamado": [
+  "idle",
+  "work"
+ ],
+ "kasa_tate": [],
+ "kitchen_sink": [],
+ "laundry_pole": [
+  "idle"
+ ],
+ "ledger": [
+  "work"
+ ],
+ "mailbox": [
+  "use"
+ ],
+ "maneki_neko": [
+  "idle"
+ ],
+ "meeting_table": [],
+ "mochi_mortar": [
+  "use"
+ ],
+ "sake_barrel": [],
+ "shoe_rack": [],
+ "shogi_board": [],
+ "shoji_screen": [
+  "work"
+ ],
+ "tansu": [],
+ "tanuki": [],
+ "tea_set": [
+  "work"
+ ],
+ "tourou": [
+  "idle"
+ ],
+ "tsubo": [],
+ "vegetable_patch": [],
+ "washtub": [
+  "idle",
+  "work"
+ ],
+ "well": [
+  "use"
+ ],
+ "wind_chime": [
+  "idle",
+  "use"
+ ],
+ "wiring_panel": [],
+ "zen_garden": [
+  "work"
+ ]
+}

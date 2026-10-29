@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/hibachi"
+  },
+  "facing=east": {
+   "model": "minpaku:block/hibachi",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/hibachi",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/hibachi",
+   "y": 270
+  }
+ }
+}

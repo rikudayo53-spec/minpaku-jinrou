@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/tansu"
+  },
+  "facing=east": {
+   "model": "minpaku:block/tansu",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/tansu",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/tansu",
+   "y": 270
+  }
+ }
+}

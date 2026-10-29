@@ -15,7 +15,13 @@ import org.jetbrains.annotations.Nullable;
  * 専用ブロック（家具）。見た目を描くほか、タスク中の動き（どこまで進んだか・最後に手を動かした時刻）を
  * まわりのプレイヤーに送る。
  */
-public class MarkerBlockEntity extends BlockEntity {
+public class MarkerBlockEntity extends BlockEntity implements software.bernie.geckolib.animatable.GeoBlockEntity {
+    /** GeckoLib（Blockbench のアニメーション）の状態 */
+    private final software.bernie.geckolib.animatable.instance.AnimatableInstanceCache geoCache =
+            software.bernie.geckolib.util.GeckoLibUtil.createInstanceCache(this);
+    /** クライアント：最後に見た「手を動かした時刻」（use のアニメーションを始めなおすため） */
+    public long seenPulse = Long.MIN_VALUE;
+
     /** 作業の進み具合（0〜1） */
     public float work;
     /** 最後に作業した（手を動かした）時刻 */
@@ -45,6 +51,25 @@ public class MarkerBlockEntity extends BlockEntity {
         lastPulse = now;
         setChanged();
         level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    /**
+     * アニメーションの流し方。idle（いつも）／work（作業中）／use（手を動かした瞬間）の3つ。
+     * どれを流すかはクライアント側（FurnitureGeo）が決める（サーバーでは何もしない）
+     */
+    @Override
+    public void registerControllers(software.bernie.geckolib.animation.AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new software.bernie.geckolib.animation.AnimationController<>(this, "idle", 0,
+                s -> GeoHooks.handler.handle(this, s, "idle")));
+        controllers.add(new software.bernie.geckolib.animation.AnimationController<>(this, "work", 5,
+                s -> GeoHooks.handler.handle(this, s, "work")));
+        controllers.add(new software.bernie.geckolib.animation.AnimationController<>(this, "use", 0,
+                s -> GeoHooks.handler.handle(this, s, "use")));
+    }
+
+    @Override
+    public software.bernie.geckolib.animatable.instance.AnimatableInstanceCache getAnimatableInstanceCache() {
+        return geoCache;
     }
 
     @Override
