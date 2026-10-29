@@ -2376,16 +2376,18 @@ def kasa_tate():
             return 1.0 + (v - 1.0) * 1.45
         g = m.group(f"umb{k}", (cx, 1.0, cz), rot=rot)
         m.cyl("ishizuki", cx, cz, 1.0, Y(2.8), 0.25, "steel_light" if kind == "crook" else "hinoki_dark", sides=2, group=g)
-        # 布：ひだ（放射状の薄い板）＋芯。下が細く、まん中がふくらみ、上で骨が集まって細くなる
-        prof = ((2.8, 4.0, 0.55), (4.0, 6.5, 1.0), (6.5, 10.5, 1.45), (10.5, 14.0, 1.35), (14.0, 16.4, 0.95), (16.4, 17.6, 0.55))
+        # 布：ひだ（放射状の薄い板）＋芯。下（先）が細く、上にいくほどだんだん広がる
+        prof = ((2.8, 4.0, 0.3), (4.0, 6.0, 0.4), (6.0, 8.0, 0.55), (8.0, 10.0, 0.8), (10.0, 12.0, 1.1), (12.0, 14.0, 1.45),
+                (14.0, 16.0, 1.8), (16.0, 17.6, 2.15))
         for (ya, yb, r) in prof:
             m.cyl("canopy", cx, cz, Y(ya), Y(yb), r * 0.62, mat, sides=3, group=g)
             for p_ in range(8):
                 ang = p_ * 45 + (12 if kind == "wagasa" else 0)
                 m.cube("pleat", (cx, Y(ya), cz - 0.17), (cx + r, Y(yb), cz + 0.17), mat, rot=[0, ang, 0], pivot=[cx, Y(ya), cz], group=g)
+        m.cyl("canopy_top", cx, cz, Y(17.6), Y(17.6) + 0.6, 1.2, mat, sides=3, group=g)
         if kind == "wagasa":
             # 和傘：蛇の目の白い帯、竹の骨が上に出る、頭の飾り
-            m.cyl("janome", cx, cz, Y(9.0), Y(9.7), 1.5, "plate", sides=3, group=g)
+            m.cyl("janome", cx, cz, Y(10.0), Y(10.7), 1.25, "plate", sides=3, group=g)
             for p_ in range(8):
                 m.cube("hone", (cx + 0.5, Y(17.6), cz - 0.08), (cx + 0.62, Y(19.2), cz + 0.08), "bamboo", rot=[0, p_ * 45, 0],
                        pivot=[cx, Y(17.6), cz], group=g)
@@ -2398,8 +2400,8 @@ def kasa_tate():
                    pivot=[cx, Y(18.8) + 6.8, cz], group=g)
         else:
             # 洋傘：留めバンドとボタン、金属の軸、曲がった持ち手
-            m.cyl("band", cx, cz, Y(11.6), Y(11.6) + 0.8, 1.5, mat, sides=3, group=g)
-            m.cube("button", (cx - 0.3, Y(11.6) + 0.1, cz - 1.75), (cx + 0.3, Y(11.6) + 0.7, cz - 1.45), "steel_light", group=g)
+            m.cyl("band", cx, cz, Y(11.6), Y(11.6) + 0.8, 1.32, mat, sides=3, group=g)
+            m.cube("button", (cx - 0.3, Y(11.6) + 0.1, cz - 1.57), (cx + 0.3, Y(11.6) + 0.7, cz - 1.27), "steel_light", group=g)
             m.cyl("runner", cx, cz, Y(17.6), Y(17.6) + 0.8, 0.45, "steel_light", sides=2, group=g)
             m.cyl("shaft", cx, cz, Y(17.6) + 0.8, Y(17.6) + 5.6, 0.22, "steel_light", sides=2, group=g)
             hx = -1 if k == 0 else 1
