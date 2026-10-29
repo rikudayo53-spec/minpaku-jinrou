@@ -802,9 +802,11 @@ public final class Plans {
      *   北：本館（2階建て。1階に大広間＝会議の間、玄関に呼び鈴）／ 北西：神社の境内
      *   中：中庭（池）／ 西：鎮守の森（悪神を封じた祠）／ 南西：庭園（井戸・畑）
      *   南：前庭（門＝スタート）／ 南東：別館（小さい宿）
+     *   東：東館（宴会場・酒蔵・板場・遊技場・書院・仏間。本館と渡り廊下でつながる）
+     *       竹林の小径・露天風呂・蔵の庭・土蔵・納屋
      */
     private static MapPlan grand() {
-        MapPlan p = new MapPlan("grand", "大旅館（敷地）", "12人〜・特大", 120, 96)
+        MapPlan p = new MapPlan("grand", "大旅館（敷地）", "12人〜・超特大", 168, 96)
                 // 本館 1階（北の部屋・廊下・南の部屋）
                 .room("厨房", 0, 42, 1, 56, 24, Blocks.SMOOTH_STONE)
                 .room("大広間", 0, 58, 1, 84, 24, Blocks.BAMBOO_PLANKS)
@@ -837,7 +839,22 @@ public final class Plans {
                 .room("別館・客室二", 0, 100, 60, 118, 72, Blocks.BAMBOO_PLANKS)
                 .room("別館の廊下", 0, 80, 74, 118, 76, Blocks.DARK_OAK_PLANKS)
                 .room("離れの湯", 0, 80, 78, 96, 94, Blocks.CALCITE)
-                .room("囲炉裏の間", 0, 98, 78, 118, 94, Blocks.SPRUCE_PLANKS);
+                .room("囲炉裏の間", 0, 98, 78, 118, 94, Blocks.SPRUCE_PLANKS)
+                // 東館（本館の廊下から渡り廊下でつながる）
+                .room("渡り廊下", 0, 120, 26, 120, 28, Blocks.DARK_OAK_PLANKS)
+                .room("宴会場", 0, 122, 1, 144, 24, Blocks.BAMBOO_PLANKS)
+                .room("酒蔵", 0, 146, 1, 166, 12, Blocks.SPRUCE_PLANKS)
+                .room("板場", 0, 146, 14, 166, 24, Blocks.SMOOTH_STONE)
+                .room("東館の廊下", 0, 122, 26, 166, 28, Blocks.DARK_OAK_PLANKS)
+                .room("遊技場", 0, 122, 30, 134, 40, Blocks.OAK_PLANKS)
+                .room("書院", 0, 136, 30, 150, 40, Blocks.SPRUCE_PLANKS)
+                .room("仏間", 0, 152, 30, 166, 40, Blocks.BAMBOO_PLANKS)
+                // 東の外と蔵
+                .garden("竹林の小径", 120, 42, 166, 58, Blocks.PODZOL)
+                .garden("露天風呂", 120, 60, 142, 80, Blocks.STONE)
+                .garden("蔵の庭", 144, 60, 166, 80, Blocks.GRASS_BLOCK)
+                .room("土蔵", 0, 122, 82, 140, 94, Blocks.POLISHED_ANDESITE)
+                .room("納屋", 0, 144, 82, 166, 94, Blocks.SPRUCE_PLANKS);
         p.upper = new int[]{42, 1, 118, 40};
         p.stairs.add(new MapPlan.Stair(72, 73, 39));
         p.entranceX = 58;
@@ -994,8 +1011,141 @@ public final class Plans {
             m.marker(MarkerType.TEA, 102, a, 92, Direction.NORTH);
             m.marker(MarkerType.KAKEJIKU, 110, a, 94, Direction.NORTH);
             m.marker(MarkerType.VENT, 117, a, 93, Direction.NORTH);
+            m.marker(MarkerType.TANSU, 116, a, 79, Direction.SOUTH);
+            m.marker(MarkerType.HIBACHI, 104, a, 80, Direction.SOUTH);
+
+            // ---- 今までの場所に飾りと新しいタスクを足す
+            m.marker(MarkerType.KASA, 71, a, 39, Direction.NORTH);
+            m.marker(MarkerType.TANUKI, 82, a, 39, Direction.NORTH);
+            m.marker(MarkerType.MANEKI, 94, a, 31, Direction.SOUTH);
+            m.marker(MarkerType.BYOBU, 82, a, 2, Direction.SOUTH);
+            m.marker(MarkerType.BYOBU, 60, a, 2, Direction.SOUTH);
+            m.marker(MarkerType.HIBACHI, 66, a, 34, Direction.SOUTH);
+            m.marker(MarkerType.CHABUDAI, 52, b, 10, Direction.SOUTH);
+            m.marker(MarkerType.CHABUDAI, 72, b, 10, Direction.SOUTH);
+            m.marker(MarkerType.HIBACHI, 92, b, 10, Direction.SOUTH);
+            m.marker(MarkerType.TANSU, 117, b, 6, Direction.WEST);
+            m.marker(MarkerType.CHABUDAI, 62, b, 32, Direction.SOUTH);
+            m.marker(MarkerType.TANSU, 72, b, 38, Direction.NORTH);
+            m.marker(MarkerType.TSUBO, 110, b, 30, Direction.SOUTH);
+            m.marker(MarkerType.MAILBOX, 64, a, 92, Direction.NORTH);
+            m.marker(MarkerType.GOLDFISH, 60, a, 46, Direction.SOUTH);
+            m.marker(MarkerType.FURIN, 90, a, 26, Direction.SOUTH);
+            m.marker(MarkerType.TOUROU, 52, a, 66, Direction.NORTH);
+            m.marker(MarkerType.ZEN, 26, a, 88, Direction.NORTH);
+
+            // ---- 東館
+            // 宴会場：ちゃぶ台を並べ、奥に屏風。餅つき
+            for (int x = 126; x <= 140; x += 7) {
+                for (int z = 6; z <= 18; z += 6) {
+                    m.marker(MarkerType.CHABUDAI, x, a, z, Direction.SOUTH);
+                }
+            }
+            m.marker(MarkerType.BYOBU, 133, a, 1, Direction.SOUTH);
+            m.marker(MarkerType.MOCHI, 141, a, 22, Direction.NORTH);
+            m.marker(MarkerType.KAKEJIKU, 128, a, 1, Direction.SOUTH);
+            m.marker(MarkerType.DUST, 123, a, 23, Direction.NORTH);
+            m.marker(MarkerType.VENT, 143, a, 2, Direction.NORTH);
+            // 酒蔵：酒樽の列とたらい
+            for (int x = 148; x <= 164; x += 4) {
+                m.marker(MarkerType.SAKE, x, a, 2, Direction.SOUTH);
+            }
+            m.marker(MarkerType.WASHTUB, 156, a, 9, Direction.SOUTH);
+            m.marker(MarkerType.SAKE, 165, a, 10, Direction.WEST);
+            m.marker(MarkerType.VENT, 147, a, 11, Direction.NORTH);
+            // 板場（二つ目の台所）
+            m.marker(MarkerType.KAMADO, 150, a, 23, Direction.NORTH);
+            m.marker(MarkerType.SINK, 157, a, 23, Direction.NORTH);
+            m.marker(MarkerType.CHOPPING, 163, a, 16, Direction.WEST);
+            m.fill(146, a, 15, 146, a + 1, 19, Blocks.BARREL);
+            // 東館の廊下：行灯と風鈴、傘立て
+            m.marker(MarkerType.ANDON, 130, a, 27, Direction.SOUTH);
+            m.marker(MarkerType.ANDON, 160, a, 27, Direction.SOUTH);
+            m.marker(MarkerType.FURIN, 145, a, 26, Direction.SOUTH);
+            m.marker(MarkerType.KASA, 124, a, 28, Direction.NORTH);
+            // 遊技場
+            m.marker(MarkerType.SHOGI, 126, a, 34, Direction.SOUTH);
+            m.marker(MarkerType.SHOGI, 131, a, 37, Direction.SOUTH);
+            m.marker(MarkerType.MANEKI, 133, a, 31, Direction.SOUTH);
+            m.marker(MarkerType.CHABUDAI, 125, a, 39, Direction.NORTH);
+            // 書院
+            m.marker(MarkerType.LEDGER, 142, a, 31, Direction.SOUTH);
+            m.marker(MarkerType.KAKEJIKU, 143, a, 40, Direction.NORTH);
+            m.marker(MarkerType.TANSU, 137, a, 36, Direction.EAST);
+            m.marker(MarkerType.BYOBU, 149, a, 38, Direction.WEST);
+            m.marker(MarkerType.VENT, 150, a, 31, Direction.NORTH);
+            // 仏間
+            m.marker(MarkerType.VASE, 159, a, 40, Direction.NORTH);
+            m.marker(MarkerType.TSUBO, 155, a, 39, Direction.NORTH);
+            m.marker(MarkerType.TSUBO, 163, a, 39, Direction.NORTH);
+            m.marker(MarkerType.ANDON, 153, a, 31, Direction.SOUTH);
+            m.marker(MarkerType.DUST, 160, a, 34, Direction.NORTH);
+            // ---- 竹林の小径（竹と石灯籠、枯山水）
+            java.util.Random rnd = new java.util.Random(42);
+            for (int i = 0; i < 70; i++) {
+                int x = 121 + rnd.nextInt(46);
+                int z = 43 + rnd.nextInt(15);
+                if (z >= 49 && z <= 51) {
+                    continue;   // まん中は小径
+                }
+                bamboo(m, x, z, 6 + rnd.nextInt(5));
+            }
+            m.fill(120, MapBuilder.F1, 49, 166, MapBuilder.F1, 51, Blocks.MOSSY_COBBLESTONE);
+            m.marker(MarkerType.TOUROU, 130, a, 48, Direction.SOUTH);
+            m.marker(MarkerType.TOUROU, 150, a, 52, Direction.NORTH);
+            m.marker(MarkerType.ZEN, 140, a, 52, Direction.NORTH);
+            m.marker(MarkerType.VENT, 162, a, 50, Direction.NORTH);
+            // ---- 露天風呂（岩で囲んだお湯、風呂釜、たぬき）
+            m.fill(124, MapBuilder.F1, 64, 138, MapBuilder.F1, 74, Blocks.WATER);
+            for (int x = 123; x <= 139; x++) {
+                m.set(x, a, 63, Blocks.MOSSY_COBBLESTONE);
+                m.set(x, a, 75, Blocks.MOSSY_COBBLESTONE);
+            }
+            for (int z = 64; z <= 74; z++) {
+                m.set(123, a, z, Blocks.MOSSY_COBBLESTONE);
+                m.set(139, a, z, Blocks.MOSSY_COBBLESTONE);
+            }
+            m.marker(MarkerType.BATH, 131, a, 78, Direction.NORTH);
+            m.marker(MarkerType.TANUKI, 141, a, 62, Direction.WEST);
+            m.marker(MarkerType.TOUROU, 121, a, 61, Direction.EAST);
+            m.marker(MarkerType.WASHTUB, 125, a, 78, Direction.NORTH);
+            m.marker(MarkerType.VENT, 141, a, 79, Direction.NORTH);
+            // ---- 蔵の庭（畑・物干し・金魚鉢）
+            m.marker(MarkerType.FIELD, 148, a, 64, Direction.NORTH);
+            m.marker(MarkerType.FIELD, 154, a, 64, Direction.NORTH);
+            m.marker(MarkerType.LAUNDRY, 162, a, 70, Direction.WEST);
+            m.marker(MarkerType.GOLDFISH, 150, a, 76, Direction.NORTH);
+            m.marker(MarkerType.WELL, 158, a, 77, Direction.NORTH);
+            tree(m, 165, 61, 1);
+            // ---- 土蔵・納屋
+            m.marker(MarkerType.TANSU, 124, a, 83, Direction.SOUTH);
+            m.marker(MarkerType.TSUBO, 128, a, 83, Direction.SOUTH);
+            m.marker(MarkerType.SAKE, 132, a, 83, Direction.SOUTH);
+            m.marker(MarkerType.DUST, 131, a, 90, Direction.NORTH);
+            m.marker(MarkerType.LEDGER, 138, a, 92, Direction.NORTH);
+            m.marker(MarkerType.VENT, 123, a, 93, Direction.NORTH);
+            m.marker(MarkerType.CHOPPING, 148, a, 90, Direction.NORTH);
+            m.marker(MarkerType.MOCHI, 156, a, 88, Direction.NORTH);
+            m.marker(MarkerType.KASA, 165, a, 83, Direction.WEST);
+            m.marker(MarkerType.MAILBOX, 160, a, 93, Direction.NORTH);
+            m.fill(162, a, 86, 166, a + 1, 88, Blocks.HAY_BLOCK);
         };
         return p;
+    }
+
+    /** 竹（高さ h） */
+    private static void bamboo(MapBuilder m, int x, int z, int h) {
+        if (!m.isAir(x, 1, z)) {
+            return;
+        }
+        BlockState base = Blocks.BAMBOO.defaultBlockState().setValue(net.minecraft.world.level.block.BambooStalkBlock.STAGE, 1)
+                .setValue(net.minecraft.world.level.block.BambooStalkBlock.AGE, 1);
+        for (int y = 1; y <= h; y++) {
+            var leaves = y >= h - 1 ? net.minecraft.world.level.block.state.properties.BambooLeaves.LARGE
+                    : y >= h - 3 ? net.minecraft.world.level.block.state.properties.BambooLeaves.SMALL
+                    : net.minecraft.world.level.block.state.properties.BambooLeaves.NONE;
+            m.set(x, y, z, base.setValue(net.minecraft.world.level.block.BambooStalkBlock.LEAVES, leaves));
+        }
     }
 
     /** 石灯籠 */
