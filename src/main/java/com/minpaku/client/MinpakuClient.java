@@ -39,6 +39,7 @@ public class MinpakuClient implements ClientModInitializer {
     public void onInitializeClient() {
         EntityRendererRegistry.register(ModEntities.BODY, BodyRenderer::new);
         com.minpaku.client.model.MeshCache.register();
+        com.minpaku.client.bb.BbCache.register();
         net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(
                 com.minpaku.registry.ModBlockEntities.MARKER, com.minpaku.client.render.MarkerRenderer::new);
         registerItemModels();

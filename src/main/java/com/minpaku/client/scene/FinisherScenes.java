@@ -62,8 +62,184 @@ public final class FinisherScenes {
         NAMES.put(f.id, f.title);
     }
 
+    /** Blockbench のプロジェクト（assets/minpaku/finishers/<id>.bbmodel）があればそれで再生する */
     public static Finisher get(String id) {
+        com.minpaku.client.bb.BbModel m = com.minpaku.client.bb.BbCache.get(id);
+        if (m != null) {
+            Bb b = BB.get(id);
+            if (b == null || b.m != m) {
+                b = new Bb(id, NAMES.getOrDefault(id, id), m);
+                BB.put(id, b);
+            }
+            return b;
+        }
         return ALL.getOrDefault(id, ALL.get("wolf"));
+    }
+
+    private static final Map<String, Bb> BB = new HashMap<>();
+
+    private static float[] hitsOf(com.minpaku.client.bb.BbModel m) {
+        java.util.List<Float> list = new java.util.ArrayList<>();
+        for (com.minpaku.client.bb.BbModel.Effect e : m.effects) {
+            if (e.channel().equals("timeline") && e.value().trim().startsWith("hit")) {
+                list.add(e.time() * 20f);
+            }
+        }
+        float[] out = new float[list.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = list.get(i);
+        }
+        return out;
+    }
+
+    /**
+     * Blockbench で作ったフィニッシャー。
+     *  - グループ killer / victim（＋ killer_head などの部位）：犯人と自分（スキンは自動で差しかえ）
+     *  - グループ camera / camera_target：カメラの位置と見る先（camera の大きさ × 50 = 画角）
+     *  - 効果のキーフレーム：sound「entity.wolf.howl|0.75」（音|高さ）、
+     *    timeline「hit」（当たった瞬間）・「text:ワオーン！:killer_head:FFE08A:2.4」（文字:場所:色:大きさ）・「noroom」
+     */
+    static final class Bb extends Finisher {
+        final com.minpaku.client.bb.BbModel m;
+        private com.minpaku.client.bb.BbRenderer.Pose base;
+
+        Bb(String id, String title, com.minpaku.client.bb.BbModel m) {
+            super(id, title, Math.max(1, Math.round(m.length * 20f)), hitsOf(m));
+            this.m = m;
+        }
+
+        private com.minpaku.client.bb.BbRenderer.Pose base(float t) {
+            base = com.minpaku.client.bb.BbRenderer.pose(m, t / 20f, null);
+            return base;
+        }
+
+        @Override
+        float camera(float t, Vector3f eye, Vector3f target) {
+            com.minpaku.client.bb.BbRenderer.Pose p = base(t);
+            Vector3f e = p.origin("camera", m);
+            Vector3f g = p.origin("camera_target", m);
+            eye.set(e != null ? e : new Vector3f(0, 1.6f, 4));
+            target.set(g != null ? g : new Vector3f(0, 1.2f, 0));
+            return 50f * m.sample("camera", "scale", t / 20f, 1f).x;
+        }
+
+        @Override
+        void scene(Scene3D s, float t, Ctx c) {
+            boolean room = true;
+            for (com.minpaku.client.bb.BbModel.Effect e : m.effects) {
+                if (e.value().trim().equals("noroom")) {
+                    room = false;
+                }
+            }
+            if (room) {
+                room(s, false);
+            }
+            com.minpaku.client.bb.BbRenderer.Pose p = base != null ? base : base(t);
+            Vector3f k = p.origin("killer", m);
+            Vector3f v = p.origin("victim", m);
+            if (k != null) {
+                c.killerPos.set(k);
+            }
+            if (v != null) {
+                c.victimPos.set(v);
+            }
+            final float push = c.push;
+            final float fall = c.fall;
+            com.minpaku.client.bb.BbRenderer.Pose drawn = p;
+            if ((push > 0 || fall > 0) && k != null && v != null) {
+                float dx = k.x - v.x;
+                float dz = k.z - v.z;
+                float len = (float) Math.max(0.001, Math.sqrt(dx * dx + dz * dz));
+                float nx = dx / len;
+                float nz = dz / len;
+                drawn = com.minpaku.client.bb.BbRenderer.pose(m, t / 20f, (name, w) -> {
+                    if (!name.equals("killer")) {
+                        return;
+                    }
+                    float off = push * 2.2f;
+                    float up = push > 0 ? (float) Math.sin(Math.min(1f, push) * Math.PI) * 0.6f : 0f;
+                    w.translate(nx * off, up, nz * off);
+                    float back = (float) Math.toRadians(Math.max(push, fall) * 85f);
+                    // 被害者から遠ざかる向きにあお向けに倒れる
+                    w.rotate(back, nz, 0, -nx);
+                });
+            }
+            com.minpaku.client.bb.BbRenderer.render(m, drawn, s.ps, s.buf, c.killerSkin, c.mySkin, s.bright);
+            base = null;
+        }
+
+        @Override
+        void marks(Scene3D s, float t, Ctx c, Map<String, float[]> out) {
+            com.minpaku.client.bb.BbRenderer.Pose p = com.minpaku.client.bb.BbRenderer.pose(m, t / 20f, null);
+            for (com.minpaku.client.bb.BbModel.Effect e : m.effects) {
+                String v = e.value().trim();
+                if (!v.startsWith("text:")) {
+                    continue;
+                }
+                String[] parts = v.split(":");
+                String bone = parts.length > 2 ? parts[2] : "killer_head";
+                Vector3f o = p.origin(bone, m);
+                if (o != null && !out.containsKey(bone)) {
+                    out.put(bone, s.toScreen(o.x, o.y + 0.55f, o.z));
+                }
+            }
+        }
+
+        @Override
+        void overlay(GuiGraphics g, Scene3D s, float t, Ctx c, Map<String, float[]> marks) {
+            for (com.minpaku.client.bb.BbModel.Effect e : m.effects) {
+                String v = e.value().trim();
+                if (!v.startsWith("text:")) {
+                    continue;
+                }
+                String[] parts = v.split(":");
+                String text = parts.length > 1 ? parts[1] : "";
+                String bone = parts.length > 2 ? parts[2] : "killer_head";
+                int color = 0xFFFFFFFF;
+                float size = 2.2f;
+                try {
+                    if (parts.length > 3) {
+                        color = 0xFF000000 | Integer.parseInt(parts[3], 16);
+                    }
+                    if (parts.length > 4) {
+                        size = Float.parseFloat(parts[4]);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+                if (bone.equals("screen")) {
+                    float st = t - e.time() * 20f;
+                    if (st > 0 && st < 22) {
+                        float a = st < 16 ? 1f : 1f - (st - 16) / 6f;
+                        float sc = size * (st < 4 ? 1.3f - st / 4f * 0.3f : 1f);
+                        Ui.text(g, Ui.serif(text), g.guiWidth() / 2f, g.guiHeight() * 0.24f, Ui.alpha(color, a), sc, 0, true);
+                    }
+                    continue;
+                }
+                pop(g, marks.get(bone), t, e.time() * 20f, text, color, size);
+            }
+        }
+
+        @Override
+        void sound(int t) {
+            for (com.minpaku.client.bb.BbModel.Effect e : m.effects) {
+                if (!e.channel().equals("sound") || Math.round(e.time() * 20f) != t) {
+                    continue;
+                }
+                String[] parts = e.value().split("\\|");
+                float pitch = 1f;
+                try {
+                    if (parts.length > 1) {
+                        pitch = Float.parseFloat(parts[1]);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+                net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(parts[0].trim());
+                if (id == null) {
+                    continue;
+                }
+                net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.getOptional(id).ifPresent(se -> play(se, pitch));
+            }
+        }
     }
 
     public static final int GUARD_LEN = 56;
