@@ -603,14 +603,74 @@ def knight_charm(m, P):
     m.sphere(0.03, (0, 0, 0.64), P["white"])
 
 
+def _talisman_surface(u, v):
+    """お札の面：u は横（0〜1）、v は上から下（0〜1）。ゆるく反って、下がすこし丸まる"""
+    W, H, top = 0.30, 0.80, 0.94
+    x = (u - 0.5) * W * (1.0 - 0.04 * v)
+    z = top - v * H
+    y = 0.045 * math.sin(v * math.pi * 1.1) + 0.035 * ((u - 0.5) * 2) ** 2 - 0.05 * max(0.0, v - 0.8) ** 2 * 25
+    return Vector((x, y, z))
+
+
+def _talisman_patch(m, mat, u0, u1, v0, v1, lift, nu=10, nv=16, shape=None):
+    """お札の面の一部を、面にそって少し手前（-Y）に浮かせた薄い板にする"""
+    bm = bmesh.new()
+    grid = []
+    for i in range(nu + 1):
+        col = []
+        for j in range(nv + 1):
+            u = u0 + (u1 - u0) * i / nu
+            v = v0 + (v1 - v0) * j / nv
+            if shape:
+                u, v = shape(i / nu, j / nv)
+            p = _talisman_surface(u, v)
+            p.y -= lift
+            col.append(bm.verts.new(p))
+        grid.append(col)
+    for i in range(nu):
+        for j in range(nv):
+            bm.faces.new((grid[i][j], grid[i + 1][j], grid[i + 1][j + 1], grid[i][j + 1]))
+    ob = m._obj(bm, mat, angle=80)
+    sol = ob.modifiers.new("Solid", 'SOLIDIFY')
+    sol.thickness = 0.004
+    return ob
+
+
 def sabotage_talisman(m, P):
-    m.box((0.32, 0.015, 0.40), (0, 0, 0.62), P["paper"], bevel=0.003)
-    m.box((0.32, 0.015, 0.40), (0, -0.04, 0.24), P["paper"], rot=(12, 0, 0), bevel=0.003)
-    m.box((0.32, 0.02, 0.05), (0, 0, 0.84), P["red"], bevel=0.004)
-    for z in (0.70, 0.60, 0.50):
-        m.box((0.20, 0.006, 0.02), (0, -0.01, z), P["red"], bevel=0)
-    m.box((0.02, 0.006, 0.34), (0, -0.012, 0.58), P["red"], bevel=0)
-    m.torus(0.05, 0.008, (0, -0.06, 0.20), P["dark"], rot=(78, 0, 0), seg=16, ring=6)
+    """妨害のお札：ゆるく反った和紙に、朱の筆の線と印。上に赤い帯と房"""
+    # 和紙（角を少し丸める：上下の端をすぼめる）
+    def paper_shape(a, b):
+        r = 0.06
+        k = min(1.0, min(b, 1 - b) / r) if min(b, 1 - b) < r else 1.0
+        inset = (1 - math.sqrt(max(0.0, 1 - (1 - k) ** 2))) * 0.06
+        return inset + a * (1 - 2 * inset), b
+    ob = _talisman_patch(m, P["paper"], 0, 1, 0, 1, 0.0, nu=14, nv=28, shape=paper_shape)
+    ob.modifiers["Solid"].thickness = 0.008
+    sub = ob.modifiers.new("Smooth", 'SUBSURF')
+    sub.levels = 1
+    # 上の赤い帯
+    _talisman_patch(m, P["red"], 0.04, 0.96, 0.02, 0.09, 0.006)
+    # 筆の線（まん中の縦の線・横の線・はらい）
+    _talisman_patch(m, P["red"], 0.46, 0.54, 0.14, 0.72, 0.006, nu=2, nv=20,
+                    shape=lambda a, b: (0.46 + a * 0.08 + 0.02 * math.sin(b * 6), 0.14 + b * 0.58))
+    for vv, w in ((0.22, 0.30), (0.34, 0.24), (0.46, 0.34)):
+        _talisman_patch(m, P["red"], 0.5 - w, 0.5 + w, vv, vv + 0.035, 0.006, nu=12, nv=2,
+                        shape=lambda a, b, vv=vv, w=w: (0.5 - w + a * 2 * w, vv + b * 0.035 + 0.012 * math.sin(a * math.pi)))
+    _talisman_patch(m, P["red"], 0.30, 0.38, 0.55, 0.70, 0.006, nu=2, nv=10,
+                    shape=lambda a, b: (0.36 - b * 0.12 + a * 0.06, 0.55 + b * 0.15))
+    _talisman_patch(m, P["red"], 0.62, 0.70, 0.55, 0.70, 0.006, nu=2, nv=10,
+                    shape=lambda a, b: (0.64 + b * 0.12 + a * 0.06, 0.55 + b * 0.15))
+    # 朱の印（丸）
+    _talisman_patch(m, P["red"], 0, 1, 0, 1, 0.006, nu=16, nv=4,
+                    shape=lambda a, b: (0.5 + math.cos(a * math.pi * 2) * 0.12 * b, 0.84 + math.sin(a * math.pi * 2) * 0.04 * b))
+    # ひもと房
+    top = _talisman_surface(0.5, 0.0)
+    m.tube([(0, top.y, top.z), (0.03, top.y, top.z + 0.06), (0, top.y, top.z + 0.11), (-0.03, top.y, top.z + 0.06),
+            (0, top.y, top.z)], 0.008, P["red"])
+    for k in range(5):
+        a = (k - 2) * 0.012
+        m.tube([(a * 0.3, top.y - 0.012, top.z - 0.01), (a, top.y - 0.03, top.z - 0.08), (a * 1.6, top.y - 0.035, top.z - 0.15)],
+               0.0045, P["gold"])
 
 
 def detective_lens(m, P):

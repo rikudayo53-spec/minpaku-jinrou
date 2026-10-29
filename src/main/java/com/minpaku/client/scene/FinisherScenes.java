@@ -237,7 +237,8 @@ public final class FinisherScenes {
                 if (id == null) {
                     continue;
                 }
-                net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.getOptional(id).ifPresent(se -> play(se, pitch));
+                final float p = pitch;
+                net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.getOptional(id).ifPresent(se -> play(se, p));
             }
         }
     }
