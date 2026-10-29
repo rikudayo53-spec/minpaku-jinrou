@@ -4,7 +4,8 @@
   "package": "com.minpaku.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "client.FogMixin"
+    "client.FogMixin",
+    "client.GunPoseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

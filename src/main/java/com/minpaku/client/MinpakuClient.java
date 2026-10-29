@@ -119,7 +119,7 @@ public class MinpakuClient implements ClientModInitializer {
     }
 
     /** 役職のアイテムは、ゲーム中はその役職の人の画面にだけ描く（ほかの人には手ぶらに見える） */
-    private static boolean roleItemVisible(net.minecraft.world.item.Item item) {
+    public static boolean roleItemVisible(net.minecraft.world.item.Item item) {
         if (!ClientGame.inGame() || item == com.minpaku.registry.ModItems.KEY) {
             return true;
         }
