@@ -42,18 +42,21 @@ public final class GameHud {
         float pt = delta.getGameTimeDeltaPartialTick(false);
 
         if (ClientGame.inGame() && !(mc.screen instanceof MeetingScreen)) {
-            Role role = ClientGame.role();
-            if (role != null) {
-                roleTag(g, role, s);
-                if (LEDGER_KEY != null && LEDGER_KEY.isDown()) {
+            // ふだんは何も出さない。［J］を押しているあいだだけ全部出す（作業中の進み具合だけは常に出す）
+            boolean show = LEDGER_KEY != null && LEDGER_KEY.isDown();
+            if (show) {
+                Role role = ClientGame.role();
+                if (role != null) {
+                    roleTag(g, role, s);
                     ledger(g, s);
-                } else {
-                    nextTask(g, s);
+                    abilities(g, role, s, w, h);
                 }
-                abilities(g, role, s, w, h);
+                topBar(g, s, w);
+                center(g, s, w, h, mc);
+            } else if (s.activeType() >= 0) {
+                Ui.ring(g, w / 2f, h / 2f, 13, 10, Mth.clamp(s.activeProgress(), 0f, 1f), 0xFFFFC94A, 0x66000000);
+                Ui.sansShadow(g, ClientGame.taskName(s.activeType()), w / 2f, h / 2f + 17, 0xFFFFE08A, 0.85f, 0);
             }
-            topBar(g, s, w);
-            center(g, s, w, h, mc);
         }
         // 井戸端会議：画面を閉じて歩いているとき
         if (ClientGame.state.phase() == 2 && ClientGame.currentMeeting != null && mc.screen == null) {

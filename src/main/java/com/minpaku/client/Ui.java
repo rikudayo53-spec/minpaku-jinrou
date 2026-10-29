@@ -20,8 +20,9 @@ import java.util.UUID;
 
 /** 民泊人狼の画面を描く道具（同梱フォント・和紙パネル・ハンコ・丸いゲージなど） */
 public final class Ui {
-    public static final ResourceLocation SANS = MinpakuJinrou.id("sans");
-    public static final ResourceLocation SERIF = MinpakuJinrou.id("serif");
+    // 文字はマイクラの標準フォント（以前は独自の ttf：minpaku:sans / minpaku:serif）
+    public static final ResourceLocation SANS = Style.DEFAULT_FONT;
+    public static final ResourceLocation SERIF = Style.DEFAULT_FONT;
 
     // 色
     public static final int INK = 0xFF2B1D12;
