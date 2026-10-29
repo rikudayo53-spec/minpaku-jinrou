@@ -2239,6 +2239,8 @@ MATS.update({
     "janome_r": Mat((176, 36, 32), "paper", accent=(150, 26, 24), noise=5),
     "janome_b": Mat((44, 62, 116), "paper", accent=(30, 44, 90), noise=5),
     "janome_y": Mat((214, 170, 70), "paper", accent=(184, 140, 50), noise=5),
+    "kasa_black": Mat((36, 38, 44), "stipple", noise=4),
+    "handle_wood": Mat((120, 70, 36), "metal", noise=5),
 })
 
 
@@ -2364,19 +2366,46 @@ def kasa_tate():
         x, z = 8 + 4.55 * math.cos(a), 8 + 4.55 * math.sin(a)
         m.cube("drip", (x - 0.3, 6.0 + (k % 3) * 0.6, z - 0.3), (x + 0.3, 8.6, z + 0.3), "glaze_g")
     m.cyl("pot_inside", 8, 8, 10.15, 10.25, 3.6, "deep_dark", sides=6)
-    # 蛇の目傘：すぼめた傘（下が細く上が太い）、骨の筋、まとめ紐、竹の柄と石突き
-    umbs = ((-1.4, -1.0, -8, 4, "janome_r"), (1.4, 0.6, 10, -6, "janome_b"), (-0.2, 1.8, 2, 8, "janome_y"))
-    for k, (dx, dz, rz, rx, mat) in enumerate(umbs):
+    # すぼめた傘を3本：先（石突き）を壺に入れ、柄が上。布はひだになって巻かれ、留めバンドでとめる
+    umbs = ((-1.6, -1.0, (6, 0, -9), "kasa_black", "crook"), (1.6, -0.4, (-4, 0, 10), "janome_b", "crook"),
+            (0.0, 1.8, (-9, 0, 2), "janome_r", "wagasa"))
+    for k, (dx, dz, rot, mat, kind) in enumerate(umbs):
         cx, cz = 8 + dx, 8 + dz
-        r = dict(rot=[rx, 0, rz], pivot=[cx, 1.0, cz])
-        m.cube("ishizuki", (cx - 0.25, 1.0, cz - 0.25), (cx + 0.25, 3.0, cz + 0.25), "hinoki_dark", **r)
-        for (ya, yb, rr) in ((3.0, 6.0, 0.7), (6.0, 11.0, 1.1), (11.0, 16.0, 1.4), (16.0, 19.0, 1.2), (19.0, 20.0, 0.7)):
-            m.cube("kasa", (cx - rr, ya, cz - rr), (cx + rr, yb, cz + rr), mat, **r)
-            m.cube("kasa", (cx - rr * 0.7, ya, cz - rr * 1.2), (cx + rr * 0.7, yb, cz + rr * 1.2), mat, **r)
-        m.cube("hone", (cx - 0.05, 6.0, cz - 1.42), (cx + 0.05, 19.0, cz - 1.3), "plate", **r)
-        m.cube("himo", (cx - 1.5, 13.0, cz - 1.5), (cx + 1.5, 13.5, cz + 1.5), "red_cloth", **r)
-        m.cube("e", (cx - 0.3, 20.0, cz - 0.3), (cx + 0.3, 25.0, cz + 0.3), "bamboo", **r)
-        m.cube("e_tip", (cx - 0.4, 25.0, cz - 0.4), (cx + 0.4, 25.8, cz + 0.4), "hinoki_dark", **r)
+
+        def Y(v):
+            return 1.0 + (v - 1.0) * 1.45
+        g = m.group(f"umb{k}", (cx, 1.0, cz), rot=rot)
+        m.cyl("ishizuki", cx, cz, 1.0, Y(2.8), 0.25, "steel_light" if kind == "crook" else "hinoki_dark", sides=2, group=g)
+        # 布：ひだ（放射状の薄い板）＋芯。下が細く、まん中がふくらみ、上で骨が集まって細くなる
+        prof = ((2.8, 4.0, 0.55), (4.0, 6.5, 1.0), (6.5, 10.5, 1.45), (10.5, 14.0, 1.35), (14.0, 16.4, 0.95), (16.4, 17.6, 0.55))
+        for (ya, yb, r) in prof:
+            m.cyl("canopy", cx, cz, Y(ya), Y(yb), r * 0.62, mat, sides=3, group=g)
+            for p_ in range(8):
+                ang = p_ * 45 + (12 if kind == "wagasa" else 0)
+                m.cube("pleat", (cx, Y(ya), cz - 0.17), (cx + r, Y(yb), cz + 0.17), mat, rot=[0, ang, 0], pivot=[cx, Y(ya), cz], group=g)
+        if kind == "wagasa":
+            # 和傘：蛇の目の白い帯、竹の骨が上に出る、頭の飾り
+            m.cyl("janome", cx, cz, Y(9.0), Y(9.7), 1.5, "plate", sides=3, group=g)
+            for p_ in range(8):
+                m.cube("hone", (cx + 0.5, Y(17.6), cz - 0.08), (cx + 0.62, Y(19.2), cz + 0.08), "bamboo", rot=[0, p_ * 45, 0],
+                       pivot=[cx, Y(17.6), cz], group=g)
+            m.cyl("rokuro", cx, cz, Y(18.8), Y(18.8) + 1.0, 0.7, "hinoki", sides=3, group=g)
+            m.cyl("e", cx, cz, Y(18.8) + 1.0, Y(18.8) + 6.8, 0.32, "bamboo", sides=2, group=g)
+            for y in (Y(18.8) + 4.4, Y(18.8) + 5.2, Y(18.8) + 6.0):
+                m.cyl("tou", cx, cz, y, y + 0.5, 0.42, "rope", sides=2, group=g)
+            m.cyl("e_end", cx, cz, Y(18.8) + 6.8, Y(18.8) + 7.4, 0.45, "hinoki_dark", sides=2, group=g)
+            m.cube("himo", (cx - 0.15, Y(18.8) + 2.2, cz - 0.15), (cx + 0.15, Y(18.8) + 6.8, cz + 0.15), "red_cloth", rot=[0, 0, 12],
+                   pivot=[cx, Y(18.8) + 6.8, cz], group=g)
+        else:
+            # 洋傘：留めバンドとボタン、金属の軸、曲がった持ち手
+            m.cyl("band", cx, cz, Y(11.6), Y(11.6) + 0.8, 1.5, mat, sides=3, group=g)
+            m.cube("button", (cx - 0.3, Y(11.6) + 0.1, cz - 1.75), (cx + 0.3, Y(11.6) + 0.7, cz - 1.45), "steel_light", group=g)
+            m.cyl("runner", cx, cz, Y(17.6), Y(17.6) + 0.8, 0.45, "steel_light", sides=2, group=g)
+            m.cyl("shaft", cx, cz, Y(17.6) + 0.8, Y(17.6) + 5.6, 0.22, "steel_light", sides=2, group=g)
+            hx = -1 if k == 0 else 1
+            t = Y(17.6) + 5.6
+            bent(m, "handle", [(cx, t, cz), (cx, t + 1.8, cz), (cx + 0.5 * hx, t + 2.9, cz), (cx + 1.5 * hx, t + 3.2, cz),
+                               (cx + 2.3 * hx, t + 2.6, cz), (cx + 2.5 * hx, t + 1.4, cz)], 0.7, "handle_wood", group=g)
     return m
 
 
