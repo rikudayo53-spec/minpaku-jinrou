@@ -17,6 +17,46 @@ import java.util.TreeSet;
 public final class MapView {
     private int floor;
     private int x, y, w, h;
+    /** true = プレイ中（今いる場所を出す）、false = 会議中（会議の前にいた場所） */
+    private final boolean live;
+    private boolean floorPicked;
+
+    public MapView() {
+        this(false);
+    }
+
+    public MapView(boolean live) {
+        this.live = live;
+    }
+
+    /** 今まさに直さないといけない設備か */
+    private static boolean urgent(ClientGame.MapFix f) {
+        Packets.State s = ClientGame.state;
+        return switch (f.type()) {
+            case BREAKER -> s.blackout();
+            case GAS_VALVE -> s.gasTicks() >= 0 && !s.valveFixed();
+            case BOILER -> s.gasTicks() >= 0 && !s.boilerFixed();
+            default -> false;
+        };
+    }
+
+    private static String fixName(com.minpaku.game.MarkerType t) {
+        return switch (t) {
+            case BREAKER -> "配電盤";
+            case GAS_VALVE -> "元栓";
+            case BOILER -> "ボイラー";
+            default -> "呼び鈴";
+        };
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private Vec3 me() {
+        if (live) {
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            return mc.player != null ? mc.player.position() : null;
+        }
+        return ClientGame.lastPlayPos;
+    }
 
     /** 階の一覧（部屋の床の高さ） */
     private static List<Integer> floors() {
@@ -59,11 +99,34 @@ public final class MapView {
             Ui.sans(g, "見取り図がありません（基本マップを建てると出ます）", x + w / 2f, y + h / 2f, Ui.INK_SOFT, 1f, 0);
             return;
         }
+        if (!floorPicked) {
+            // 最初は、直す場所があればその階、なければ自分のいる階
+            floorPicked = true;
+            Vec3 m0 = me();
+            if (m0 != null) {
+                floor = taskFloor((int) Math.floor(m0.y), fl);
+            }
+            for (ClientGame.MapFix f : ClientGame.fixes) {
+                if (urgent(f)) {
+                    floor = taskFloor(f.pos().getY(), fl);
+                    break;
+                }
+            }
+        }
         floor = Math.min(floor, fl.size() - 1);
+        float pulse = (float) (Math.sin(System.currentTimeMillis() / 160.0) * 0.5 + 0.5);
         // 階のボタン
         for (int i = 0; i < fl.size(); i++) {
             boolean hv = inside(mouseX, mouseY, x + 110 + i * 52, y + 8, 48, 16);
             Ui.button(g, x + 110 + i * 52, y + 8, 48, 16, (i + 1) + "階", i == floor, hv, true, 0.85f);
+            // ほかの階に直す場所があれば「！」
+            for (ClientGame.MapFix f : ClientGame.fixes) {
+                if (urgent(f) && taskFloor(f.pos().getY(), fl) == i && i != floor) {
+                    Ui.disc(g, x + 110 + i * 52 + 46, y + 9, 5f, Ui.alpha(0xFFE53935, 0.6f + 0.4f * pulse));
+                    Ui.sans(g, "!", x + 110 + i * 52 + 46, y + 5, 0xFFFFFFFF, 0.75f, 0);
+                    break;
+                }
+            }
         }
         // 範囲（全部の部屋の外枠）
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
@@ -116,13 +179,48 @@ public final class MapView {
             Ui.disc(g, px, pz, 3.5f, t.done() ? 0xFF3FA34D : 0xFFFFC21F);
             Ui.disc(g, px, pz, 1.6f, 0xFF2B1D12);
         }
-        // 会議の前にいた場所
-        Vec3 me = ClientGame.lastPlayPos;
+        // 設備（呼び鈴・妨害を直す場所）
+        boolean anyUrgent = false;
+        for (ClientGame.MapFix f : ClientGame.fixes) {
+            if (taskFloor(f.pos().getY(), fl) != floor) {
+                anyUrgent |= urgent(f);
+                continue;
+            }
+            float fx = ox + (f.pos().getX() + 0.5f - minX) * scale;
+            float fz = oz + (f.pos().getZ() + 0.5f - minZ) * scale;
+            if (urgent(f)) {
+                anyUrgent = true;
+                float r = 7f + pulse * 5f;
+                Ui.disc(g, fx, fz, r, Ui.alpha(0xFFE53935, 0.35f * (1f - pulse) + 0.15f));
+                Ui.disc(g, fx, fz, 5f, 0xFFE53935);
+                Ui.sans(g, "!", fx, fz - 4, 0xFFFFFFFF, 0.8f, 0);
+                Ui.sansShadow(g, fixName(f.type()) + "で直す", fx, fz - 17, 0xFFFFE08A, 0.8f, 0);
+            } else if (f.type() == com.minpaku.game.MarkerType.BELL) {
+                Ui.disc(g, fx, fz, 3.5f, 0xFFD4A017);
+                Ui.disc(g, fx, fz, 1.5f, 0xFF5A3A00);
+            } else {
+                g.fill((int) fx - 2, (int) fz - 2, (int) fx + 2, (int) fz + 2, 0xFF6E6E6E);
+            }
+        }
+        // 自分のいる場所（会議中は会議の前にいた場所）
+        Vec3 me = me();
         if (me != null && taskFloor((int) Math.floor(me.y), fl) == floor) {
             float px = ox + (float) (me.x - minX) * scale;
             float pz = oz + (float) (me.z - minZ) * scale;
             Ui.disc(g, px, pz, 5f, 0xFFC8372D);
             Ui.disc(g, px, pz, 2.5f, 0xFFFFFFFF);
+            if (live) {
+                // 向いている方向の小さな矢印
+                var mc = net.minecraft.client.Minecraft.getInstance();
+                if (mc.player != null) {
+                    double yaw = Math.toRadians(mc.player.getYRot());
+                    float dx = (float) -Math.sin(yaw);
+                    float dz = (float) Math.cos(yaw);
+                    for (int k = 1; k <= 3; k++) {
+                        Ui.disc(g, px + dx * (5 + k * 2.5f), pz + dz * (5 + k * 2.5f), 1.8f - k * 0.3f, 0xFFC8372D);
+                    }
+                }
+            }
             Ui.sans(g, "あなた", px, pz - 14, 0xFFC8372D, 0.75f, 0);
         }
         // 凡例
@@ -132,7 +230,16 @@ public final class MapView {
         Ui.disc(g, x + 100, ly + 4, 3.5f, 0xFF3FA34D);
         Ui.sans(g, "終わったタスク", x + 107, ly, Ui.INK_SOFT, 0.75f, -1);
         Ui.disc(g, x + 190, ly + 4, 4f, 0xFFC8372D);
-        Ui.sans(g, "会議の前にいた場所", x + 197, ly, Ui.INK_SOFT, 0.75f, -1);
+        Ui.sans(g, live ? "いまの場所" : "会議の前にいた場所", x + 197, ly, Ui.INK_SOFT, 0.75f, -1);
+        Ui.disc(g, x + 290, ly + 4, 3.5f, 0xFFD4A017);
+        Ui.sans(g, "呼び鈴", x + 297, ly, Ui.INK_SOFT, 0.75f, -1);
+        Ui.disc(g, x + 340, ly + 4, 4f, 0xFFE53935);
+        Ui.sans(g, "妨害を直す場所", x + 347, ly, Ui.INK_SOFT, 0.75f, -1);
+        if (anyUrgent) {
+            Packets.State s = ClientGame.state;
+            String what = s.blackout() ? "停電中：配電盤へ！" : "ガス漏れ：元栓とボイラーへ！";
+            Ui.sans(g, what, x + w - 12, y + h - 30, Ui.alpha(0xFFE53935, 0.7f + 0.3f * pulse), 0.85f, 1);
+        }
     }
 
     /** ブロックの高さ（タスクの場所など）から階 */

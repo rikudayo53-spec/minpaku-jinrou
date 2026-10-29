@@ -41,5 +41,6 @@
  "block.minpaku.well": "Well (Task)",
  "block.minpaku.shogi_board": "Shogi Board (Task)",
  "block.minpaku.kakejiku": "Hanging Scroll (Task)",
- "key.minpaku.vote": "Open voting screen (free meeting)"
+ "key.minpaku.vote": "Open voting screen (free meeting)",
+ "key.minpaku.map": "Open map"
 }

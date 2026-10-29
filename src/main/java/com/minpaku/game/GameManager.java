@@ -2205,6 +2205,17 @@ public final class GameManager {
                     .append('|').append(r.x2()).append('|').append(r.y2()).append('|').append(r.z2());
         }
         send(p, new Packets.Info("rooms", sb.toString()));
+        // 妨害を直す場所と呼び鈴（見取り図に出す）
+        StringBuilder fx = new StringBuilder();
+        for (MarkerType t : new MarkerType[]{MarkerType.BREAKER, MarkerType.GAS_VALVE, MarkerType.BOILER, MarkerType.BELL}) {
+            for (net.minecraft.core.BlockPos pos : map().get(t)) {
+                if (fx.length() > 0) {
+                    fx.append(';');
+                }
+                fx.append(t.name()).append('|').append(pos.getX()).append('|').append(pos.getY()).append('|').append(pos.getZ());
+            }
+        }
+        send(p, new Packets.Info("fixes", fx.toString()));
     }
 
     public void sendBounds(ServerPlayer p) {

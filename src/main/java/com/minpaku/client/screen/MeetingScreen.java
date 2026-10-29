@@ -263,7 +263,41 @@ public class MeetingScreen extends Screen {
     }
 
     private int cardY(int i) {
-        return py + 52 + (i / 2) * (cardH + 5);
+        return py + 52 + (i / 2) * (cardH + 5) - Math.round(scroll);
+    }
+
+    // 参加者が多いときはスクロール（スキップの行は一番下に固定）
+    private float scroll;
+
+    private int listTop() {
+        return py + 50;
+    }
+
+    private int listBottom() {
+        return py + ph - 32;
+    }
+
+    private int skipY() {
+        return py + ph - 28;
+    }
+
+    private float maxScroll() {
+        int rows = (meeting.participants().size() + 1) / 2;
+        int content = rows * (cardH + 5) + 2;
+        return Math.max(0, content - (listBottom() - listTop()));
+    }
+
+    private boolean inList(double my) {
+        return my >= listTop() && my < listBottom();
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+        if (mapView == null && mx < chatX && maxScroll() > 0) {
+            scroll = Mth.clamp(scroll - (float) sy * 18f, 0f, maxScroll());
+            return true;
+        }
+        return super.mouseScrolled(mx, my, sx, sy);
     }
 
     private void table(GuiGraphics g, int mouseX, int mouseY) {
@@ -308,13 +342,34 @@ public class MeetingScreen extends Screen {
 
         // 参加者のカード
         List<Packets.Participant> ps = meeting.participants();
+        scroll = Mth.clamp(scroll, 0f, maxScroll());
+        int lmx = inList(mouseY) ? mouseX : -9999;
+        g.enableScissor(px + 8, listTop(), chatX - 4, listBottom());
         for (int i = 0; i < ps.size(); i++) {
-            card(g, ps.get(i), cardX(i), cardY(i), mouseX, mouseY);
+            int cy = cardY(i);
+            if (cy + cardH < listTop() || cy > listBottom()) {
+                continue;
+            }
+            card(g, ps.get(i), cardX(i), cy, lmx, mouseY);
+        }
+        g.disableScissor();
+        if (maxScroll() > 0) {
+            // スクロールバー
+            int bx = chatX - 8;
+            int top = listTop();
+            int hgt = listBottom() - top;
+            float frac = hgt / (hgt + maxScroll());
+            int bh = Math.max(12, (int) (hgt * frac));
+            int byy = top + (int) ((hgt - bh) * (scroll / maxScroll()));
+            g.fill(bx, top, bx + 3, top + hgt, 0x40000000);
+            g.fill(bx, byy, bx + 3, byy + bh, 0xFF8D6E4A);
+            if (scroll < maxScroll() - 1) {
+                Ui.sans(g, "▼ ホイールで下へ", px + (chatX - px) / 2f, listBottom() - 9, Ui.alpha(Ui.INK_SOFT, 0.8f), 0.7f, 0);
+            }
         }
 
-        // スキップ
-        int rows = (ps.size() + 1) / 2;
-        int by = cardY(rows * 2) + 2;
+        // スキップ（一番下に固定）
+        int by = skipY();
         boolean canPress = votingOpen() && canVote() && !myVoteSent;
         if (isGuesser() && age >= SPLASH) {
             boolean hg = inside(mouseX, mouseY, px + pw - chatW - 112, by, 92, 18);
@@ -531,8 +586,7 @@ public class MeetingScreen extends Screen {
             return true;
         }
         if (isGuesser() && age >= SPLASH) {
-            int rows0 = (ps.size() + 1) / 2;
-            int by0 = cardY(rows0 * 2) + 2;
+            int by0 = skipY();
             if (inside(mx, my, px + pw - chatW - 112, by0, 92, 18)) {
                 guessMode = !guessMode;
                 ClientGame.play(SoundEvents.UI_BUTTON_CLICK, guessMode ? 0.8f : 1.2f);
@@ -540,7 +594,7 @@ public class MeetingScreen extends Screen {
             }
             if (guessMode) {
                 for (int i = 0; i < ps.size(); i++) {
-                    if (inside(mx, my, cardX(i), cardY(i), cardW, cardH) && canGuess(ps.get(i))) {
+                    if (inList(my) && inside(mx, my, cardX(i), cardY(i), cardW, cardH) && canGuess(ps.get(i))) {
                         guessTarget = ps.get(i).id();
                         ClientGame.play(SoundEvents.UI_BUTTON_CLICK, 1.0f);
                         return true;
@@ -552,7 +606,7 @@ public class MeetingScreen extends Screen {
         if (age < SPLASH || result != null || !votingOpen() || !canVote() || myVoteSent) {
             return super.mouseClicked(mx, my, button);
         }
-        for (int i = 0; i < ps.size(); i++) {
+        for (int i = 0; i < ps.size() && inList(my); i++) {
             Packets.Participant p = ps.get(i);
             int x = cardX(i);
             int y = cardY(i);
@@ -572,8 +626,7 @@ public class MeetingScreen extends Screen {
                 return true;
             }
         }
-        int rows = (ps.size() + 1) / 2;
-        int by = cardY(rows * 2) + 2;
+        int by = skipY();
         if (inside(mx, my, px + 12, by, 70, 18)) {
             sendVote(Packets.NONE);
             return true;

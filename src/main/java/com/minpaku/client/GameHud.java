@@ -25,6 +25,7 @@ import net.minecraft.world.entity.player.Player;
 public final class GameHud {
     public static KeyMapping LEDGER_KEY;
     public static KeyMapping VOTE_KEY;
+    public static KeyMapping MAP_KEY;
     public static KeyMapping KILL_KEY;
 
     private GameHud() {
@@ -207,6 +208,7 @@ public final class GameHud {
             bg = 0xCC7A5200;
         }
         if (alert != null) {
+            alert += "　（" + (MAP_KEY != null ? MAP_KEY.getTranslatedKeyMessage().getString() : "M") + " で場所を見る）";
             int tw = (int) (Ui.width(Ui.sans(alert)) * 0.85f) + 16;
             int ax = w / 2 - tw / 2;
             g.fill(ax + 3, 22, ax + tw - 3, 34, bg);

@@ -52,6 +52,8 @@ public class MinpakuClient implements ClientModInitializer {
                 new net.minecraft.client.KeyMapping("key.minpaku.kill", org.lwjgl.glfw.GLFW.GLFW_KEY_R, "key.categories.minpaku"));
         GameHud.VOTE_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
                 new net.minecraft.client.KeyMapping("key.minpaku.vote", org.lwjgl.glfw.GLFW.GLFW_KEY_V, "key.categories.minpaku"));
+        GameHud.MAP_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
+                new net.minecraft.client.KeyMapping("key.minpaku.map", org.lwjgl.glfw.GLFW.GLFW_KEY_M, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
         WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.RoleTags::render);
 
@@ -302,6 +304,13 @@ public class MinpakuClient implements ClientModInitializer {
         while (GameHud.VOTE_KEY != null && GameHud.VOTE_KEY.consumeClick()) {
             if (cm != null && mc.screen == null && ClientGame.state.phase() == 2) {
                 mc.setScreen(cm);
+            }
+        }
+        // 見取り図（プレイ中も M で開ける）
+        while (GameHud.MAP_KEY != null && GameHud.MAP_KEY.consumeClick()) {
+            if (mc.screen == null && mc.player != null && !ClientGame.rooms.isEmpty()) {
+                mc.setScreen(new com.minpaku.client.screen.MapScreen());
+                ClientGame.play(net.minecraft.sounds.SoundEvents.BOOK_PAGE_TURN, 1.0f);
             }
         }
         Previews.tick();

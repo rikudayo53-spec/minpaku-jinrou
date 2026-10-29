@@ -41,5 +41,6 @@
  "block.minpaku.well": "井戸（タスク）",
  "block.minpaku.shogi_board": "将棋盤（タスク）",
  "block.minpaku.kakejiku": "掛け軸（タスク）",
- "key.minpaku.vote": "会議の投票画面を開く（井戸端会議）"
+ "key.minpaku.vote": "会議の投票画面を開く（井戸端会議）",
+ "key.minpaku.map": "見取り図（マップ）を開く"
 }

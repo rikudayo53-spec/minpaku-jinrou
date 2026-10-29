@@ -66,6 +66,12 @@ public final class ClientGame {
     }
 
     public static final java.util.List<MapRoom> rooms = new java.util.ArrayList<>();
+
+    /** 見取り図に出す設備（配電盤・元栓・ボイラー・呼び鈴） */
+    public record MapFix(com.minpaku.game.MarkerType type, net.minecraft.core.BlockPos pos) {
+    }
+
+    public static final java.util.List<MapFix> fixes = new java.util.ArrayList<>();
     /** 会議の前（ゲーム中）に最後にいた場所 */
     @Nullable
     public static net.minecraft.world.phys.Vec3 lastPlayPos;
@@ -101,6 +107,19 @@ public final class ClientGame {
                             rooms.add(new MapRoom(v[0], Integer.parseInt(v[1]), Integer.parseInt(v[2]), Integer.parseInt(v[3]),
                                     Integer.parseInt(v[4]), Integer.parseInt(v[5]), Integer.parseInt(v[6])));
                         } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
+            case "fixes" -> {
+                fixes.clear();
+                for (String part : p.data().split(";")) {
+                    String[] v = part.split("\\|");
+                    if (v.length == 4) {
+                        try {
+                            fixes.add(new MapFix(com.minpaku.game.MarkerType.valueOf(v[0]),
+                                    new net.minecraft.core.BlockPos(Integer.parseInt(v[1]), Integer.parseInt(v[2]), Integer.parseInt(v[3]))));
+                        } catch (IllegalArgumentException ignored) {
                         }
                     }
                 }
