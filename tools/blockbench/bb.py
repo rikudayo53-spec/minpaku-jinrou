@@ -38,7 +38,15 @@ MATERIAL_COLORS = {
     "light_blue_terracotta": (113, 108, 137), "green_terracotta": (76, 83, 42), "soul_fire_0": (80, 220, 230),
     "glow_soul_fire_0": (80, 220, 230), "glow_shroomlight": (240, 146, 70), "white_terracotta": (209, 178, 161),
     "purple_wool": (122, 42, 172), "glow_yellow_concrete": (240, 220, 40), "glow_purple_concrete": (180, 90, 255),
-    "magenta_wool": (189, 68, 179),
+    "magenta_wool": (189, 68, 179), "red_concrete_powder": (168, 54, 50), "brown_wool": (114, 71, 40),
+    "white_wool_": (234, 236, 236), "glow_white_concrete": (240, 240, 240), "glow_red_concrete": (230, 30, 30),
+    "light_gray_concrete": (125, 125, 115), "stripped_spruce_log": (115, 89, 52), "calcite": (223, 224, 220),
+    "paper": (240, 232, 200), "birch_log": (216, 215, 210), "cyan_concrete": (21, 119, 136), "lime_concrete": (94, 168, 24),
+    "orange_wool": (240, 118, 19), "light_gray_wool": (142, 142, 134), "glow_light_blue_concrete": (120, 210, 255),
+    "glow_cyan_concrete": (80, 230, 230), "glow_pink_concrete": (255, 130, 200), "glow_orange_concrete": (255, 150, 40),
+    "terracotta": (152, 94, 67), "smooth_stone": (158, 158, 158), "quartz_block_side": (235, 229, 222),
+    "glow_magenta_concrete": (220, 80, 220), "glow_yellow_concrete_": (240, 220, 40), "mud_bricks": (137, 103, 79),
+    "packed_mud": (142, 106, 79), "bamboo_planks": (194, 173, 80), "dried_kelp_side": (50, 59, 37),
 }
 
 
@@ -136,11 +144,17 @@ class Project:
         self.groups[name] = g
         return g
 
-    def cube(self, group, name, frm, to, texture, box_uv=None, inflate=0.0):
-        """立方体。frm/to はピクセル（Blockbench の座標）。box_uv=(u,v) ならスキンの箱 UV"""
+    def cube(self, group, name, frm, to, texture, box_uv=None, inflate=0.0, rotation=None, pivot=None):
+        """立方体。frm/to はピクセル（Blockbench の座標）。box_uv=(u,v) ならスキンの箱 UV。
+        rotation=(x,y,z) 度・pivot=回転の中心（なければ立方体の真ん中）"""
         g = self.groups[group] if isinstance(group, str) else group
+        if isinstance(texture, str):
+            texture = self.mat(texture)
+        if pivot is None:
+            pivot = [(a + b) / 2 for a, b in zip(frm, to)] if rotation else g.origin
         e = {"name": name, "from": list(map(float, frm)), "to": list(map(float, to)), "texture": texture,
-             "box_uv": box_uv, "inflate": inflate, "uuid": uid(), "origin": list(g.origin)}
+             "box_uv": box_uv, "inflate": inflate, "uuid": uid(), "origin": [float(v) for v in pivot],
+             "rotation": [float(v) for v in (rotation or (0, 0, 0))]}
         self.elements.append(e)
         g.cubes.append(e)
         return e
@@ -231,7 +245,7 @@ class Project:
             uvs = self.face_uvs(e)
             el = {"name": e["name"], "box_uv": bool(e["box_uv"]), "rescale": False, "locked": False, "render_order": "default",
                   "allow_mirror_modeling": True, "from": e["from"], "to": e["to"], "autouv": 0, "color": 0,
-                  "inflate": e["inflate"], "origin": e["origin"], "faces": {k: {"uv": v, "texture": e["texture"]} for k, v in uvs.items()},
+                  "inflate": e["inflate"], "origin": e["origin"], "rotation": e["rotation"], "faces": {k: {"uv": v, "texture": e["texture"]} for k, v in uvs.items()},
                   "type": "cube", "uuid": e["uuid"]}
             if e["box_uv"]:
                 el["uv_offset"] = list(e["box_uv"])

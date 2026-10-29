@@ -143,6 +143,11 @@ public final class FinisherScenes {
             if (v != null) {
                 c.victimPos.set(v);
             }
+            // 当たった所（血しぶき）は胸：首の付け根から少し下（寝ていても胸になる）
+            Vector3f neck = p.origin("victim_body", m);
+            if (neck != null) {
+                c.victimPos.set(neck.x, neck.y - 1.55f, neck.z);
+            }
             final float push = c.push;
             final float fall = c.fall;
             com.minpaku.client.bb.BbRenderer.Pose drawn = p;
