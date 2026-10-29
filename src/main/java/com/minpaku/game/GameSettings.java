@@ -43,6 +43,8 @@ public final class GameSettings {
     static {
         // マップ（建てるときに使う。小さい順）
         DEFS.add(new Def("map", "建てるマップ", "マップ", Kind.CHOICE, 1, Plans.ALL.size(), 1, 3, Plans.labels()));
+        DEFS.add(new Def("evil_god", "祠の悪神（役職シャッフル）", "マップ", Kind.CHOICE, 1, 3, 1, 2,
+                new String[]{"起きない", "ときどき起きる", "かならず起きる"}));
         // 役職の人数（Role に登録した役職ぶん自動で作る）
         for (Role role : Role.special()) {
             boolean basic = role == Role.WOLF || role == Role.SEER || role == Role.KNIGHT || role == Role.MEDIUM;
@@ -54,7 +56,10 @@ public final class GameSettings {
             DEFS.add(new Def("role." + role.id, role.name + "の人数", "役職", Kind.NUMBER, min, max, step, def));
         }
         DEFS.add(new Def("itamae_uses", "板前のおにぎり（会議ごと）", "能力", Kind.NUMBER, 0, 3, 1, 1));
-        DEFS.add(new Def("okami_cooldown", "女将がふすまを閉める間隔", "能力", Kind.SECONDS, 15, 90, 5, 30));
+        DEFS.add(new Def("guesser_shots", "ゲッサーが当てられる回数", "能力", Kind.NUMBER, 1, 5, 1, 3));
+        DEFS.add(new Def("buttoner_uses", "ボタナーの遠隔招集の回数", "能力", Kind.NUMBER, 1, 3, 1, 1));
+        DEFS.add(new Def("sheriff_shots", "シェリフの弾の数", "能力", Kind.NUMBER, 1, 5, 1, 2));
+        DEFS.add(new Def("sheriff_neutral", "シェリフが第三陣営も撃てる", "能力", Kind.TOGGLE, 0, 1, 1, 0));
         DEFS.add(new Def("seer_uses", "占いの回数（会議ごと）", "能力", Kind.NUMBER, 0, 5, 1, 1));
         DEFS.add(new Def("knight_uses", "騎士が守れる回数（会議ごと）", "能力", Kind.NUMBER, 0, 5, 1, 1));
         DEFS.add(new Def("medium_result", "霊媒師が追放結果を知れる", "能力", Kind.TOGGLE, 0, 1, 1, 1));

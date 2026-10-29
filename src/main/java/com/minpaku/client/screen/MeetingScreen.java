@@ -40,6 +40,14 @@ public class MeetingScreen extends Screen {
     private Packets.MeetingResult result;
     private int resultAge;
     private EditBox input;
+    /** 会議中に倒れた人（ゲッサー） */
+    private final Set<UUID> deadNow = new HashSet<>();
+    private String deathText = "";
+    private int deathAge = 999;
+    /** ゲッサー：当てる相手を選んでいるところ／役職を選んでいるところ */
+    private boolean guessMode;
+    @Nullable
+    private UUID guessTarget;
 
     // レイアウト
     private int px, py, pw, ph, cardW, cardH, chatX, chatW;
@@ -47,6 +55,53 @@ public class MeetingScreen extends Screen {
     public MeetingScreen(Packets.Meeting meeting) {
         super(Component.literal("会議"));
         this.meeting = meeting;
+    }
+
+    /** 会議中に誰かが撃ち抜かれた */
+    public void onDeath(UUID id, String text) {
+        deadNow.add(id);
+        deathText = text;
+        deathAge = 0;
+        if (id.equals(selected)) {
+            selected = null;
+        }
+        if (id.equals(guessTarget)) {
+            guessTarget = null;
+        }
+        ClientGame.play(SoundEvents.GENERIC_EXPLODE.value(), 1.8f);
+        ClientGame.play(SoundEvents.PLAYER_HURT, 0.8f);
+    }
+
+    @Nullable
+    private UUID me() {
+        return minecraft != null && minecraft.player != null ? minecraft.player.getUUID() : null;
+    }
+
+    private boolean alive(Packets.Participant p) {
+        return p.alive() && !deadNow.contains(p.id());
+    }
+
+    private boolean canVote() {
+        UUID me = me();
+        return meeting.canVote() && (me == null || !deadNow.contains(me));
+    }
+
+    private boolean isGuesser() {
+        com.minpaku.game.Role r = ClientGame.role();
+        return canVote() && result == null && r != null
+                && (r == com.minpaku.game.Role.NICE_GUESSER || r == com.minpaku.game.Role.EVIL_GUESSER);
+    }
+
+    /** 当てられる役職（ナイスは村人陣営以外、イビルは人狼陣営以外） */
+    private List<com.minpaku.game.Role> guessRoles() {
+        List<com.minpaku.game.Role> out = new ArrayList<>();
+        boolean evil = ClientGame.role() == com.minpaku.game.Role.EVIL_GUESSER;
+        for (com.minpaku.game.Role r : com.minpaku.game.Role.all()) {
+            if (evil ? r.team != com.minpaku.game.Role.Team.WOLF : r.team != com.minpaku.game.Role.Team.VILLAGE) {
+                out.add(r);
+            }
+        }
+        return out;
     }
 
     public void onVoted(List<UUID> voters) {
@@ -82,6 +137,7 @@ public class MeetingScreen extends Screen {
     @Override
     public void tick() {
         age++;
+        deathAge++;
         if (age == 1) {
             if (meeting.reason() == 1) {
                 ClientGame.play(SoundEvents.ANVIL_LAND, 0.5f);
@@ -131,6 +187,48 @@ public class MeetingScreen extends Screen {
         table(g, mouseX, mouseY);
         input.visible = true;
         input.render(g, mouseX, mouseY, pt);
+        // 会議中に撃ち抜かれた
+        if (deathAge < 70) {
+            float a = Math.min(1f, deathAge / 4f) * Math.min(1f, (70 - deathAge) / 10f);
+            g.fill(0, height / 2 - 24, width, height / 2 + 24, Ui.alpha(0xFF3A0806, a * 0.85f));
+            Ui.text(g, Ui.serif(deathText), width / 2f, height / 2f - 12, Ui.alpha(0xFFFF8A80, a), 2.2f, 0, true);
+        }
+        if (guessTarget != null) {
+            guessPicker(g, mouseX, mouseY);
+        }
+    }
+
+    // ゲッサーの役職えらび
+    private int gpX, gpY, gpW, gpH, gpCols;
+
+    private void guessPicker(GuiGraphics g, int mouseX, int mouseY) {
+        List<com.minpaku.game.Role> roles = guessRoles();
+        gpCols = 3;
+        int bw = 92;
+        int bh = 16;
+        int rows = (roles.size() + gpCols - 1) / gpCols;
+        gpW = gpCols * (bw + 4) + 16;
+        gpH = rows * (bh + 4) + 40;
+        gpX = (width - gpW) / 2;
+        gpY = (height - gpH) / 2;
+        g.fill(0, 0, width, height, 0x80000000);
+        Ui.sprite(g, "panel", gpX, gpY, gpW, gpH);
+        String name = "";
+        for (Packets.Participant p : meeting.participants()) {
+            if (p.id().equals(guessTarget)) {
+                name = p.name();
+            }
+        }
+        Ui.fitSans(g, name + " の役職は？（外れたら自分が倒れる）", gpX + gpW / 2f, gpY + 8, gpW - 16, Ui.INK, 0.9f, 0);
+        for (int i = 0; i < roles.size(); i++) {
+            com.minpaku.game.Role r = roles.get(i);
+            int bx = gpX + 8 + (i % gpCols) * (bw + 4);
+            int by = gpY + 24 + (i / gpCols) * (bh + 4);
+            boolean hv = inside(mouseX, mouseY, bx, by, bw, bh);
+            g.fill(bx, by, bx + bw, by + bh, hv ? 0xFFFFF3D6 : 0xFFEADFC6);
+            g.fill(bx, by, bx + 3, by + bh, 0xFF000000 | r.color);
+            Ui.fitSans(g, r.name, bx + bw / 2f + 1, by + 4, bw - 8, Ui.INK, 0.85f, 0);
+        }
     }
 
     private void splash(GuiGraphics g, float t) {
@@ -205,13 +303,19 @@ public class MeetingScreen extends Screen {
         // スキップ
         int rows = (ps.size() + 1) / 2;
         int by = cardY(rows * 2) + 2;
-        boolean canPress = votingOpen() && meeting.canVote() && !myVoteSent;
+        boolean canPress = votingOpen() && canVote() && !myVoteSent;
+        if (isGuesser() && age >= SPLASH) {
+            boolean hg = inside(mouseX, mouseY, px + pw - chatW - 112, by, 92, 18);
+            Ui.button(g, px + pw - chatW - 112, by, 92, 18, guessMode ? "やめる" : "役職を当てる", guessMode, hg, true, 0.85f);
+        }
         boolean hover = inside(mouseX, mouseY, px + 12, by, 70, 18);
         Ui.button(g, px + 12, by, 70, 18, "スキップ", false, hover && canPress, canPress, 1f);
         String info;
         if (result != null) {
             info = "スキップした人";
-        } else if (!meeting.canVote()) {
+        } else if (guessMode) {
+            info = "撃ち抜く相手を選ぼう";
+        } else if (!canVote()) {
             info = "幽霊は投票できません";
         } else if (myVoteSent) {
             info = "投票しました。ほかの人を待っています";
@@ -235,18 +339,28 @@ public class MeetingScreen extends Screen {
     }
 
     private void card(GuiGraphics g, Packets.Participant p, int x, int y, int mouseX, int mouseY) {
-        boolean hover = inside(mouseX, mouseY, x, y, cardW, cardH) && canVoteFor(p);
+        boolean hover = inside(mouseX, mouseY, x, y, cardW, cardH) && (canVoteFor(p) || canGuess(p));
         boolean sel = p.id().equals(selected);
-        String sp = !p.alive() ? "card_dead" : sel ? "card_selected" : hover ? "card_hover" : "card";
+        boolean living = alive(p);
+        String sp = !living ? "card_dead" : sel ? "card_selected" : hover ? "card_hover" : "card";
         Ui.sprite(g, sp, x, y, cardW, cardH);
         Ui.face(g, p.id(), x + 5, y + 5, 18);
-        if (!p.alive()) {
+        if (!living) {
             g.fill(x + 5, y + 5, x + 23, y + 23, 0x88000000);
             Ui.sans(g, "✕", x + 14, y + 8, 0xFFFF4444, 1.2f, 0);
         }
-        int nameColor = !p.alive() ? 0xFF7A6A58 : ClientGame.isMate(p.id()) ? 0xFFA8231B : Ui.INK;
+        int nameColor = !living ? 0xFF7A6A58 : ClientGame.isMate(p.id()) ? 0xFFA8231B : Ui.INK;
         Ui.sans(g, p.name(), x + 28, y + 5, nameColor, 1f, -1);
-        Ui.sans(g, p.alive() ? "生存" : "死亡", x + 28, y + 16, 0xFF8D7A62, 0.7f, -1);
+        String known = ClientGame.knownRoles.get(p.id());
+        if (known != null) {
+            com.minpaku.game.Role kr = com.minpaku.game.Role.byId(known);
+            Ui.sans(g, (living ? "" : "死亡・") + kr.name, x + 28, y + 16, 0xFF000000 | kr.color, 0.7f, -1);
+        } else {
+            Ui.sans(g, living ? "生存" : "死亡", x + 28, y + 16, 0xFF8D7A62, 0.7f, -1);
+        }
+        if (guessMode && canGuess(p)) {
+            Ui.stamp(g, "的", x + cardW - 14, y + cardH / 2f, 16, 0xFF6A1B9A, 8, false);
+        }
         if (meeting.caller().equals(p.name())) {
             Ui.sans(g, meeting.reason() == 1 ? "通報" : "呼び鈴", x + 28 + (int) (Ui.width(Ui.sans(p.name()))) + 4, y + 6,
                     Ui.VERMILION, 0.7f, -1);
@@ -337,12 +451,12 @@ public class MeetingScreen extends Screen {
             java.util.List<UUID> carriers = new java.util.ArrayList<>();
             UUID me = minecraft != null && minecraft.player != null ? minecraft.player.getUUID() : null;
             for (Packets.Participant p : meeting.participants()) {
-                if (p.alive() && !p.id().equals(result.ejected()) && p.id().equals(me)) {
+                if (alive(p) && !p.id().equals(result.ejected()) && p.id().equals(me)) {
                     carriers.add(p.id());
                 }
             }
             for (Packets.Participant p : meeting.participants()) {
-                if (p.alive() && !p.id().equals(result.ejected()) && !p.id().equals(me) && carriers.size() < 4) {
+                if (alive(p) && !p.id().equals(result.ejected()) && !p.id().equals(me) && carriers.size() < 4) {
                     carriers.add(p.id());
                 }
             }
@@ -355,7 +469,12 @@ public class MeetingScreen extends Screen {
     // ------------------------------------------------------------ 操作
 
     private boolean canVoteFor(Packets.Participant p) {
-        return votingOpen() && meeting.canVote() && !myVoteSent && p.alive();
+        return votingOpen() && canVote() && !myVoteSent && alive(p);
+    }
+
+    private boolean canGuess(Packets.Participant p) {
+        return guessMode && isGuesser() && alive(p) && !p.id().equals(me())
+                && !(ClientGame.role() == com.minpaku.game.Role.EVIL_GUESSER && ClientGame.isMate(p.id()));
     }
 
     private static boolean inside(double mx, double my, int x, int y, int w, int h) {
@@ -370,10 +489,46 @@ public class MeetingScreen extends Screen {
             return true;
         }
         input.setFocused(false);
-        if (age < SPLASH || result != null || !votingOpen() || !meeting.canVote() || myVoteSent) {
+        List<Packets.Participant> ps = meeting.participants();
+        // ゲッサー：役職えらび
+        if (guessTarget != null) {
+            List<com.minpaku.game.Role> roles = guessRoles();
+            for (int i = 0; i < roles.size(); i++) {
+                int bx = gpX + 8 + (i % gpCols) * 96;
+                int by = gpY + 24 + (i / gpCols) * 20;
+                if (inside(mx, my, bx, by, 92, 16)) {
+                    ClientPlayNetworking.send(new Packets.Act("guess", guessTarget, roles.get(i).id));
+                    ClientGame.play(SoundEvents.CROSSBOW_SHOOT, 0.8f);
+                    guessTarget = null;
+                    guessMode = false;
+                    return true;
+                }
+            }
+            guessTarget = null;
+            return true;
+        }
+        if (isGuesser() && age >= SPLASH) {
+            int rows0 = (ps.size() + 1) / 2;
+            int by0 = cardY(rows0 * 2) + 2;
+            if (inside(mx, my, px + pw - chatW - 112, by0, 92, 18)) {
+                guessMode = !guessMode;
+                ClientGame.play(SoundEvents.UI_BUTTON_CLICK, guessMode ? 0.8f : 1.2f);
+                return true;
+            }
+            if (guessMode) {
+                for (int i = 0; i < ps.size(); i++) {
+                    if (inside(mx, my, cardX(i), cardY(i), cardW, cardH) && canGuess(ps.get(i))) {
+                        guessTarget = ps.get(i).id();
+                        ClientGame.play(SoundEvents.UI_BUTTON_CLICK, 1.0f);
+                        return true;
+                    }
+                }
+                return true;
+            }
+        }
+        if (age < SPLASH || result != null || !votingOpen() || !canVote() || myVoteSent) {
             return super.mouseClicked(mx, my, button);
         }
-        List<Packets.Participant> ps = meeting.participants();
         for (int i = 0; i < ps.size(); i++) {
             Packets.Participant p = ps.get(i);
             int x = cardX(i);

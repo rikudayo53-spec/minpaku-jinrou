@@ -64,9 +64,15 @@ public class RevealScreen extends Screen {
         // 1) 最初の文字
         if (t < 30) {
             float a = Mth.clamp(t / 8f, 0f, 1f) * Mth.clamp((30 - t) / 6f, 0f, 1f);
-            Ui.text(g, Ui.serif("民泊人狼"), cx, cy - 34, Ui.alpha(0xFFFFE0B2, a), 4f, 0, false);
-            Ui.text(g, Ui.sans(reveal.players() + "人の宿泊客の中に、人狼がまぎれこんでいる…"), cx, cy + 14,
-                    Ui.alpha(0xFFDDDDDD, a), 1.1f, 0, false);
+            if (reveal.players() < 0) {
+                Ui.text(g, Ui.serif("悪神の祟り"), cx, cy - 34, Ui.alpha(0xFFD9A6FF, a), 4f, 0, false);
+                Ui.text(g, Ui.sans("祠の封印が解けて、みんなの役職が入れかわった…"), cx, cy + 14,
+                        Ui.alpha(0xFFDDDDDD, a), 1.1f, 0, false);
+            } else {
+                Ui.text(g, Ui.serif("民泊人狼"), cx, cy - 34, Ui.alpha(0xFFFFE0B2, a), 4f, 0, false);
+                Ui.text(g, Ui.sans(reveal.players() + "人の宿泊客の中に、人狼がまぎれこんでいる…"), cx, cy + 14,
+                        Ui.alpha(0xFFDDDDDD, a), 1.1f, 0, false);
+            }
             return;
         }
 
@@ -74,7 +80,9 @@ public class RevealScreen extends Screen {
         float open = Mth.clamp((t - 30) / 16f, 0f, 1f);
         open = 1 - (1 - open) * (1 - open);
         int sw = Math.min(width - 40, 300);
-        int fullH = Math.min(height - 40, 230);
+        int fullH = Math.min(height - 24, 300);
+        // ミニキャラの大きさ（画面が低いときは小さく）
+        int chara = fullH >= 280 ? 64 : 48;
         int sh = (int) (fullH * open);
         int x = cx - sw / 2;
         int top = cy - sh / 2;
@@ -90,12 +98,17 @@ public class RevealScreen extends Screen {
             float t2 = t - 46;
             float a = Mth.clamp(t2 / 6f, 0f, 1f) * fadeOut;
             float pop = t2 < 8 ? 0.7f + 0.3f * (t2 / 8f) + (float) Math.sin(t2 / 8f * Math.PI) * 0.15f : 1f;
-            int y0 = top + 14;
-            Ui.text(g, Ui.sans("あなたの役職は"), cx, y0, Ui.alpha(Ui.INK_SOFT, a), 1f, 0, false);
-            Ui.text(g, Ui.serif(role.name), cx, y0 + 16 + (1 - pop) * 20, Ui.alpha(0xFF000000 | role.color, a),
-                    (role.name.length() > 2 ? 4.2f : 5.5f) * pop, 0, false);
-            Ui.chip(g, role.team.label, cx, y0 + 80, Ui.alpha(0xFF000000 | role.team.color, a * 0.9f), Ui.alpha(0xFFFFFFFF, a));
-            int ly = y0 + 98;
+            // 役職のミニキャラ（ドット絵）：ぽんと出て、ときどき跳ねて、まばたきする
+            drawChara(g, cx, top + 10, chara, t2, a);
+            int y0 = top + 14 + chara;
+            float big = chara >= 64 ? 1f : 0.8f;
+            Ui.text(g, Ui.sans(reveal.players() < 0 ? "あなたの新しい役職は" : "あなたの役職は"), cx, y0, Ui.alpha(Ui.INK_SOFT, a), 1f, 0, false);
+            float nameScale = (role.name.length() > 4 ? 3.0f : role.name.length() > 2 ? 4.0f : 5.0f) * big;
+            Ui.text(g, Ui.serif(role.name), cx, y0 + 14 + (1 - pop) * 20, Ui.alpha(0xFF000000 | role.color, a),
+                    nameScale * pop, 0, false);
+            int chipY = y0 + 14 + (int) (12 * nameScale) + 6;
+            Ui.chip(g, role.team.label, cx, chipY, Ui.alpha(0xFF000000 | role.team.color, a * 0.9f), Ui.alpha(0xFFFFFFFF, a));
+            int ly = chipY + 18;
             for (var line : Ui.split(role.description, sw - 50)) {
                 int lw = font.width(line);
                 g.drawString(font, line, cx - lw / 2, ly, Ui.alpha(Ui.INK, a), false);
@@ -103,7 +116,7 @@ public class RevealScreen extends Screen {
             }
             // 仲間の人狼
             if (!reveal.mates().isEmpty()) {
-                Ui.text(g, Ui.sans("仲間の人狼"), cx, ly + 4, Ui.alpha(Ui.VERMILION, a), 0.9f, 0, false);
+                Ui.text(g, Ui.sans(role == Role.KYOYU ? "相方の共有者" : "仲間の人狼"), cx, ly + 4, Ui.alpha(Ui.VERMILION, a), 0.9f, 0, false);
                 int n = reveal.mates().size();
                 int fx = cx - n * 34 / 2;
                 for (int i = 0; i < n; i++) {
@@ -122,6 +135,27 @@ public class RevealScreen extends Screen {
                 g.pose().popPose();
             }
         }
+        g.pose().popPose();
+    }
+
+    /** ミニキャラ：textures/gui/role/<役職>.png（左＝ふつう、右＝まばたき。各32×32） */
+    private void drawChara(GuiGraphics g, int cx, int y, int size, float t2, float a) {
+        net.minecraft.resources.ResourceLocation tex = com.minpaku.MinpakuJinrou.id("textures/gui/role/" + role.id + ".png");
+        float pop = t2 < 6 ? (float) Math.sin(Mth.clamp(t2 / 6f, 0f, 1f) * Math.PI * 0.5) * 1.15f
+                : t2 < 10 ? 1.15f - (t2 - 6) / 4f * 0.15f : 1f;
+        // 40tick ごとに小さく跳ねる
+        float ph = (t2 % 40f) / 40f;
+        float hop = ph < 0.2f ? (float) Math.sin(ph / 0.2f * Math.PI) * 3f : 0f;
+        boolean blink = (t2 % 52f) > 47f;
+        g.pose().pushPose();
+        g.pose().translate(cx, y + size - hop, 0);
+        g.pose().scale(pop, pop, 1f);
+        // 足もとの影
+        g.fill(-size / 3, -2, size / 3, 0, Ui.alpha(0x30000000, a));
+        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+        g.setColor(1f, 1f, 1f, a);
+        g.blit(tex, -size / 2, -size, size, size, blink ? 32 : 0, 0, 32, 32, 64, 32);
+        g.setColor(1f, 1f, 1f, 1f);
         g.pose().popPose();
     }
 

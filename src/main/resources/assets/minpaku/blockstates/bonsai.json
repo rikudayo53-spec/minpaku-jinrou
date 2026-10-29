@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/bonsai"
+  },
+  "facing=east": {
+   "model": "minpaku:block/bonsai",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/bonsai",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/bonsai",
+   "y": 270
+  }
+ }
+}

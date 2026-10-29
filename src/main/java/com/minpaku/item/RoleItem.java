@@ -23,11 +23,13 @@ import java.util.List;
  *   TALISMAN … 妨害のお札（人狼）: 右クリックで妨害メニュー
  *   KEY      … 管理人の鍵: 右クリックで設定画面
  *   LENS     … 虫めがね（探偵）: 死体に使うと犯人の役職が分かる
- *   KEYRING  … 鍵束（女将）: 右クリックで近くのふすまを閉める
+ *   KEYRING  … 鍵束（もう使わない）
+ *   GUN      … 短筒（シェリフ）: 右クリックで見ている相手を撃つ
+ *   HANDBELL … 手持ちの呼び鈴（ナイスボタナー）: 右クリックでどこからでも緊急会議
  *   ONIGIRI  … おにぎり（板前）: 人に使うと1回だけキルを耐える
  */
 public class RoleItem extends Item {
-    public enum Kind { CRYSTAL, CHARM, TALISMAN, KEY, LENS, KEYRING, ONIGIRI }
+    public enum Kind { CRYSTAL, CHARM, TALISMAN, KEY, LENS, KEYRING, ONIGIRI, GUN, HANDBELL }
 
     private final Kind kind;
 
@@ -65,9 +67,15 @@ public class RoleItem extends Item {
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
-        if (kind == Kind.KEYRING) {
+        if (kind == Kind.GUN) {
             if (player instanceof ServerPlayer sp) {
-                GameManager.get(sp.server).useOkami(sp);
+                GameManager.get(sp.server).useSheriff(sp);
+            }
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+        }
+        if (kind == Kind.HANDBELL) {
+            if (player instanceof ServerPlayer sp) {
+                GameManager.get(sp.server).useButtoner(sp);
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
         }
@@ -88,7 +96,9 @@ public class RoleItem extends Item {
             case TALISMAN -> "右クリック: 停電・ガス漏れを起こす";
             case KEY -> "右クリック: ゲームの設定・開始";
             case LENS -> "死体に右クリック: 犯人の役職が分かる";
-            case KEYRING -> "右クリック: 近くのふすまを10秒閉める";
+            case KEYRING -> "（使われていません）";
+            case GUN -> "右クリック: 見ている相手を撃つ（村人を撃つと自分が倒れる）";
+            case HANDBELL -> "右クリック: どこからでも緊急会議を開く";
             case ONIGIRI -> "人に右クリック: 1回だけキルを耐える";
         };
         tooltip.add(Component.literal(text).withStyle(ChatFormatting.GRAY));

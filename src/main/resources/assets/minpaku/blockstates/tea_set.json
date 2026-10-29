@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/tea_set"
+  },
+  "facing=east": {
+   "model": "minpaku:block/tea_set",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/tea_set",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/tea_set",
+   "y": 270
+  }
+ }
+}

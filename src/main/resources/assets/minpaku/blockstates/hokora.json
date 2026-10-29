@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/hokora"
+  },
+  "facing=east": {
+   "model": "minpaku:block/hokora",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/hokora",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/hokora",
+   "y": 270
+  }
+ }
+}

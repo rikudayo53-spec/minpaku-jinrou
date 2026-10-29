@@ -50,6 +50,8 @@ public class MinpakuClient implements ClientModInitializer {
         GameHud.KILL_KEY = net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper.registerKeyBinding(
                 new net.minecraft.client.KeyMapping("key.minpaku.kill", org.lwjgl.glfw.GLFW.GLFW_KEY_R, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
+        WorldRenderEvents.AFTER_TRANSLUCENT.register(com.minpaku.client.render.Distortion::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.RoleTags::render);
 
         ClientBridge.openSettings = () -> Minecraft.getInstance().setScreen(new SettingsScreen());
         ClientBridge.openSabotage = () -> {
@@ -94,6 +96,8 @@ public class MinpakuClient implements ClientModInitializer {
         itemModel(com.minpaku.registry.ModItems.LENS, "detective_lens");
         itemModel(com.minpaku.registry.ModItems.KEYRING, "okami_keyring");
         itemModel(com.minpaku.registry.ModItems.ONIGIRI, "itamae_onigiri");
+        itemModel(com.minpaku.registry.ModItems.GUN, "sheriff_gun");
+        itemModel(com.minpaku.registry.ModItems.HANDBELL, "buttoner_bell");
     }
 
     /** 役職のアイテムは、ゲーム中はその役職の人の画面にだけ描く（ほかの人には手ぶらに見える） */
@@ -117,8 +121,11 @@ public class MinpakuClient implements ClientModInitializer {
         if (item == com.minpaku.registry.ModItems.LENS) {
             return r == com.minpaku.game.Role.DETECTIVE;
         }
-        if (item == com.minpaku.registry.ModItems.KEYRING) {
-            return r == com.minpaku.game.Role.OKAMI;
+        if (item == com.minpaku.registry.ModItems.GUN) {
+            return r == com.minpaku.game.Role.SHERIFF;
+        }
+        if (item == com.minpaku.registry.ModItems.HANDBELL) {
+            return r == com.minpaku.game.Role.NICE_BUTTONER;
         }
         if (item == com.minpaku.registry.ModItems.ONIGIRI) {
             return r == com.minpaku.game.Role.ITAMAE;
@@ -249,6 +256,8 @@ public class MinpakuClient implements ClientModInitializer {
                 ClientGame.talk.remove(0);
             }
         }));
+        ClientPlayNetworking.registerGlobalReceiver(Packets.Info.TYPE, (p, ctx) -> ctx.client().execute(() ->
+                ClientGame.onInfo(p)));
         ClientPlayNetworking.registerGlobalReceiver(Packets.Result.TYPE, (p, ctx) -> ctx.client().execute(() ->
                 Minecraft.getInstance().setScreen(new ResultScreen(p))));
     }
@@ -270,13 +279,18 @@ public class MinpakuClient implements ClientModInitializer {
                 ClientPlayNetworking.send(new Packets.KillRequest(target.getUUID()));
             }
         }
-        if (mc.player == null || !ClientGame.inGame()) {
+        if (mc.player == null) {
+            return;
+        }
+        boolean lobbyVent = !ClientGame.inGame() && ClientGame.lobbyVent;
+        if (!ClientGame.inGame() && !lobbyVent) {
+            wasLeft = wasRight = wasSneak = false;
             return;
         }
         Packets.State s = ClientGame.state;
 
-        // ベントの中：A/D で移動、スニークで出る
-        if (s.inVent() && mc.screen == null) {
+        // ベントの中：A/D で移動、スニークで出る（ゲーム前のお試しも）
+        if ((lobbyVent || s.inVent()) && mc.screen == null) {
             boolean left = mc.options.keyLeft.isDown();
             boolean right = mc.options.keyRight.isDown();
             boolean sneak = mc.options.keyShift.isDown();

@@ -42,6 +42,14 @@ public class PlayerState {
     public boolean onigiri;
     public int itamaeLeft;
     public int okamiCooldown;
+    /** ゲッサーが当てられる残り回数・ボタナーの残り回数・シェリフの残りの弾 */
+    public int guessLeft;
+    public int buttonLeft;
+    public int sheriffLeft;
+    /** 会議の前にいた場所（会議が終わったら戻す） */
+    @Nullable
+    public Vec3 beforeMeeting;
+    public float beforeYaw;
     @Nullable
     public BlockPos vent;
     public long lastClickTick;

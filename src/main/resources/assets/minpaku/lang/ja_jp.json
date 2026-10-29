@@ -29,5 +29,16 @@
  "key.minpaku.kill": "キル（人狼）",
  "item.minpaku.detective_lens": "探偵の虫めがね",
  "item.minpaku.okami_keyring": "女将の鍵束",
- "item.minpaku.itamae_onigiri": "板前のおにぎり"
+ "item.minpaku.itamae_onigiri": "板前のおにぎり",
+ "item.minpaku.sheriff_gun": "シェリフの短筒",
+ "item.minpaku.buttoner_bell": "ボタナーの呼び鈴",
+ "block.minpaku.meeting_table": "会議の座卓（会議の集合場所）",
+ "block.minpaku.hokora": "祠（悪神イベント）",
+ "block.minpaku.andon": "行灯（タスク）",
+ "block.minpaku.irori": "囲炉裏（タスク）",
+ "block.minpaku.bonsai": "盆栽（タスク）",
+ "block.minpaku.tea_set": "茶道具（タスク）",
+ "block.minpaku.well": "井戸（タスク）",
+ "block.minpaku.shogi_board": "将棋盤（タスク）",
+ "block.minpaku.kakejiku": "掛け軸（タスク）"
 }

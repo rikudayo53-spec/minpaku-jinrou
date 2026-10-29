@@ -340,7 +340,7 @@ public class SettingsScreen extends Screen {
         for (int k = 0; k < teams.length; k++) {
             List<Role> list = new ArrayList<>();
             for (Role r : Role.special()) {
-                boolean third = r.team == Role.Team.FOX || r.team == Role.Team.TERU;
+                boolean third = r.team == Role.Team.FOX || r.team == Role.Team.TERU || r.team == Role.Team.GOD;
                 if ((teams[k] == Role.Team.FOX && third) || r.team == teams[k] && !third) {
                     list.add(r);
                 }

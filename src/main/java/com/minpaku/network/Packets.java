@@ -670,4 +670,54 @@ public final class Packets {
             return TYPE;
         }
     }
+
+    // ------------------------------------------------------------ なんでも用（小さな通知・操作）
+
+    /**
+     * サーバー → クライアントの小さな通知。kind ごとに data の形が決まっている。
+     *  lobby_vent: "1"/"0" … ゲーム前にベントに入っている
+     *  roles: "uuid=役職id;uuid=役職id…" … 役職が見える人（神）
+     *  meeting_death: "uuid;名前;文章" … 会議中に倒れた（ゲッサー）
+     *  bounds: "x1,y1,z1,x2,y2,z2" … マップの範囲（外は時空のゆがみで見えない）
+     *  evil_god: "x,y,z" … 祠の封印が解けた
+     */
+    public record Info(String kind, String data) implements CustomPacketPayload {
+        public static final Type<Info> TYPE = key("info");
+        public static final StreamCodec<FriendlyByteBuf, Info> CODEC = CustomPacketPayload.codec(Info::write, Info::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeUtf(kind);
+            b.writeUtf(data, 65535);
+        }
+
+        private static Info read(FriendlyByteBuf b) {
+            return new Info(b.readUtf(), b.readUtf(65535));
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** クライアント → サーバーの小さな操作。guess: target を data の役職だと当てる */
+    public record Act(String kind, UUID target, String data) implements CustomPacketPayload {
+        public static final Type<Act> TYPE = key("act");
+        public static final StreamCodec<FriendlyByteBuf, Act> CODEC = CustomPacketPayload.codec(Act::write, Act::read);
+
+        private void write(FriendlyByteBuf b) {
+            b.writeUtf(kind);
+            b.writeUUID(target);
+            b.writeUtf(data);
+        }
+
+        private static Act read(FriendlyByteBuf b) {
+            return new Act(b.readUtf(), b.readUUID(), b.readUtf());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
 }

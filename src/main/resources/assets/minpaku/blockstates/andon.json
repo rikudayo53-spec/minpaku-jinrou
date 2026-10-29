@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/andon"
+  },
+  "facing=east": {
+   "model": "minpaku:block/andon",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/andon",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/andon",
+   "y": 270
+  }
+ }
+}

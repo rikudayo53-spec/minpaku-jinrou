@@ -47,6 +47,7 @@ public class ResultScreen extends Screen {
             case WOLF -> 0x780F0A;
             case FOX -> 0x6B4A05;
             case TERU -> 0x1D4A6B;
+            case GOD -> 0x5A4A10;
             default -> 0x0F4A1A;
         };
         g.fillGradient(0, 0, width, height, 0xE0000000 | c, 0xF0000000);

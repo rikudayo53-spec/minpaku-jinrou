@@ -54,7 +54,35 @@ public final class GameHud {
             center(g, s, w, h, mc);
         }
         killFx(g, w, h, pt);
+        evilGod(g, w, h, pt);
         announce(g, w, h);
+    }
+
+    /** 祠の悪神が目覚めた：紫の稲光と、ゆらぐ影 */
+    private static void evilGod(GuiGraphics g, int w, int h, float pt) {
+        if (ClientGame.evilGodTicks <= 0) {
+            return;
+        }
+        float t = ClientGame.EVIL_GOD_LEN - ClientGame.evilGodTicks + pt;
+        float flash = t < 6 ? 1f - t / 6f : (t > 20 && t < 24 ? 0.6f : 0f);
+        float fade = Math.min(1f, ClientGame.evilGodTicks / 20f);
+        g.fill(0, 0, w, h, Ui.alpha(0xFF2A0838, 0.45f * fade));
+        if (flash > 0) {
+            g.fill(0, 0, w, h, Ui.alpha(0xFFE6C8FF, flash * 0.8f));
+        }
+        // 大きな目（悪神がこちらを見る）
+        float open = Math.min(1f, Math.max(0f, (t - 10) / 14f)) * fade;
+        if (open > 0) {
+            float cx = w / 2f;
+            float cy = h * 0.42f;
+            for (int k = -1; k <= 1; k += 2) {
+                float ex = cx + k * w * 0.12f;
+                float ew = w * 0.07f;
+                float eh = ew * 0.45f * open;
+                g.fill((int) (ex - ew), (int) (cy - eh), (int) (ex + ew), (int) (cy + eh), Ui.alpha(0xFFFF3A2A, 0.85f * fade));
+                g.fill((int) (ex - ew * 0.18f), (int) (cy - eh), (int) (ex + ew * 0.18f), (int) (cy + eh), Ui.alpha(0xFF100008, fade));
+            }
+        }
     }
 
     // ------------------------------------------------------------ 左上

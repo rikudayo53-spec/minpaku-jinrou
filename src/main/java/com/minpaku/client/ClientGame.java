@@ -61,6 +61,61 @@ public final class ClientGame {
     /** 自分が選んだ共通フィニッシャー */
     public static String myFinisher = "pingpong";
 
+    /** ゲーム前にベントに入っている（お試し） */
+    public static boolean lobbyVent;
+    /** 役職が見える人（神）：UUID → 役職 */
+    public static final java.util.Map<UUID, String> knownRoles = new java.util.HashMap<>();
+    /** マップの範囲（x1,y1,z1,x2,y2,z2）。外は時空のゆがみで見えない */
+    @Nullable
+    public static int[] bounds;
+    /** 祠の悪神が目覚めた演出（残り tick） */
+    public static int evilGodTicks;
+    public static final int EVIL_GOD_LEN = 90;
+
+    /** 小さな通知を受け取る */
+    public static void onInfo(Packets.Info p) {
+        switch (p.kind()) {
+            case "lobby_vent" -> lobbyVent = p.data().equals("1");
+            case "roles" -> {
+                knownRoles.clear();
+                for (String part : p.data().split(";")) {
+                    int eq = part.indexOf('=');
+                    if (eq > 0) {
+                        try {
+                            knownRoles.put(UUID.fromString(part.substring(0, eq)), part.substring(eq + 1));
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                    }
+                }
+            }
+            case "bounds" -> {
+                String[] v = p.data().split(",");
+                if (v.length == 6) {
+                    int[] b = new int[6];
+                    for (int i = 0; i < 6; i++) {
+                        b[i] = Integer.parseInt(v[i].trim());
+                    }
+                    bounds = b;
+                } else {
+                    bounds = null;
+                }
+            }
+            case "evil_god" -> {
+                evilGodTicks = EVIL_GOD_LEN;
+                announce("悪神 降臨", "祠の封印が解けた…役職がすべて入れかわる！", 0xC060FF);
+                play(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER, 0.7f);
+            }
+            case "meeting_death" -> {
+                String[] v = p.data().split(";", 3);
+                if (v.length == 3 && Minecraft.getInstance().screen instanceof com.minpaku.client.screen.MeetingScreen m) {
+                    m.onDeath(UUID.fromString(v[0]), v[2]);
+                }
+            }
+            default -> {
+            }
+        }
+    }
+
     // 会議中の発言
     public static final java.util.List<Packets.Talk> talk = new java.util.ArrayList<>();
 
@@ -110,6 +165,9 @@ public final class ClientGame {
     }
 
     public static void tick() {
+        if (evilGodTicks > 0) {
+            evilGodTicks--;
+        }
         if (announceTicks > 0) {
             announceTicks--;
         }
@@ -133,6 +191,9 @@ public final class ClientGame {
 
     public static void reset() {
         state = Packets.State.lobby();
+        lobbyVent = false;
+        knownRoles.clear();
+        bounds = null;
         announceTicks = 0;
         killFxTicks = 0;
     }

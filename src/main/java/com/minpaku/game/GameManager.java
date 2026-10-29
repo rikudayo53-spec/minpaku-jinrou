@@ -285,7 +285,11 @@ public final class GameManager {
             return;
         }
         p.sendSystemMessage(Component.literal("「" + plan.name + "」（" + plan.players + "）を建てています…").withStyle(ChatFormatting.GOLD));
+        exitAllLobbyVents();
         BlockPos spawn = MapBuilder.build(p, plan);
+        for (ServerPlayer o : level.players()) {
+            sendBounds(o);
+        }
         p.teleportTo(p.serverLevel(), spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, p.getYRot(), 0f);
         p.sendSystemMessage(Component.literal("完成！ 玄関がスタート地点です。管理人の鍵でゲームを始めよう。")
                 .withStyle(ChatFormatting.GREEN));
@@ -301,6 +305,7 @@ public final class GameManager {
         }
         level = starter.serverLevel();
         host = starter.getUUID();
+        exitAllLobbyVents();
         GameSettings s = settings();
 
         List<ServerPlayer> humans = new ArrayList<>();
@@ -356,6 +361,9 @@ public final class GameManager {
             ps.knightLeft = s.get("knight_uses");
             ps.itamaeLeft = s.get("itamae_uses");
             ps.emergencyLeft = s.get("emergency_uses");
+            ps.guessLeft = s.get("guesser_shots");
+            ps.buttonLeft = s.get("buttoner_uses");
+            ps.sheriffLeft = s.get("sheriff_shots");
         }
         // 表示の順番は人間 → ボット
         all.sort(Comparator.comparing(ps -> ps.bot));
@@ -417,12 +425,18 @@ public final class GameManager {
 
         phase = Phase.PLAYING;
         ticks = 0;
+        lobbyVents.clear();
+        // 祠の悪神：起きるかどうかと、いつ起きるか
+        int ev = s.get("evil_god");
+        boolean happen = map().count(MarkerType.HOKORA) > 0 && (ev == 3 || (ev == 2 && random.nextBoolean()));
+        evilGodAt = happen ? 20L * (70 + random.nextInt(120)) : -1;
 
         for (ServerPlayer p : humans) {
             PlayerState ps = players.get(p.getUUID());
             send(p, new Packets.Reveal(ps.role.id, mates(ps), players.size()));
         }
         syncAll();
+        sendRoles();
         if (botCount > 0) {
             starter.sendSystemMessage(Component.literal("ボット " + botCount + " 人が参加しています。会議ではチャットで名前を出すと、ボットが参考にします。")
                     .withStyle(ChatFormatting.AQUA));
@@ -442,6 +456,10 @@ public final class GameManager {
         p.setHealth(p.getMaxHealth());
         p.getFoodData().setFoodLevel(20);
         p.addEffect(new MobEffectInstance(MobEffects.SATURATION, -1, 0, false, false));
+        giveRoleItem(p, ps);
+    }
+
+    private void giveRoleItem(ServerPlayer p, PlayerState ps) {
         if (ps.role == Role.SEER) {
             p.getInventory().setItem(0, new ItemStack(ModItems.CRYSTAL));
         } else if (ps.role == Role.KNIGHT) {
@@ -450,8 +468,10 @@ public final class GameManager {
             p.getInventory().setItem(0, new ItemStack(ModItems.TALISMAN));
         } else if (ps.role == Role.DETECTIVE) {
             p.getInventory().setItem(0, new ItemStack(ModItems.LENS));
-        } else if (ps.role == Role.OKAMI) {
-            p.getInventory().setItem(0, new ItemStack(ModItems.KEYRING));
+        } else if (ps.role == Role.SHERIFF) {
+            p.getInventory().setItem(0, new ItemStack(ModItems.GUN));
+        } else if (ps.role == Role.NICE_BUTTONER) {
+            p.getInventory().setItem(0, new ItemStack(ModItems.HANDBELL));
         } else if (ps.role == Role.ITAMAE) {
             p.getInventory().setItem(0, new ItemStack(ModItems.ONIGIRI));
         }
@@ -502,6 +522,14 @@ public final class GameManager {
                     winner = Role.Team.FOX;
                     break;
                 }
+            }
+        }
+        // 神（女将）が生き残っていたら、どの陣営が勝っても勝ちを横取りする
+        for (PlayerState ps : players.values()) {
+            if (ps.role.team == Role.Team.GOD && ps.alive && !ps.left) {
+                reason = reason + "…が、神（女将） " + ps.name + " がすべてを見ていた";
+                winner = Role.Team.GOD;
+                break;
             }
         }
         phase = Phase.ENDED;
@@ -557,6 +585,8 @@ public final class GameManager {
         active.clear();
         activeProgress.clear();
         votes.clear();
+        evilGodAt = -1;
+        shuffleAt = -1;
         phase = Phase.LOBBY;
         for (ServerPlayer p : notify) {
             send(p, Packets.State.lobby());
@@ -630,6 +660,7 @@ public final class GameManager {
     public void tick() {
         tickPreview();
         if (phase == Phase.LOBBY) {
+            tickLobby();
             return;
         }
         ticks++;
@@ -654,11 +685,7 @@ public final class GameManager {
             sabotageCooldown--;
         }
         tickPendingBodies();
-        for (PlayerState ps : players.values()) {
-            if (ps.okamiCooldown > 0) {
-                ps.okamiCooldown--;
-            }
-        }
+        tickEvilGod();
         if (doorsOpenAt >= 0 && ticks >= doorsOpenAt) {
             reopenDoors();
         }
@@ -939,16 +966,11 @@ public final class GameManager {
             }
             if (blocked == 1) {
                 t.onigiri = false;
-                // 襲われた人には、フィニッシャーが途中で止まる演出
-                ServerPlayer tp = t.bot ? null : player(t.id);
-                if (tp != null) {
-                    send(tp, new Packets.KillFx(0, k.name, k.id, fin, 1));
-                }
             }
+            // 守られた側は気づかない（演出も音も出さない）。襲った人狼だけに「守られた」と分かる
             if (kp != null) {
                 send(kp, new Packets.KillFx(2, t.name, t.id, fin, blocked));
             }
-            level.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1f, 1f);
             return true;
         }
         boolean counter = t.role == Role.NEKOMATA;
@@ -1187,71 +1209,6 @@ public final class GameManager {
     private final List<ClosedDoor> closedDoors = new ArrayList<>();
     private long doorsOpenAt = -1;
 
-    public void useOkami(ServerPlayer p) {
-        PlayerState ps = players.get(p.getUUID());
-        if (phase != Phase.PLAYING || ps == null || !ps.alive || ps.role != Role.OKAMI) {
-            return;
-        }
-        if (ps.okamiCooldown > 0) {
-            actionBar(p, "あと " + (ps.okamiCooldown / 20 + 1) + " 秒で使えます", ChatFormatting.GRAY);
-            return;
-        }
-        BlockPos c = p.blockPosition();
-        int n = 0;
-        for (BlockPos pos : BlockPos.betweenClosed(c.offset(-5, -1, -5), c.offset(5, 1, 5))) {
-            if (isDoorway(pos) && level.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(pos).inflate(0, 2, 0)).isEmpty()) {
-                for (int dy = 0; dy < 3; dy++) {
-                    BlockPos q = pos.above(dy).immutable();
-                    closedDoors.add(new ClosedDoor(q, level.getBlockState(q)));
-                    level.setBlock(q, Blocks.MUSHROOM_STEM.defaultBlockState(), Block.UPDATE_CLIENTS);
-                }
-                n++;
-            }
-        }
-        if (n == 0) {
-            actionBar(p, "近くに閉められるふすまがない", ChatFormatting.GRAY);
-            return;
-        }
-        ps.okamiCooldown = settings().get("okami_cooldown") * 20;
-        doorsOpenAt = ticks + 200;
-        level.playSound(null, c, SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.BLOCKS, 1.2f, 0.8f);
-        actionBar(p, "ふすまを閉めた（10秒）", ChatFormatting.YELLOW);
-    }
-
-    /** 出入り口（両わきが壁で、上がふさがった、3マスの高さのすき間）か */
-    private boolean isDoorway(BlockPos pos) {
-        for (int dy = 0; dy < 3; dy++) {
-            if (!level.getBlockState(pos.above(dy)).isAir()) {
-                return false;
-            }
-        }
-        if (level.getBlockState(pos.above(3)).isAir() || level.getBlockState(pos.below()).isAir()) {
-            return false;
-        }
-        boolean ew = !level.getBlockState(pos.east()).isAir() && !level.getBlockState(pos.west()).isAir();
-        boolean ns = !level.getBlockState(pos.north()).isAir() && !level.getBlockState(pos.south()).isAir();
-        // 片側だけ壁でも、反対側に出入り口の続きがあればよい（2〜3マス幅）
-        boolean ew2 = (!level.getBlockState(pos.east()).isAir() || isGap(pos.west()))
-                && (!level.getBlockState(pos.west()).isAir() || isGap(pos.east()));
-        boolean ns2 = (!level.getBlockState(pos.north()).isAir() || isGap(pos.south()))
-                && (!level.getBlockState(pos.south()).isAir() || isGap(pos.north()));
-        boolean wallsAroundX = !level.getBlockState(pos.north().above(3)).isAir() || !level.getBlockState(pos.south().above(3)).isAir();
-        return (ew || ns || ew2 || ns2) && wallsAroundX && thinWall(pos);
-    }
-
-    private boolean isGap(BlockPos q) {
-        return level.getBlockState(q).isAir() && !level.getBlockState(q.above(3)).isAir();
-    }
-
-    /** 壁の厚み1マスの所だけ（部屋の真ん中では閉めない） */
-    private boolean thinWall(BlockPos pos) {
-        boolean xOpen = level.getBlockState(pos.east()).isAir() && level.getBlockState(pos.west()).isAir();
-        boolean zOpen = level.getBlockState(pos.north()).isAir() && level.getBlockState(pos.south()).isAir();
-        boolean xWall = !level.getBlockState(pos.north().above(1)).isAir() || !level.getBlockState(pos.south().above(1)).isAir();
-        boolean zWall = !level.getBlockState(pos.east().above(1)).isAir() || !level.getBlockState(pos.west().above(1)).isAir();
-        return (xOpen && xWall) || (zOpen && zWall) || (!xOpen && !zOpen);
-    }
-
     private void reopenDoors() {
         for (ClosedDoor d : closedDoors) {
             if (level.getBlockState(d.pos()).is(Blocks.MUSHROOM_STEM)) {
@@ -1315,9 +1272,7 @@ public final class GameManager {
 
     public InteractionResult onUseMarker(ServerPlayer p, BlockPos pos, MarkerType type) {
         if (!running()) {
-            if (type != MarkerType.SPAWN) {
-                actionBar(p, type.label, ChatFormatting.GRAY);
-            }
+            lobbyUse(p, pos, type);
             return InteractionResult.SUCCESS;
         }
         PlayerState ps = players.get(p.getUUID());
@@ -1453,6 +1408,14 @@ public final class GameManager {
 
     /** ミニゲーム画面を終えた */
     public void finishMiniGame(ServerPlayer p, BlockPos pos) {
+        if (!running()) {
+            // ゲーム前のお試し：家具が完成の動きをするだけ
+            if (p.distanceToSqr(Vec3.atCenterOf(pos)) <= 49 && level.getBlockState(pos).getBlock() instanceof MarkerBlock) {
+                animate(pos, 1f);
+                p.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.6f, 1.2f);
+            }
+            return;
+        }
         PlayerState ps = players.get(p.getUUID());
         if (phase != Phase.PLAYING || ps == null || ps.left) {
             return;
@@ -1590,6 +1553,10 @@ public final class GameManager {
     }
 
     public void ventMove(ServerPlayer p, int dir) {
+        if (!running() && lobbyVents.containsKey(p.getUUID())) {
+            lobbyVentMove(p, dir);
+            return;
+        }
         PlayerState ps = players.get(p.getUUID());
         if (ps == null || ps.vent == null || phase != Phase.PLAYING) {
             return;
@@ -1780,11 +1747,19 @@ public final class GameManager {
         activeProgress.clear();
         removeBodies();
 
-        // 集合場所：呼び鈴（なければスタート地点）
+        // 集合場所：会議の座卓（なければ呼び鈴、それもなければスタート地点）
+        List<BlockPos> tables = map().get(MarkerType.MEETING);
         List<BlockPos> bells = map().get(MarkerType.BELL);
         List<BlockPos> spawns = map().get(MarkerType.SPAWN);
-        Vec3 center = !bells.isEmpty() ? Vec3.atBottomCenterOf(bells.get(0))
+        Vec3 center = !tables.isEmpty() ? Vec3.atBottomCenterOf(tables.get(0))
+                : !bells.isEmpty() ? Vec3.atBottomCenterOf(bells.get(0))
                 : !spawns.isEmpty() ? Vec3.atBottomCenterOf(spawns.get(0)) : null;
+        // 会議の前にいた場所を覚える（終わったら戻す）
+        for (PlayerState ps : living()) {
+            LivingEntity e = entityOf(ps);
+            ps.beforeMeeting = e != null ? e.position() : null;
+            ps.beforeYaw = e != null ? e.getYRot() : 0f;
+        }
 
         for (ServerPlayer p : online()) {
             PlayerState ps = players.get(p.getUUID());
@@ -1800,7 +1775,7 @@ public final class GameManager {
             }
             if (center != null) {
                 double a = i / (double) living.size() * Math.PI * 2;
-                double r = 2.5;
+                double r = tables.isEmpty() ? 2.5 : 2.2;
                 double x = center.x + Math.cos(a) * r;
                 double z = center.z + Math.sin(a) * r;
                 float yaw = (float) (Mth.atan2(center.z - z, center.x - x) * Mth.RAD_TO_DEG) - 90f;
@@ -2019,6 +1994,17 @@ public final class GameManager {
         for (PlayerState ps : players.values()) {
             ps.killCooldown = cd;
             ps.seat = null;
+            // 会議の前にいた場所へ戻す
+            if (ps.alive && !ps.left && ps.beforeMeeting != null) {
+                LivingEntity e = entityOf(ps);
+                Vec3 b = ps.beforeMeeting;
+                if (e instanceof ServerPlayer sp) {
+                    sp.teleportTo(level, b.x, b.y, b.z, ps.beforeYaw, 0f);
+                } else if (e != null) {
+                    e.moveTo(b.x, b.y, b.z, ps.beforeYaw, 0);
+                }
+            }
+            ps.beforeMeeting = null;
         }
         for (BotBrain brain : brains.values()) {
             brain.onMeetingEnd();
@@ -2060,6 +2046,393 @@ public final class GameManager {
         }
     }
 
+
+    // ================================================================= ゲーム前（ロビー）：タスクとベントをお試しで使える
+
+    /** ゲーム前にベントに入っている人と、入る前のゲームモード */
+    private final Map<UUID, BlockPos> lobbyVents = new HashMap<>();
+    private final Map<UUID, GameType> lobbyVentModes = new HashMap<>();
+
+    private void lobbyUse(ServerPlayer p, BlockPos pos, MarkerType type) {
+        if (lobbyVents.containsKey(p.getUUID())) {
+            return;
+        }
+        switch (type) {
+            case SPAWN, MEETING -> actionBar(p, type.label, ChatFormatting.GRAY);
+            case HOKORA -> {
+                level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1f, 0.6f);
+                actionBar(p, "古い祠だ。何かが封じられている…", ChatFormatting.LIGHT_PURPLE);
+            }
+            case BELL -> {
+                animate(pos, 0f);
+                level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1f, 1.2f);
+                actionBar(p, "呼び鈴（ゲーム中に鳴らすと緊急会議）", ChatFormatting.GRAY);
+            }
+            case VENT -> {
+                lobbyVentModes.put(p.getUUID(), p.gameMode.getGameModeForPlayer());
+                lobbyVents.put(p.getUUID(), pos.immutable());
+                animate(pos, 0f);
+                p.setGameMode(GameType.SPECTATOR);
+                p.teleportTo(level, pos.getX() + 0.5, pos.getY() + 0.1, pos.getZ() + 0.5, p.getYRot(), p.getXRot());
+                level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.8f, 0.8f);
+                send(p, new Packets.Info("lobby_vent", "1"));
+                actionBar(p, "ベントの中（お試し）… A/D で移動、スニークで出る", ChatFormatting.LIGHT_PURPLE);
+            }
+            case BREAKER -> {
+                animate(pos, 0.3f);
+                send(p, new Packets.OpenTask(pos, MarkerType.BREAKER.ordinal()));
+            }
+            default -> {
+                String name = type.taskName != null ? type.taskName : type.label;
+                switch (type.use) {
+                    case HOLD -> {
+                        previewing.put(pos.immutable(), 0);
+                        workFx(pos, type);
+                        actionBar(p, name + "（お試し）", ChatFormatting.YELLOW);
+                    }
+                    case CLICK -> {
+                        workFx(pos, type, 1f / Math.max(1, type.amount));
+                        actionBar(p, name + "（お試し）", ChatFormatting.YELLOW);
+                    }
+                    case WIRES, NUMBERS, HOLES -> {
+                        animate(pos, 0.2f);
+                        send(p, new Packets.OpenTask(pos, type.ordinal()));
+                    }
+                    default -> actionBar(p, type.label, ChatFormatting.GRAY);
+                }
+            }
+        }
+    }
+
+    private void tickLobby() {
+        if (lobbyVents.isEmpty()) {
+            return;
+        }
+        lobbyVents.entrySet().removeIf(e -> player(e.getKey()) == null);
+        for (Map.Entry<UUID, BlockPos> e : lobbyVents.entrySet()) {
+            ServerPlayer p = player(e.getKey());
+            BlockPos v = e.getValue();
+            if (p != null && p.distanceToSqr(Vec3.atBottomCenterOf(v)) > 0.3) {
+                p.teleportTo(level, v.getX() + 0.5, v.getY() + 0.1, v.getZ() + 0.5, p.getYRot(), p.getXRot());
+            }
+        }
+    }
+
+    private void lobbyVentMove(ServerPlayer p, int dir) {
+        BlockPos cur = lobbyVents.get(p.getUUID());
+        if (cur == null) {
+            return;
+        }
+        if (dir == 0) {
+            exitLobbyVent(p);
+            return;
+        }
+        List<BlockPos> vents = map().get(MarkerType.VENT);
+        if (vents.size() < 2) {
+            actionBar(p, "つながっているベントがない", ChatFormatting.GRAY);
+            return;
+        }
+        int idx = vents.indexOf(cur);
+        int next = Math.floorMod((idx < 0 ? 0 : idx) + (dir > 0 ? 1 : -1), vents.size());
+        animate(cur, 0f);
+        BlockPos nv = vents.get(next);
+        lobbyVents.put(p.getUUID(), nv);
+        animate(nv, 0f);
+        p.teleportTo(level, nv.getX() + 0.5, nv.getY() + 0.1, nv.getZ() + 0.5, p.getYRot(), p.getXRot());
+        p.playNotifySound(SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.5f, 1.4f);
+        actionBar(p, "ベント " + (next + 1) + " / " + vents.size() + "（お試し）  A/D で移動、スニークで出る", ChatFormatting.LIGHT_PURPLE);
+    }
+
+    private void exitLobbyVent(ServerPlayer p) {
+        BlockPos v = lobbyVents.remove(p.getUUID());
+        GameType mode = lobbyVentModes.remove(p.getUUID());
+        if (v == null) {
+            return;
+        }
+        animate(v, 0f);
+        p.setGameMode(mode == null || mode == GameType.SPECTATOR ? GameType.ADVENTURE : mode);
+        p.teleportTo(level, v.getX() + 0.5, v.getY() + 0.1, v.getZ() + 0.5, p.getYRot(), p.getXRot());
+        level.playSound(null, v, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.8f, 1.1f);
+        send(p, new Packets.Info("lobby_vent", "0"));
+    }
+
+    private void exitAllLobbyVents() {
+        for (UUID id : new ArrayList<>(lobbyVents.keySet())) {
+            ServerPlayer p = player(id);
+            if (p != null) {
+                exitLobbyVent(p);
+            }
+        }
+        lobbyVents.clear();
+        lobbyVentModes.clear();
+    }
+
+    // ================================================================= マップの範囲（外は時空のゆがみで見えない）
+
+    public void sendBounds(ServerPlayer p) {
+        int[] b = map().lastBuilt;
+        String data = b.length == 6 ? b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "," + b[4] + "," + b[5] : "";
+        send(p, new Packets.Info("bounds", data));
+    }
+
+    // ================================================================= 神（女将）：全員の役職が見える
+
+    void sendRoles() {
+        StringBuilder sb = new StringBuilder();
+        for (PlayerState o : players.values()) {
+            if (sb.length() > 0) {
+                sb.append(';');
+            }
+            sb.append(o.id).append('=').append(o.role.id);
+        }
+        for (PlayerState ps : players.values()) {
+            if (ps.bot) {
+                continue;
+            }
+            ServerPlayer p = player(ps.id);
+            if (p != null) {
+                send(p, new Packets.Info("roles", ps.role.team == Role.Team.GOD ? sb.toString() : ""));
+            }
+        }
+    }
+
+    // ================================================================= シェリフ・ナイスボタナー・ゲッサー
+
+    /** 見ている先の参加者（壁の向こうは撃てない） */
+    @Nullable
+    private LivingEntity aimed(ServerPlayer p, double range) {
+        Vec3 eye = p.getEyePosition();
+        Vec3 look = p.getViewVector(1f);
+        HitResult block = p.pick(range, 1f, false);
+        double reach = block.getType() == HitResult.Type.MISS ? range : block.getLocation().distanceTo(eye);
+        Vec3 end = eye.add(look.scale(reach));
+        net.minecraft.world.phys.AABB box = p.getBoundingBox().expandTowards(look.scale(reach)).inflate(1.0);
+        net.minecraft.world.phys.EntityHitResult hit = net.minecraft.world.entity.projectile.ProjectileUtil.getEntityHitResult(
+                p, eye, end, box, e -> e instanceof LivingEntity && e != p && players.containsKey(e.getUUID()), reach * reach);
+        return hit != null && hit.getEntity() instanceof LivingEntity le ? le : null;
+    }
+
+    public void useSheriff(ServerPlayer sp) {
+        PlayerState s = players.get(sp.getUUID());
+        if (phase != Phase.PLAYING || s == null || !s.alive || s.role != Role.SHERIFF || s.vent != null) {
+            return;
+        }
+        if (s.sheriffLeft <= 0) {
+            actionBar(sp, "弾がもう残っていない", ChatFormatting.GRAY);
+            return;
+        }
+        if (s.killCooldown > 0) {
+            actionBar(sp, "次に撃てるまで " + (s.killCooldown / 20 + 1) + " 秒", ChatFormatting.GRAY);
+            return;
+        }
+        LivingEntity target = aimed(sp, 14);
+        PlayerState t = target == null ? null : stateOf(target);
+        if (t == null || !t.alive) {
+            actionBar(sp, "撃つ相手に照準を合わせよう", ChatFormatting.GRAY);
+            return;
+        }
+        s.sheriffLeft--;
+        s.killCooldown = settings().get("kill_cooldown") * 20;
+        sp.swing(InteractionHand.MAIN_HAND, true);
+        level.playSound(null, sp.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.7f, 1.9f);
+        Vec3 muzzle = sp.getEyePosition().add(sp.getViewVector(1f).scale(0.8));
+        level.sendParticles(ParticleTypes.SMOKE, muzzle.x, muzzle.y - 0.2, muzzle.z, 12, 0.05, 0.05, 0.05, 0.02);
+        boolean ok = t.role.team == Role.Team.WOLF
+                || (settings().flag("sheriff_neutral") && t.role.team != Role.Team.VILLAGE);
+        if (ok) {
+            kill(target, t, s, "sheriff", 0);
+            s.kills++;
+            send(sp, new Packets.KillFx(1, t.name, t.id, "sheriff", 0));
+        } else {
+            // 誤射：シェリフが倒れる（撃たれた人は無事）
+            spawnBody(s.id, s.name, sp.position(), sp.getYRot(), "sheriff");
+            becomeGhost(sp, s);
+            send(sp, new Packets.Announce("誤射…", t.name + " は撃ってはいけない相手だった", 0xFF8A80, 0));
+            level.playSound(null, sp.blockPosition(), SoundEvents.PLAYER_HURT, SoundSource.PLAYERS, 1f, 0.7f);
+        }
+        checkWin();
+    }
+
+    public void useButtoner(ServerPlayer p) {
+        PlayerState ps = players.get(p.getUUID());
+        if (phase != Phase.PLAYING || ps == null || !ps.alive || ps.role != Role.NICE_BUTTONER || ps.vent != null) {
+            return;
+        }
+        if (gasTicks >= 0) {
+            actionBar(p, "ガス漏れ中は呼び鈴を鳴らせない！", ChatFormatting.RED);
+            return;
+        }
+        if (ps.buttonLeft <= 0) {
+            actionBar(p, "もう呼び鈴は使えません", ChatFormatting.GRAY);
+            return;
+        }
+        ps.buttonLeft--;
+        level.playSound(null, p.blockPosition(), SoundEvents.BELL_BLOCK, SoundSource.PLAYERS, 2f, 1.5f);
+        startMeeting(0, ps, null);
+    }
+
+    /** クライアントからの小さな操作 */
+    public void act(ServerPlayer p, String kind, UUID target, String data) {
+        if (kind.equals("guess")) {
+            guess(p, target, data);
+        }
+    }
+
+    /** ゲッサー：会議中に役職を当てる。当たれば相手、外れたら自分が倒れる */
+    public void guess(ServerPlayer p, UUID targetId, String roleId) {
+        PlayerState g = players.get(p.getUUID());
+        if (phase != Phase.MEETING || resultShown || g == null || !g.alive || g.left) {
+            return;
+        }
+        if (g.role != Role.NICE_GUESSER && g.role != Role.EVIL_GUESSER) {
+            return;
+        }
+        if (g.guessLeft <= 0) {
+            actionBar(p, "もう役職を当てる弾がない", ChatFormatting.GRAY);
+            return;
+        }
+        PlayerState t = players.get(targetId);
+        if (t == null || !t.alive || t.left || t == g) {
+            return;
+        }
+        if (g.role == Role.EVIL_GUESSER && t.role.knowsWolves()) {
+            actionBar(p, "仲間の人狼は撃てない", ChatFormatting.GRAY);
+            return;
+        }
+        g.guessLeft--;
+        boolean hit = t.role.id.equals(roleId);
+        meetingKill(hit ? t : g);
+    }
+
+    /** 会議中に倒れる（だれが撃ったかは分からない） */
+    private void meetingKill(PlayerState dead) {
+        dead.alive = false;
+        dead.protectedByKnight = false;
+        LivingEntity e = entityOf(dead);
+        if (dead.bot) {
+            if (e != null) {
+                e.discard();
+            }
+        } else if (e instanceof ServerPlayer sp) {
+            becomeGhost(sp, dead);
+        }
+        if (e != null) {
+            level.playSound(null, e.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.7f, 1.9f);
+        }
+        // 倒れた人の票は消す。倒れた人への票はスキップあつかい
+        votes.remove(dead.id);
+        for (Map.Entry<UUID, UUID> v : votes.entrySet()) {
+            if (v.getValue().equals(dead.id)) {
+                v.setValue(Packets.NONE);
+            }
+        }
+        sendAll(new Packets.Info("meeting_death", dead.id + ";" + dead.name + ";" + dead.name + " が撃ち抜かれた"));
+        sendAll(new Packets.Voted(new ArrayList<>(votes.keySet())));
+        checkWin();
+        if (phase == Phase.MEETING && !resultShown && votes.size() >= living().size()) {
+            tally();
+        }
+    }
+
+    // ================================================================= 祠の悪神：役職がすべて入れかわる
+
+    private long evilGodAt = -1;
+    private long shuffleAt = -1;
+
+    private void tickEvilGod() {
+        if (evilGodAt >= 0 && ticks >= evilGodAt) {
+            evilGodAt = -1;
+            awakenEvilGod();
+        }
+        if (shuffleAt >= 0 && ticks >= shuffleAt) {
+            shuffleAt = -1;
+            shuffleRoles();
+        }
+    }
+
+    private void awakenEvilGod() {
+        List<BlockPos> shrines = map().get(MarkerType.HOKORA);
+        if (shrines.isEmpty()) {
+            return;
+        }
+        BlockPos pos = shrines.get(random.nextInt(shrines.size()));
+        animate(pos, 1f);
+        net.minecraft.world.entity.LightningBolt bolt = net.minecraft.world.entity.EntityType.LIGHTNING_BOLT.create(level);
+        if (bolt != null) {
+            bolt.moveTo(Vec3.atBottomCenterOf(pos));
+            bolt.setVisualOnly(true);
+            level.addFreshEntity(bolt);
+        }
+        level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 80, 0.6, 1.2, 0.6, 0.05);
+        level.sendParticles(ParticleTypes.LARGE_SMOKE, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, 40, 0.5, 1, 0.5, 0.02);
+        for (ServerPlayer o : online()) {
+            o.playNotifySound(SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.8f, 0.6f);
+            send(o, new Packets.Info("evil_god", pos.getX() + "," + pos.getY() + "," + pos.getZ()));
+        }
+        shuffleAt = ticks + 90;
+    }
+
+    /** 生きている人の役職を、すべてシャッフルして配り直す */
+    private void shuffleRoles() {
+        if (phase != Phase.PLAYING) {
+            shuffleAt = ticks + 40;
+            return;
+        }
+        List<PlayerState> alive = living();
+        if (alive.size() < 2) {
+            return;
+        }
+        List<Role> roles = new ArrayList<>();
+        for (PlayerState ps : alive) {
+            roles.add(ps.role);
+        }
+        List<Role> before = new ArrayList<>(roles);
+        for (int i = 0; i < 8; i++) {
+            Collections.shuffle(roles, random);
+            if (!roles.equals(before)) {
+                break;
+            }
+        }
+        GameSettings s = settings();
+        for (int i = 0; i < alive.size(); i++) {
+            PlayerState ps = alive.get(i);
+            ps.role = roles.get(i);
+            ps.killCooldown = s.get("kill_cooldown") * 20;
+            ps.seerLeft = s.get("seer_uses");
+            ps.knightLeft = s.get("knight_uses");
+            ps.itamaeLeft = s.get("itamae_uses");
+            ps.guessLeft = s.get("guesser_shots");
+            ps.buttonLeft = s.get("buttoner_uses");
+            ps.sheriffLeft = s.get("sheriff_shots");
+            ps.onigiri = false;
+            ps.protectedByKnight = false;
+            if (ps.bot) {
+                brains.put(ps.id, new BotBrain(this, ps));
+                continue;
+            }
+            ServerPlayer p = player(ps.id);
+            if (p == null) {
+                continue;
+            }
+            if (ps.vent != null && !ps.role.canVent()) {
+                exitVent(p, ps, true);
+            }
+            active.remove(ps.id);
+            activeProgress.remove(ps.id);
+            p.getInventory().clearContent();
+            giveRoleItem(p, ps);
+        }
+        for (PlayerState ps : alive) {
+            ServerPlayer p = ps.bot ? null : player(ps.id);
+            if (p != null) {
+                send(p, new Packets.Reveal(ps.role.id, mates(ps), -1));
+            }
+        }
+        sendRoles();
+        syncAll();
+        checkWin();
+    }
+
     // ================================================================= 出入り
 
     public void onLeave(ServerPlayer p) {
@@ -2077,6 +2450,7 @@ public final class GameManager {
     }
 
     public void onJoin(ServerPlayer p) {
+        sendBounds(p);
         PlayerState ps = players.get(p.getUUID());
         if (ps != null && running()) {
             ps.left = false;

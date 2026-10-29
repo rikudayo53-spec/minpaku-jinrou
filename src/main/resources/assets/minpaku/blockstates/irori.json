@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/irori"
+  },
+  "facing=east": {
+   "model": "minpaku:block/irori",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/irori",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/irori",
+   "y": 270
+  }
+ }
+}

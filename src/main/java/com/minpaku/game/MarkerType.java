@@ -13,6 +13,8 @@ public enum MarkerType {
     BREAKER("breaker", "配電盤（停電を直す）", Use.NONE, null, 0),
     GAS_VALVE("gas_valve", "ガスの元栓（ガス漏れを直す）", Use.HOLD, "ガスの元栓を閉める", 40),
     BOILER("boiler", "ボイラー（ガス漏れを直す）", Use.HOLD, "ボイラーを止める", 40),
+    MEETING("meeting_table", "会議の座卓（会議の集合場所）", Use.NONE, null, 0),
+    HOKORA("hokora", "祠（悪神が封じられている）", Use.NONE, null, 0),
 
     // タスク（ミニゲーム）
     WIRING("wiring_panel", "配線盤", Use.WIRES, "配線をつなぐ", 0),
@@ -31,7 +33,16 @@ public enum MarkerType {
     VASE("flower_vase", "花瓶", Use.CLICK, "花に水をやる", 3),
     SINK("kitchen_sink", "流し台", Use.HOLD, "お皿を洗う", 80),
     SHOE_RACK("shoe_rack", "下駄箱", Use.CLICK, "靴をそろえる", 4),
-    SHOJI("shoji_screen", "障子", Use.HOLES, "障子の穴をふさぐ", 0);
+    SHOJI("shoji_screen", "障子", Use.HOLES, "障子の穴をふさぐ", 0),
+
+    // 第3弾で追加したタスク
+    ANDON("andon", "行灯", Use.HOLD, "行灯に火を入れる", 60),
+    IRORI("irori", "囲炉裏", Use.HOLD, "囲炉裏の火をおこす", 90),
+    BONSAI("bonsai", "盆栽", Use.CLICK, "盆栽を手入れする", 5),
+    TEA("tea_set", "茶道具", Use.HOLD, "お茶をたてる", 80),
+    WELL("well", "井戸", Use.CLICK, "井戸の水をくむ", 5),
+    SHOGI("shogi_board", "将棋盤", Use.CLICK, "将棋の駒を並べる", 6),
+    KAKEJIKU("kakejiku", "掛け軸", Use.CLICK, "掛け軸をまっすぐにする", 3);
 
     public enum Use {
         /** 何もしない（設備） */
@@ -63,7 +74,7 @@ public enum MarkerType {
     }
 
     public boolean isTask() {
-        return ordinal() >= WIRING.ordinal();
+        return taskName != null && this != GAS_VALVE && this != BOILER;
     }
 
     public static MarkerType byOrdinal(int i) {

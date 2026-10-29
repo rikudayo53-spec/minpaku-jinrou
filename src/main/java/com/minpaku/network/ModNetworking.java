@@ -25,6 +25,8 @@ public final class ModNetworking {
         PayloadTypeRegistry.playS2C().register(Packets.Announce.TYPE, Packets.Announce.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Result.TYPE, Packets.Result.CODEC);
         PayloadTypeRegistry.playS2C().register(Packets.Talk.TYPE, Packets.Talk.CODEC);
+        PayloadTypeRegistry.playS2C().register(Packets.Info.TYPE, Packets.Info.CODEC);
+        PayloadTypeRegistry.playC2S().register(Packets.Act.TYPE, Packets.Act.CODEC);
 
         PayloadTypeRegistry.playC2S().register(Packets.SetSetting.TYPE, Packets.SetSetting.CODEC);
         PayloadTypeRegistry.playC2S().register(Packets.Control.TYPE, Packets.Control.CODEC);
@@ -66,6 +68,10 @@ public final class ModNetworking {
         ServerPlayNetworking.registerGlobalReceiver(Packets.VentMove.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
             player.server.execute(() -> GameManager.get(player.server).ventMove(player, p.dir()));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(Packets.Act.TYPE, (p, ctx) -> {
+            ServerPlayer player = ctx.player();
+            player.server.execute(() -> GameManager.get(player.server).act(player, p.kind(), p.target(), p.data()));
         });
         ServerPlayNetworking.registerGlobalReceiver(Packets.GhostUse.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();

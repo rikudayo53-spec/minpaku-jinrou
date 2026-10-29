@@ -29,5 +29,16 @@
  "key.minpaku.kill": "Kill (werewolf)",
  "item.minpaku.detective_lens": "Detective's Lens",
  "item.minpaku.okami_keyring": "Okami's Keyring",
- "item.minpaku.itamae_onigiri": "Itamae's Onigiri"
+ "item.minpaku.itamae_onigiri": "Itamae's Onigiri",
+ "item.minpaku.sheriff_gun": "Sheriff's Pistol",
+ "item.minpaku.buttoner_bell": "Buttoner's Hand Bell",
+ "block.minpaku.meeting_table": "Meeting Table",
+ "block.minpaku.hokora": "Hokora Shrine",
+ "block.minpaku.andon": "Andon Lamp (Task)",
+ "block.minpaku.irori": "Irori Hearth (Task)",
+ "block.minpaku.bonsai": "Bonsai (Task)",
+ "block.minpaku.tea_set": "Tea Set (Task)",
+ "block.minpaku.well": "Well (Task)",
+ "block.minpaku.shogi_board": "Shogi Board (Task)",
+ "block.minpaku.kakejiku": "Hanging Scroll (Task)"
 }
