@@ -46,6 +46,15 @@ jobs:
             done
             unzip -l "$GL" | grep -E "\.class" | awk '{print $4}' | grep -E "^software/bernie/geckolib/(animation|model|renderer|animatable|cache/object|util)/[A-Za-z]+\.class" >> /tmp/out/geckolib_api.txt
           fi
+          # 前提MOD（playerAnimator）の使える関数の一覧（開発用）
+          PA=$(find .gradle/loom-cache/remapped_mods -name "player-animation-lib*.jar" 2>/dev/null | head -1)
+          if [ -n "$PA" ]; then
+            unzip -l "$PA" | awk '{print $4}' | grep -E "\.class$|\.json$" > /tmp/out/playeranim_files.txt
+            for c in $(unzip -l "$PA" | awk '{print $4}' | grep -E "^dev/kosmx/playerAnim/(api|core/data|core/util|minecraftApi|core/impl)/.*\.class$" | sed 's/\.class$//' | tr '/' '.' | grep -v '\$' | head -60); do
+              javap -cp "$PA" "$c" >> /tmp/out/playeranim_api.txt 2>&1
+            done
+            javap -c -p -cp "$PA" dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry >> /tmp/out/playeranim_code.txt 2>&1
+          fi
           cd /tmp/out
           git init -q
           git checkout -q -b jar

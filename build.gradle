@@ -13,6 +13,8 @@ repositories {
     mavenCentral()
     // GeckoLib（Blockbench で作ったアニメーションを再生する）
     maven { url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
+    // playerAnimator（プレイヤーの体のアニメーション）
+    maven { url 'https://maven.kosmx.dev/' }
 }
 
 dependencies {
@@ -23,6 +25,9 @@ dependencies {
     // GeckoLib は mod の中に同梱する（遊ぶ人が別に入れなくてよい）
     modImplementation "software.bernie.geckolib:geckolib-fabric-1.21.1:${project.geckolib_version}"
     include "software.bernie.geckolib:geckolib-fabric-1.21.1:${project.geckolib_version}"
+    // playerAnimator も同梱（遊ぶ人が別に入れなくてよい）
+    modImplementation "dev.kosmx.player-anim:player-animation-lib-fabric:${project.playeranim_version}"
+    include "dev.kosmx.player-anim:player-animation-lib-fabric:${project.playeranim_version}"
 }
 
 processResources {
