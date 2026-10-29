@@ -2410,6 +2410,208 @@ def kasa_tate():
                                (cx + 2.3 * hx, t + 2.6, cz), (cx + 2.5 * hx, t + 1.4, cz)], 0.7, "handle_wood", group=g)
     return m
 
+# ---------------------------------------------------------------- 41〜44 で使う材質
+MATS.update({
+    "tanuki_b": Mat((122, 86, 54), "stone", accent=(96, 64, 38), noise=12),
+    "tanuki_l": Mat((214, 186, 142), "stone", accent=(190, 160, 116), noise=8),
+    "tanuki_d": Mat((60, 40, 26), "stone", noise=8),
+    "tanuki_hat": Mat((150, 104, 60), "stone", accent=(120, 80, 44), noise=10),
+    "tokkuri": Mat((236, 230, 214), "plaster", noise=4),
+    "neko": Mat((248, 246, 240), "plaster", noise=3),
+    "neko_orange": Mat((226, 140, 60), "plaster", noise=5),
+    "neko_black": Mat((40, 36, 34), "plaster", noise=4),
+    "koban": Mat((226, 186, 70), "metal", accent=(250, 220, 120), noise=6),
+    "hibachi_c": Mat((228, 222, 206), "plaster", noise=4),
+    "hibachi_blue": Mat((50, 76, 140), "plain", noise=3),
+    "tsubo_body": Mat((96, 62, 40), "stone", accent=(70, 44, 28), noise=12),
+    "tsubo_glaze": Mat((60, 96, 82), "metal", accent=(90, 130, 110), noise=8),
+})
+
+
+def _sometsuke(draw, face, x0, y0, w, h):
+    """火鉢の染付（青い唐草の帯）"""
+    if face not in ("north", "south", "east", "west"):
+        return
+    c = (50, 76, 140, 255)
+    draw.line([(x0, y0 + 2), (x0 + w, y0 + 2)], fill=c, width=1)
+    draw.line([(x0, y0 + h - 3), (x0 + w, y0 + h - 3)], fill=c, width=1)
+    for k in range(0, max(1, w), 6):
+        draw.arc([x0 + k, y0 + h * 0.3, x0 + k + 6, y0 + h * 0.7], 0, 270, fill=c, width=1)
+
+
+# ---------------------------------------------------------------- 41 信楽たぬき
+
+def tanuki():
+    m = F("tanuki", 6)
+    # 台と足
+    bevel(m, "base", (2, 0, 2.4), (14, 0.8, 14.4), "tanuki_d", b=0.25)
+    for x in (5.2, 10.8):
+        m.cyl("foot", x, 6.8, 0.8, 1.8, 1.5, "tanuki_b", sides=4)
+    # 胴：大きなおなか（前へ出っぱる）
+    for (ya, yb, r) in ((1.6, 3.0, 4.4), (3.0, 6.0, 5.2), (6.0, 9.0, 5.4), (9.0, 11.4, 4.8), (11.4, 13.0, 3.8)):
+        m.cyl("body", 8, 8.6, ya, yb, r, "tanuki_b", sides=6)
+    for (ya, yb, r) in ((3.0, 4.4, 3.4), (4.4, 6.0, 4.2), (6.0, 8.4, 4.5), (8.4, 9.8, 4.0), (9.8, 10.8, 3.0)):
+        m.cyl("belly", 8, 6.0, ya, yb, r, "tanuki_l", sides=6)
+    m.cube("heso", (7.5, 6.6, 1.45), (8.5, 7.6, 1.55), "tanuki_d")
+    # 頭：まるい顔、白い顔の模様、つき出た鼻、大きな目、耳
+    for (ya, yb, r) in ((12.8, 13.8, 3.2), (13.8, 17.4, 3.9), (17.4, 19.0, 3.3), (19.0, 19.6, 2.4)):
+        m.cyl("head", 8, 8.4, ya, yb, r, "tanuki_b", sides=6)
+    bevel(m, "face", (5.0, 13.8, 4.4), (11.0, 17.6, 5.0), "tanuki_l", b=0.4)
+    bevel(m, "snout", (6.6, 14.2, 3.6), (9.4, 15.8, 4.6), "tanuki_l", b=0.35)
+    m.cube("nose", (7.4, 15.2, 3.4), (8.6, 16.0, 3.7), "tanuki_d")
+    for x in (5.8, 9.0):
+        bevel(m, "eye_ring", (x - 0.2, 15.8, 4.2), (x + 1.4, 17.4, 4.5), "tanuki_d", b=0.15)
+        m.cube("eye", (x + 0.3, 16.4, 4.1), (x + 0.9, 17.0, 4.2), "plate")
+    for x in (4.8, 10.0):
+        m.cube("ear", (x, 18.6, 7.4), (x + 1.2, 20.0, 9.0), "tanuki_b", rot=[0, 0, 15 if x < 8 else -15], pivot=[x + 0.6, 18.6, 8])
+    # 笠：つばが広く、てっぺんがとがる
+    m.cyl("kasa", 8, 8.4, 19.4, 19.9, 5.6, "tanuki_hat", sides=6)
+    for (ya, yb, r) in ((19.9, 20.6, 4.0), (20.6, 21.4, 2.8), (21.4, 22.0, 1.6), (22.0, 22.4, 0.6)):
+        m.cyl("kasa_top", 8, 8.4, ya, yb, r, "tanuki_hat", sides=6)
+    m.cyl("kasa_himo", 8, 8.4, 19.9, 20.2, 4.1, "red", sides=6)
+    # 右手（向かって左）に通い帳、左手（向かって右）に徳利
+    bevel(m, "arm", (2.0, 8.4, 6.0), (4.0, 12.6, 9.0), "tanuki_b", b=0.5)
+    bevel(m, "book", (1.4, 6.4, 5.0), (3.4, 10.6, 8.6), "tokkuri", b=0.15, decal=_text("通", size=0.5, faces=("west",)))
+    m.cube("book_tie", (1.3, 8.0, 5.0), (3.5, 8.4, 8.6), "tanuki_d")
+    bevel(m, "arm", (12.0, 8.4, 6.0), (14.0, 12.6, 9.0), "tanuki_b", b=0.5)
+    for (ya, yb, r) in ((3.6, 5.0, 1.0), (5.0, 7.6, 1.5), (7.6, 9.0, 1.1), (9.0, 10.0, 0.5), (10.0, 10.4, 0.7)):
+        m.cyl("tokkuri", 14.2, 7.2, ya, yb, r, "tokkuri", sides=4)
+    m.cube("tokkuri_text", (13.0, 5.6, 6.1), (15.4, 7.2, 6.2), "tanuki_d")
+    m.cube("tokkuri_rope", (13.4, 9.6, 6.6), (15.0, 10.0, 7.8), "rope")
+    # しっぽ
+    for k, (ya, yb, r, dz) in enumerate(((1.6, 3.2, 1.4, 14.2), (1.2, 2.6, 1.2, 15.4))):
+        m.cyl("tail", 8, dz, ya, yb, r, "tanuki_b", sides=4)
+    return m
+
+
+# ---------------------------------------------------------------- 42 招き猫
+
+def maneki_neko():
+    m = F("maneki_neko", 6)
+    # 座布団（ふくらみ・房）
+    bevel(m, "cushion", (1.4, 0, 1.4), (14.6, 1.6, 14.6), "red_cloth", b=0.5)
+    bevel(m, "cushion_top", (2.0, 1.6, 2.0), (14.0, 2.0, 14.0), "red_cloth", b=0.3)
+    for (x, z) in ((1.6, 1.6), (14.0, 1.6), (1.6, 14.0), (14.0, 14.0)):
+        m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.5, z + 0.4), "koban")
+    # 胴：すわった形（下がふくらむ）、三毛のぶち
+    for (ya, yb, r) in ((2.0, 3.6, 4.2), (3.6, 7.0, 4.4), (7.0, 9.6, 4.0), (9.6, 11.2, 3.4)):
+        m.cyl("body", 8, 8.6, ya, yb, r, "neko", sides=6)
+    m.cube("buchi", (9.6, 4.0, 11.4), (12.4, 8.4, 12.8), "neko_orange")
+    m.cube("buchi", (3.8, 6.0, 9.0), (4.2, 9.2, 12.0), "neko_black")
+    for x in (5.0, 9.4):
+        bevel(m, "hind", (x, 2.0, 4.6), (x + 1.6, 3.4, 7.0), "neko", b=0.4)
+    # 頭：大きくまるい。三角の耳、目・鼻・口・ひげ
+    for (ya, yb, r) in ((10.8, 12.0, 3.4), (12.0, 16.2, 4.2), (16.2, 17.6, 3.6), (17.6, 18.2, 2.6)):
+        m.cyl("head", 8, 8.2, ya, yb, r, "neko", sides=6)
+    m.cube("buchi_head", (9.6, 15.2, 4.4), (11.6, 17.6, 6.0), "neko_orange")
+    for x, sgn in ((5.4, -1), (10.6, 1)):
+        m.cube("ear", (x - 1.0, 17.0, 7.4), (x + 1.0, 19.4, 8.8), "neko", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
+        m.cube("ear_in", (x - 0.6, 17.4, 7.3), (x + 0.6, 18.9, 7.45), "pink_cloth", rot=[0, 0, sgn * -14], pivot=[x, 17.0, 8])
+    for x in (5.9, 9.1):
+        m.cube("eye", (x, 14.6, 4.0), (x + 1.0, 15.1, 4.2), "neko_black")
+        m.cube("eye_hi", (x + 0.2, 14.9, 3.95), (x + 0.4, 15.1, 4.0), "plate")
+    bevel(m, "muzzle", (6.4, 12.4, 3.6), (9.6, 14.0, 4.4), "neko", b=0.3)
+    m.cube("nose", (7.6, 13.6, 3.5), (8.4, 14.1, 3.7), "pink_cloth")
+    m.cube("mouth", (7.9, 12.8, 3.55), (8.1, 13.6, 3.62), "neko_black")
+    for sgn in (-1, 1):
+        for k in range(2):
+            m.cube("hige", (8 + sgn * 2.0 - 1.4, 13.0 + k * 0.6, 3.9), (8 + sgn * 2.0 + 1.4, 13.1 + k * 0.6, 4.0), "neko_black",
+                   rot=[0, 0, sgn * (8 - k * 12)], pivot=[8 + sgn * 2.0, 13.0, 4])
+    # 首輪と鈴（まるい）
+    m.cyl("collar", 8, 8.4, 10.6, 11.4, 3.7, "red_cloth", sides=6)
+    for (ya, yb, r) in ((9.0, 9.4, 0.6), (9.4, 10.4, 0.9), (10.4, 10.8, 0.6)):
+        m.cyl("bell", 8, 4.6, ya, yb, r, "koban", sides=4)
+    m.cube("bell_slit", (7.4, 9.5, 3.7), (8.6, 9.65, 3.8), "neko_black")
+    # 小判（だ円）と抱える左手
+    for (x0, x1, y0, y1) in ((5.4, 10.6, 4.4, 8.6), (5.0, 11.0, 5.0, 8.0), (5.8, 10.2, 4.0, 9.0)):
+        m.cube("koban", (x0, y0, 3.6), (x1, y1, 4.2), "koban")
+    m.cube("koban_face", (5.9, 4.7, 3.55), (10.1, 8.3, 3.6), "koban", decal=_text("千万両", size=0.45))
+    bevel(m, "paw_l", (3.4, 5.6, 4.0), (5.6, 8.6, 6.4), "neko", b=0.5)
+    # 招く手（ゆっくり手まねき）：腕・まるい手・肉球
+    m.group("paw", (11.5, 11, 7))
+    bevel(m, "arm", (10.4, 10.6, 6.0), (12.8, 16.4, 8.4), "neko", b=0.6, group="paw")
+    bevel(m, "hand", (10.2, 16.0, 5.6), (13.0, 18.0, 8.4), "neko", b=0.6, group="paw")
+    m.cube("pad", (10.9, 16.4, 5.5), (12.3, 17.2, 5.65), "pink_cloth", group="paw")
+    for x in (10.7, 11.45, 12.2):
+        m.cube("toe", (x, 17.35, 5.5), (x + 0.45, 17.75, 5.65), "pink_cloth", group="paw")
+    return m
+
+
+# ---------------------------------------------------------------- 43 火鉢
+
+def hibachi():
+    from items_hires import ring
+    import random
+    rng = random.Random(43)
+    m = F("hibachi", 6)
+    # 木の台
+    bevel(m, "dai", (0.6, 0, 0.6), (15.4, 1.0, 15.4), "hinoki_dark", b=0.25)
+    # 陶器の火鉢：すこしふくらみ、口が内に入る。染付の帯
+    for (ya, yb, r) in ((1.0, 1.8, 5.6), (1.8, 4.0, 6.2), (4.0, 7.6, 6.5), (7.6, 9.4, 6.3)):
+        m.cyl("pot", 8, 8, ya, yb, r, "hibachi_c", sides=8)
+    m.cyl("pot_band", 8, 8, 4.4, 7.2, 6.55, "hibachi_c", sides=8)
+    for k in range(16):
+        a = 2 * math.pi * k / 16
+        x, z = 8 + 6.58 * math.cos(a), 8 + 6.58 * math.sin(a)
+        m.cube("karakusa", (x - 0.06, 5.0 + (k % 2) * 0.8, z - 0.5), (x + 0.06, 6.0 + (k % 2) * 0.8, z + 0.5), "hibachi_blue",
+               rot=[0, -math.degrees(a), 0], pivot=[x, 5.0, z])
+    for y in (4.3, 7.2):
+        ring(m, "blue_line", 8, y, 8, 6.58, 0.06, 0.2, "hibachi_blue", seg=24, plane="xz")
+    ring(m, "rim", 8, 9.7, 8, 5.6, 1.2, 0.6, "hibachi_c", seg=24, plane="xz")
+    # 灰：まん中が少し盛り上がる。炭（ごつごつ）と火
+    m.cyl("ash", 8, 8, 8.6, 9.6, 5.2, "ash_r", sides=8)
+    m.cyl("ash_mound", 8, 8, 9.6, 10.0, 3.2, "ash_r", sides=6)
+    m.group("ember", (8, 9.6, 8))
+    for (x, z) in ((6, 6.4), (9.2, 7), (7.2, 9.6), (9.8, 9.8)):
+        rough(m, "charcoal", (x - 1.0, 9.8, z - 0.8), (x + 1.0, 10.9, z + 0.8), "charcoal", rng, lumps=2, depth=0.15)
+        m.cube("glow_ember", (x - 0.8, 10.85, z - 0.6), (x + 0.8, 11.0, z + 0.6), "ember", group="ember")
+        m.cube("glow_ember", (x - 1.05, 10.0, z - 0.3), (x - 0.98, 10.6, z + 0.3), "ember", group="ember")
+    # 五徳と鉄瓶
+    ring(m, "gotoku", 8, 11.6, 8, 2.6, 0.4, 0.35, "iron_r", seg=12, plane="xz")
+    for a in range(3):
+        ang = math.radians(a * 120 + 90)
+        x, z = 8 + 2.6 * math.cos(ang), 8 + 2.6 * math.sin(ang)
+        m.cube("gotoku_leg", (x - 0.2, 9.8, z - 0.2), (x + 0.2, 11.8, z + 0.2), "iron_r")
+    for (ya, yb, r) in ((11.8, 12.4, 2.0), (12.4, 14.0, 2.7), (14.0, 14.8, 2.2), (14.8, 15.2, 1.4)):
+        m.cyl("tetsubin", 8, 8, ya, yb, r, "tetsubin", sides=8)
+    m.cyl("lid_knob", 8, 8, 15.2, 15.6, 0.4, "brass_s", sides=4)
+    bent(m, "spout", [(10.4, 13.0, 8), (11.6, 13.8, 8), (12.2, 14.8, 8)], 0.6, "tetsubin")
+    bent(m, "tsuru", [(5.8, 14.6, 8), (6.2, 16.0, 8), (8, 16.5, 8), (9.8, 16.0, 8), (10.2, 14.6, 8)], 0.35, "iron_r")
+    # 火箸を灰に立てる
+    for dx in (0, 0.6):
+        m.cube("hibashi", (3.4 + dx, 9.0, 11.2), (3.7 + dx, 17.0, 11.5), "iron_r", rot=[0, 0, 12], pivot=[3.5 + dx, 9.0, 11.3])
+    return m
+
+
+# ---------------------------------------------------------------- 44 壺
+
+def tsubo():
+    from items_hires import ring
+    m = F("tsubo", 6)
+    # 台：黒漆の花台（脚）
+    bevel(m, "stand", (1.4, 1.6, 1.4), (14.6, 2.6, 14.6), "urushi_k", b=0.3)
+    for (x, z) in ((1.6, 1.6), (13.2, 1.6), (1.6, 13.2), (13.2, 13.2)):
+        bevel(m, "stand_leg", (x, 0, z), (x + 1.2, 1.6, z + 1.2), "urushi_k", b=0.2)
+    m.cube("shiki", (3.4, 2.6, 3.4), (12.6, 2.8, 12.6), "mosen")
+    # 壺：肩が張って、首がしまり、口が開く。上半分に釉がかかり、たれる
+    prof = [(2.8, 3.4, 3.0), (3.4, 5.0, 3.9), (5.0, 7.4, 4.8), (7.4, 10.6, 5.4), (10.6, 13.0, 5.5), (13.0, 14.6, 4.8),
+            (14.6, 15.8, 3.6), (15.8, 17.0, 2.4), (17.0, 18.6, 2.1), (18.6, 19.6, 2.6)]
+    for (ya, yb, r) in prof:
+        m.cyl("pot", 8, 8, ya, yb, r, "tsubo_glaze" if ya >= 12.0 else "tsubo_body", sides=8)
+    for k in range(10):
+        a = 2 * math.pi * k / 10 + 0.2
+        x, z = 8 + 5.48 * math.cos(a), 8 + 5.48 * math.sin(a)
+        ln = 1.4 + (k * 7 % 5) * 0.6
+        m.cube("drip", (x - 0.35, 12.0 - ln, z - 0.35), (x + 0.35, 12.2, z + 0.35), "tsubo_glaze")
+    m.cyl("mouth", 8, 8, 19.55, 19.65, 1.8, "deep_dark", sides=6)
+    ring(m, "lip", 8, 19.7, 8, 2.5, 0.35, 0.3, "tsubo_glaze", seg=16, plane="xz")
+    # 肩の耳（縄を通す小さな輪）
+    for a in (0, 90, 180, 270):
+        ang = math.radians(a + 45)
+        x, z = 8 + 4.9 * math.cos(ang), 8 + 4.9 * math.sin(ang)
+        m.cube("mimi", (x - 0.5, 14.0, z - 0.5), (x + 0.5, 15.0, z + 0.5), "tsubo_glaze")
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
@@ -2420,4 +2622,5 @@ OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BRE
              "TEA": tea_set, "WELL": well, "SHOGI": shogi_board, "KAKEJIKU": kakejiku,
              "MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar,
              "ZEN": zen_garden, "WASHTUB": washtub, "TANSU": tansu, "CHABUDAI": chabudai,
-             "BYOBU": byobu, "TOUROU": tourou, "SAKE": sake_barrel, "KASA": kasa_tate}
+             "BYOBU": byobu, "TOUROU": tourou, "SAKE": sake_barrel, "KASA": kasa_tate,
+             "TANUKI": tanuki, "MANEKI": maneki_neko, "HIBACHI": hibachi, "TSUBO": tsubo}
