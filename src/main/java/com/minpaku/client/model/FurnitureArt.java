@@ -141,8 +141,8 @@ public final class FurnitureArt {
             case BELL, KAMADO -> 1.35f;    // 鐘楼 3m・かまど 2.2m
             case BATH, FUTON, HOKORA, BYOBU -> 1.3f;
             case BOILER, SINK -> 1.25f;
-            case CHOPPING, TEA, SHOGI, WASHTUB -> 1.2f;
-            case IRORI, MOCHI -> 1.15f;
+            case CHOPPING, TEA, SHOGI, WASHTUB -> 1.2f; case TANSU -> 1.3f;
+            case IRORI, MOCHI, CHABUDAI -> 1.15f;
             case SHOJI -> 1.05f;
             default -> 1f;
         };

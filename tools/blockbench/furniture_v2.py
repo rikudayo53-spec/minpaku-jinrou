@@ -2029,6 +2029,199 @@ def mochi_mortar():
         m.cyl("maru_top", x + 0.8, z + 0.8, 1.5, 1.8, 0.6, "mochi_s", sides=4)
     return m
 
+# ---------------------------------------------------------------- 33〜36 で使う材質
+MATS.update({
+    "sand_w": Mat((226, 220, 204), "stone", accent=(206, 198, 180), noise=6),
+    "sand_ridge": Mat((240, 236, 222), "stone", noise=4),
+    "border_stone": Mat((96, 96, 92), "stone", accent=(70, 70, 68), noise=10),
+    "garden_rock": Mat((118, 114, 106), "stone", accent=(90, 86, 80), noise=14),
+    "tarai": Mat((200, 164, 112), "wood", accent=(174, 136, 88), noise=5),
+    "suds": Mat((248, 250, 252), "plaster", noise=2),
+    "kiri_t": Mat((214, 186, 146), "wood", accent=(190, 160, 120), noise=4),
+    "kiri_t_d": Mat((180, 148, 108), "wood", accent=(150, 118, 82), noise=4),
+    "tansu_iron": Mat((40, 38, 40), "metal", noise=5),
+    "chabu": Mat((150, 98, 56), "wood", accent=(120, 74, 38), noise=5),
+    "kyusu": Mat((150, 70, 40), "stone", accent=(120, 52, 28), noise=8),
+    "senbei": Mat((196, 140, 70), "stone", accent=(150, 96, 40), noise=10),
+})
+
+
+def _zen_ripples(m, cx, cz, rs, mat):
+    """石のまわりの丸い砂紋"""
+    from items_hires import ring
+    for r in rs:
+        ring(m, "ripple_round", cx, 1.3, cz, r, 0.35, 0.2, mat, seg=max(10, int(r * 5)), plane="xz")
+
+
+# ---------------------------------------------------------------- 33 枯山水
+
+def zen_garden():
+    import random
+    rng = random.Random(33)
+    m = F("zen_garden", 6)
+    # 縁石：ごつごつした石を並べる
+    for x in range(-4, 20, 4):
+        rough(m, "edge", (x, 0, -4.4), (x + 4, 2.2, -2.8), "border_stone", rng, lumps=2, depth=0.2)
+        rough(m, "edge", (x, 0, 18.8), (x + 4, 2.2, 20.4), "border_stone", rng, lumps=2, depth=0.2)
+    for z in range(-3, 19, 4):
+        z1 = min(z + 4, 18.8)
+        rough(m, "edge", (-4.4, 0, z), (-2.8, 2.2, z1), "border_stone", rng, lumps=2, depth=0.2)
+        rough(m, "edge", (18.8, 0, z), (20.4, 2.2, z1), "border_stone", rng, lumps=2, depth=0.2)
+    m.cube("sand", (-2.8, 0, -2.8), (18.8, 1.1, 18.8), "sand_w")
+    # 石組み：大小3つ、根もとに苔
+    rough(m, "rock", (1.4, 1.1, 2.6), (5.8, 5.6, 6.4), "garden_rock", rng, lumps=6, depth=0.4)
+    rough(m, "rock", (4.8, 1.1, 4.2), (7.2, 3.2, 6.6), "garden_rock", rng, lumps=4, depth=0.3)
+    rough(m, "rock", (11, 1.1, 10), (14.2, 3.4, 12.8), "garden_rock", rng, lumps=5, depth=0.35)
+    rough(m, "rock", (12.6, 1.1, 1.8), (14.2, 2.2, 3.4), "garden_rock", rng, lumps=2, depth=0.2)
+    for (x0, z0, x1, z1) in ((1.0, 6.2, 4.6, 7.2), (10.6, 12.6, 13.2, 13.4), (7.0, 4.0, 7.8, 6.2)):
+        rough(m, "moss", (x0, 1.1, z0), (x1, 1.5, z1), "moss", rng, lumps=2, depth=0.1)
+    # 石のまわりの丸い砂紋（いつも見えている）
+    _zen_ripples(m, 4.0, 4.6, (4.0, 5.0), "sand_ridge")
+    _zen_ripples(m, 12.6, 11.4, (2.8, 3.8), "sand_ridge")
+    # まっすぐな砂紋（進むと1本ずつ現れる）：盛り上がった筋を3本ずつ
+    for k in range(6):
+        z = -1.5 + k * 3.4
+        m.group(f"line{k}", (8, 1.2, z))
+        for d in (-0.9, 0, 0.9):
+            m.cube("ripple", (-2.6, 1.1, z + d - 0.18), (18.6, 1.32, z + d + 0.18), "sand_ridge", group=f"line{k}")
+    # 熊手：竹の柄、横木、歯
+    m.group("rake", (8, 1.2, 8))
+    bevel(m, "rake_head", (5.4, 1.6, 7.4), (10.6, 2.4, 8.4), "bamboo", b=0.15, group="rake")
+    for k in range(7):
+        x = 5.6 + k * 0.8
+        m.cube("tine", (x, 1.1, 7.2), (x + 0.3, 1.8, 7.6), "bamboo", rot=[18, 0, 0], pivot=[x, 1.8, 7.6], group="rake")
+    cylz(m, "rake_handle", 8, 2.2, 8.3, 22, 0.4, "bamboo", group="rake")
+    for z in (12, 17):
+        cylz(m, "rake_node", 8, 2.2, z, z + 0.3, 0.5, "take_node", group="rake")
+    return m
+
+
+# ---------------------------------------------------------------- 34 たらい
+
+def washtub():
+    from items_hires import ring
+    from furniture_hires import _ridges
+    m = F("washtub", 6)
+    # たらい：板を輪に並べた中空の桶、たが2本、底
+    ring(m, "tarai", 8, 2.6, 8, 6.4, 0.6, 5.2, "tarai", seg=24, plane="xz")
+    m.cyl("tarai_floor", 8, 8, 0, 0.6, 6.3, "tarai", sides=8)
+    for y in (1.2, 4.0):
+        ring(m, "taga", 8, y, 8, 6.75, 0.25, 0.7, "steel", seg=24, plane="xz")
+    m.cyl("glass_water", 8, 8, 0.6, 4.4, 6.0, "water_thin", sides=8)
+    # 洗濯板：板と、横に並んだ山（本物の凹凸）
+    m.cube("washboard", (3, 1, 9), (13, 14, 9.6), "washboard", rot=(-25, 0, 0), pivot=(8, 1, 9.5))
+    for k in range(10):
+        y = 2.2 + k * 1.05
+        m.cube("ridge", (3.6, y, 8.7), (12.4, y + 0.45, 9.05), "washboard", rot=(-25, 0, 0), pivot=(8, 1, 9.5))
+    for x in (2.6, 12.6):
+        m.cube("board_side", (x, 1, 8.6), (x + 0.8, 14.4, 9.8), "hinoki_dark", rot=(-25, 0, 0), pivot=(8, 1, 9.5))
+    # 洗いものの布：しわ（帯を前後にずらす）
+    m.group("cloth", (8, 7, 9))
+    for k in range(6):
+        x0 = 4 + k * 1.35
+        dz = 0.25 * math.sin(k * 1.9)
+        m.cube("cloth", (x0, 5.5 - (k % 2) * 0.4, 7.6 + dz), (x0 + 1.4, 9.5, 8.4 + dz), "cloth_blue", group="cloth", rot=(-25, 0, 0),
+               pivot=(8, 7, 8))
+    # 泡：まるい玉（輪切りを2段）を水面に
+    m.group("bubbles", (8, 4.4, 8))
+    for k, (x, z, r) in enumerate(((5, 5, 1.0), (10, 6, 0.8), (7, 11, 1.2), (11, 10, 0.7), (4.5, 9, 0.6), (9, 3.4, 0.5), (12, 8, 0.9))):
+        m.cyl("soap", x, z, 4.2, 4.2 + r * 0.8, r, "suds", sides=6, group="bubbles")
+        m.cyl("soap", x, z, 4.2 + r * 0.8, 4.2 + r * 1.4, r * 0.65, "suds", sides=4, group="bubbles")
+    # 石けん（受け皿つき）と、小さな腰掛け
+    bevel(m, "soap_dish", (13.2, 0, 12.6), (17.0, 0.5, 15.4), "hinoki", b=0.12)
+    bevel(m, "bar", (13.7, 0.5, 13.1), (16.5, 1.6, 14.9), "plate", b=0.3)
+    bevel(m, "stool_top", (-6, 4, 4), (-1, 5, 12), "hinoki", b=0.25)
+    for z in (4.4, 10.6):
+        bevel(m, "stool_leg", (-5.6, 0, z), (-1.4, 4, z + 1), "hinoki_dark", b=0.15)
+    return m
+
+
+# ---------------------------------------------------------------- 35 箪笥
+
+def _warabite(m, x, y, z):
+    """蕨手（わらびて）の引き手：座金と、弓なりの持ち手"""
+    bevel(m, "zagane", (x - 1.2, y - 0.6, z - 0.25), (x + 1.2, y + 0.6, z), "tansu_iron", b=0.1)
+    bent(m, "warabite", [(x - 1.1, y + 0.1, z - 0.3), (x - 0.7, y - 0.6, z - 0.7), (x + 0.7, y - 0.6, z - 0.7), (x + 1.1, y + 0.1, z - 0.3)],
+         0.28, "tansu_iron")
+
+
+def tansu():
+    m = F("tansu", 6)
+    # 台輪と本体（ふちを落とす）。上下2段の重ね箪笥
+    bevel(m, "dai", (0.2, 0, 2.6), (15.8, 1.2, 15.2), "kiri_t_d", b=0.25)
+    bevel(m, "body_lower", (0.5, 1.2, 3), (15.5, 14.6, 15), "kiri_t", b=0.3)
+    bevel(m, "body_upper", (0.5, 14.8, 3), (15.5, 27.8, 15), "kiri_t", b=0.3)
+    bevel(m, "tenban", (0.2, 27.8, 2.6), (15.8, 28.6, 15.2), "kiri_t_d", b=0.25)
+    # 下段：引き出し3つ（前板が少し出る）
+    for (y0, y1) in ((1.8, 5.8), (6.2, 10.2), (10.6, 14.2)):
+        bevel(m, "drawer", (1.2, y0, 2.5), (14.8, y1, 3.05), "kiri_t", b=0.15)
+        for x in (4.2, 11.8):
+            _warabite(m, x, (y0 + y1) / 2 + 0.3, 2.5)
+    # 上段：左は小引き出し2つ、右は観音開きの戸（錠前つき）
+    for (y0, y1) in ((15.4, 21.2), (21.6, 27.2)):
+        bevel(m, "drawer", (1.2, y0, 2.5), (7.6, y1, 3.05), "kiri_t", b=0.15)
+        _warabite(m, 4.4, (y0 + y1) / 2 + 0.3, 2.5)
+    for (x0, x1) in ((8.0, 11.3), (11.5, 14.8)):
+        bevel(m, "door", (x0, 15.4, 2.5), (x1, 27.2, 3.05), "kiri_t", b=0.15)
+    bevel(m, "lock_plate", (10.2, 19.4, 2.2), (12.6, 23.2, 2.5), "tansu_iron", b=0.15)
+    m.cube("lock", (11.0, 20.4, 1.9), (11.8, 21.8, 2.2), "brass_s")
+    # 角の金具（L字）
+    for (x, y) in ((0.2, 0.9), (0.2, 27.2), (14.3, 0.9), (14.3, 27.2)):
+        m.cube("kanagu", (x, y - 0.4, 2.3), (x + 1.5, y + 0.6, 2.6), "tansu_iron")
+    for (x, y) in ((0.2, 0.9), (0.2, 25.7), (15.5, 0.9), (15.5, 25.7)):
+        m.cube("kanagu", (x, y, 2.3), (x + 0.3, y + 1.5, 4.0), "tansu_iron")
+    # 横の持ち手（棹通し）
+    for x in (0.1, 15.5):
+        m.cube("sao", (x, 13.6, 7.4), (x + 0.4, 15.6, 10.6), "tansu_iron")
+    # 上に壺と文箱
+    for (ya, yb, r) in ((28.6, 29.2, 1.0), (29.2, 31.4, 1.6), (31.4, 32.4, 1.0), (32.4, 33.0, 1.2)):
+        m.cyl("vase", 11.5, 8.5, ya, yb, r, "pottery", sides=8)
+    bevel(m, "fubako", (2, 28.6, 6), (7.4, 30.2, 11), "urushi_k", b=0.2)
+    m.cube("fubako_himo", (4.5, 28.6, 5.9), (4.9, 30.3, 11.1), "red")
+    return m
+
+
+# ---------------------------------------------------------------- 36 ちゃぶ台
+
+def chabudai():
+    from items_hires import ring
+    import random
+    rng = random.Random(36)
+    m = F("chabudai", 6)
+    # 天板：丸く、ふちを丸める（2段）
+    m.cyl("top", 8, 8, 6.2, 7.2, 8.6, "chabu", sides=12)
+    m.cyl("top_edge", 8, 8, 5.9, 6.2, 8.3, "chabu", sides=12)
+    m.cyl("top_face", 8, 8, 7.2, 7.25, 8.3, "chabu", sides=12)
+    # 幕板と、折りたたみ脚（脚と脚をつなぐ貫）
+    ring(m, "maku", 8, 5.3, 8, 6.4, 0.5, 1.2, "chabu", seg=20, plane="xz")
+    for (x, z) in ((3.4, 3.4), (11.4, 3.4), (3.4, 11.4), (11.4, 11.4)):
+        bevel(m, "leg", (x, 0, z), (x + 1.2, 5.9, z + 1.2), "hinoki_dark", b=0.2)
+    for z in (3.7, 11.7):
+        m.cube("nuki", (4.6, 1.8, z), (11.4, 2.4, z + 0.6), "hinoki_dark")
+    # 急須（横手）、湯のみ（茶たく）、せんべいの皿
+    for (ya, yb, r) in ((7.25, 7.6, 1.4), (7.6, 9.2, 1.9), (9.2, 9.8, 1.4)):
+        m.cyl("kyusu", 6, 7, ya, yb, r, "kyusu", sides=8)
+    m.cyl("kyusu_lid", 6, 7, 9.8, 10.1, 1.2, "kyusu", sides=6)
+    m.cyl("kyusu_knob", 6, 7, 10.1, 10.5, 0.35, "kyusu", sides=4)
+    bent(m, "spout", [(7.7, 8.2, 7), (8.6, 8.8, 7), (9.2, 9.4, 7)], 0.5, "kyusu")
+    cylz(m, "yokode", 6, 8.4, 3.0, 5.2, 0.45, "kyusu")
+    for (x, z) in ((10.6, 4.8), (11.2, 10.2)):
+        m.cyl("chataku", x, z, 7.25, 7.5, 1.2, "urushi_r", sides=8)
+        m.cyl("cup", x, z, 7.5, 9.2, 0.85, "yunomi", sides=8)
+        m.cyl("cup_tea", x, z, 9.15, 9.22, 0.7, "matcha_r", sides=6)
+    m.cyl("plate", 6.4, 12, 7.25, 7.6, 2.2, "plate", sides=10)
+    for k in range(4):
+        a = k * 1.6
+        x, z = 6.4 + 1.0 * math.cos(a), 12 + 1.0 * math.sin(a)
+        m.cyl("senbei", x, z, 7.6 + k * 0.18, 7.85 + k * 0.18, 0.9, "senbei", sides=8)
+    # 座布団3枚（ふくらみ・房）
+    for (x0, z0, x1, z1) in ((-7, 3, -1.4, 13), (17.4, 3, 23, 13), (3, -7, 13, -1.4)):
+        bevel(m, "zabuton", (x0, 0, z0), (x1, 1.4, z1), "zabuton", b=0.45)
+        bevel(m, "zabuton_top", (x0 + 0.5, 1.4, z0 + 0.5), (x1 - 0.5, 1.7, z1 - 0.5), "zabuton", b=0.3)
+        for (x, z) in ((x0 + 0.2, z0 + 0.2), (x1 - 0.6, z0 + 0.2), (x0 + 0.2, z1 - 0.6), (x1 - 0.6, z1 - 0.6)):
+            m.cube("fusa", (x, 0.8, z), (x + 0.4, 1.4, z + 0.4), "yellow_cloth")
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
@@ -2037,4 +2230,5 @@ OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BRE
              "LAUNDRY": laundry_pole, "VASE": flower_vase, "SINK": kitchen_sink, "SHOE_RACK": shoe_rack,
              "SHOJI": shoji_screen, "ANDON": andon, "IRORI": irori, "BONSAI": bonsai,
              "TEA": tea_set, "WELL": well, "SHOGI": shogi_board, "KAKEJIKU": kakejiku,
-             "MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar}
+             "MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar,
+             "ZEN": zen_garden, "WASHTUB": washtub, "TANSU": tansu, "CHABUDAI": chabudai}
