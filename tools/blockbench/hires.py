@@ -232,8 +232,11 @@ def paint_real(img, x0, y0, w, h, mat, face, rng, along="u", seed=1):
                 c = shade(mat.accent, 0.9) if (j % 8 == 0) else shade(base, 0.92 + 0.12 * n1 + 0.05 * ((i // 10) % 2))
             else:
                 c = shade(base, 1.0 + 0.06 * n1)
-            # 焼き込んだ陰：側面は下ほど暗く、上面は少し明るく、底は暗く
-            if side:
+            # 焼き込んだ陰：側面は下ほど暗く、上面は少し明るく、底は暗く（なめらかな曲面の材質は陰もふちも描かない）
+            smooth = getattr(mat, "smooth", False)
+            if smooth:
+                c = shade(base, 1.0 + 0.03 * n1)
+            elif side:
                 c = shade(c, 1.04 - 0.16 * v)
             elif face == "up":
                 c = shade(c, 1.06)
@@ -242,7 +245,7 @@ def paint_real(img, x0, y0, w, h, mat, face, rng, along="u", seed=1):
             if not mat.glow:
                 c = tuple(clamp(a + (n2 * mat.noise * 0.5)) for a in c[:3])
             # ふち：上と左は光、下と右は影（面取りしたように見える）。透明なもの（ガラス）はふちを描かない
-            if mat.alpha < 128:
+            if mat.alpha < 128 or smooth:
                 pass
             elif j == 0 or i == 0:
                 c = mix(c, (255, 255, 255), 0.12) if not mat.glow else c
