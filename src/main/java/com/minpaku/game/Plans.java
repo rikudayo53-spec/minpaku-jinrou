@@ -23,8 +23,9 @@ public final class Plans {
     public static final MapPlan RYOKAN = ryokan();
     public static final MapPlan SHUKUBO = shukubo();
     public static final MapPlan GRAND = grand();
+    public static final MapPlan KARAKURI = karakuri();
 
-    public static final List<MapPlan> ALL = List.of(MACHIYA, HIRAYA, KOMINKA, YASHIKI, RYOKAN, SHUKUBO, GRAND);
+    public static final List<MapPlan> ALL = List.of(MACHIYA, HIRAYA, KOMINKA, YASHIKI, RYOKAN, SHUKUBO, GRAND, KARAKURI);
 
     /** 設定の値（1〜6）からマップ */
     public static MapPlan byIndex(int i) {
@@ -1129,6 +1130,194 @@ public final class Plans {
             m.marker(MarkerType.KASA, 165, a, 83, Direction.WEST);
             m.marker(MarkerType.MAILBOX, 160, a, 93, Direction.NORTH);
             m.fill(162, a, 86, 166, a + 1, 88, Blocks.HAY_BLOCK);
+
+            // ---- 第5弾のタスク（運ぶ・見回り・タイミング）
+            m.marker(MarkerType.MAKI, 46, a, 12, Direction.EAST);           // 厨房の薪 → 風呂釜・かまど
+            m.marker(MarkerType.OZEN, 54, a, 12, Direction.WEST);           // 厨房のお膳 → ちゃぶ台
+            m.marker(MarkerType.TEOKE, 14, a, 84, Direction.NORTH);         // 庭園の手桶 → 玄関
+            m.marker(MarkerType.MAKI, 152, a, 88, Direction.NORTH);         // 納屋の薪
+            m.marker(MarkerType.TAIKO, 136, a, 22, Direction.NORTH);        // 宴会場の太鼓
+            m.marker(MarkerType.KANE, 30, a, 26, Direction.WEST);           // 神社の境内の半鐘
+            m.marker(MarkerType.CHOCHIN, 60, a, 27, Direction.SOUTH);       // 本館の廊下
+            m.marker(MarkerType.CHOCHIN, 112, a, 27, Direction.SOUTH);
+            m.marker(MarkerType.CHOCHIN, 140, a, 27, Direction.SOUTH);      // 東館の廊下
+            m.marker(MarkerType.CHOCHIN, 110, a, 75, Direction.SOUTH);      // 別館の廊下
+            m.marker(MarkerType.CHOCHIN, 64, a, 70, Direction.SOUTH);       // 前庭
+            m.marker(MarkerType.AMADO, 68, b, 21, Direction.SOUTH);         // 二階の廊下
+            m.marker(MarkerType.AMADO, 108, b, 21, Direction.SOUTH);
+            m.marker(MarkerType.AMADO, 152, a, 27, Direction.SOUTH);        // 東館の廊下
+            m.marker(MarkerType.AMADO, 88, a, 75, Direction.SOUTH);         // 別館の廊下
+        };
+        return p;
+    }
+
+    // ================================================================ アモアス風：からくり宿
+    /**
+     * アモアス（The Skeld）のように、大小の部屋を細い廊下でつないだ平屋の大きな宿。200 × 130
+     *   北：上の釜場・湯治の間・大広間（会議と呼び鈴）・厨房
+     *   西：大浴場の釜（ボイラー）・見張り番所　／　東：庭の池・物見櫓
+     *   中：番台　／　南：下の釜場・配電室・納戸・帳場・蔵、いちばん南に玄関（スタート）
+     * 部屋と部屋は直接つながらず、廊下を通る（壁1マスをはさんで自動で出入り口があく）
+     */
+    private static MapPlan karakuri() {
+        MapPlan p = new MapPlan("karakuri", "からくり宿（アモアス風）", "8人〜・超特大", 200, 130)
+                // 部屋
+                .room("上の釜場", 0, 4, 8, 30, 34, Blocks.SMOOTH_STONE)
+                .room("湯治の間", 0, 44, 30, 66, 48, Blocks.BAMBOO_PLANKS)
+                .room("大広間", 0, 72, 4, 120, 40, Blocks.BAMBOO_PLANKS)
+                .room("厨房", 0, 136, 6, 162, 30, Blocks.SMOOTH_STONE)
+                .room("大浴場の釜", 0, 2, 46, 20, 78, Blocks.CALCITE)
+                .room("見張り番所", 0, 29, 56, 43, 72, Blocks.SPRUCE_PLANKS)
+                .room("番台", 0, 116, 56, 134, 74, Blocks.OAK_PLANKS)
+                .garden("庭の池", 138, 46, 170, 62, Blocks.MOSS_BLOCK)
+                .room("物見櫓", 0, 178, 48, 196, 76, Blocks.SPRUCE_PLANKS)
+                .room("下の釜場", 0, 4, 92, 30, 118, Blocks.SMOOTH_STONE)
+                .room("配電室", 0, 52, 80, 74, 100, Blocks.POLISHED_ANDESITE)
+                .room("納戸", 0, 84, 84, 112, 124, Blocks.SPRUCE_PLANKS)
+                .room("帳場", 0, 122, 98, 142, 114, Blocks.OAK_PLANKS)
+                .room("蔵", 0, 150, 92, 178, 114, Blocks.POLISHED_ANDESITE)
+                .room("玄関", 0, 92, 126, 104, 129, Blocks.OAK_PLANKS)
+                // 廊下
+                .room("北の廊下", 0, 32, 14, 70, 18, Blocks.DARK_OAK_PLANKS)
+                .room("湯治場への廊下", 0, 52, 20, 56, 28, Blocks.DARK_OAK_PLANKS)
+                .room("西の廊下", 0, 22, 36, 27, 90, Blocks.DARK_OAK_PLANKS)
+                .room("南西の廊下", 0, 32, 102, 82, 106, Blocks.DARK_OAK_PLANKS)
+                .room("中央の廊下", 0, 92, 42, 98, 82, Blocks.DARK_OAK_PLANKS)
+                .room("番台への廊下", 0, 100, 62, 114, 66, Blocks.DARK_OAK_PLANKS)
+                .room("厨房の廊下", 0, 140, 32, 146, 44, Blocks.DARK_OAK_PLANKS)
+                .room("物見への廊下", 0, 172, 50, 176, 58, Blocks.DARK_OAK_PLANKS)
+                .room("東の廊下", 0, 180, 78, 186, 110, Blocks.DARK_OAK_PLANKS)
+                .room("南の廊下", 0, 114, 116, 186, 120, Blocks.DARK_OAK_PLANKS);
+        p.entranceX = 97;
+        p.spawnX = 98;
+        p.spawnZ = 127;
+        p.furnish = m -> {
+            int a = 1;
+            // ---- 大広間（会議・呼び鈴）
+            m.marker(MarkerType.MEETING, 96, a, 20, Direction.NORTH);
+            m.marker(MarkerType.BELL, 96, a, 8, Direction.SOUTH);
+            m.marker(MarkerType.KAKEJIKU, 84, a, 4, Direction.SOUTH);
+            m.marker(MarkerType.KAKEJIKU, 108, a, 4, Direction.SOUTH);
+            m.marker(MarkerType.BYOBU, 76, a, 6, Direction.SOUTH);
+            m.marker(MarkerType.BYOBU, 116, a, 6, Direction.SOUTH);
+            for (int[] c : new int[][]{{80, 16}, {80, 28}, {112, 16}, {112, 28}}) {
+                m.marker(MarkerType.CHABUDAI, c[0], a, c[1], Direction.SOUTH);
+            }
+            m.marker(MarkerType.TAIKO, 76, a, 36, Direction.EAST);
+            m.marker(MarkerType.OZEN, 117, a, 37, Direction.WEST);
+            m.marker(MarkerType.CHOCHIN, 73, a, 22, Direction.EAST);
+            m.marker(MarkerType.CHOCHIN, 119, a, 22, Direction.WEST);
+            m.marker(MarkerType.VASE, 104, a, 38, Direction.NORTH);
+            m.marker(MarkerType.VENT, 88, a, 37, Direction.NORTH);
+            // ---- 上の釜場（ガスの元栓）
+            m.marker(MarkerType.KAMADO, 10, a, 10, Direction.SOUTH);
+            m.marker(MarkerType.KAMADO, 18, a, 10, Direction.SOUTH);
+            m.marker(MarkerType.GAS_VALVE, 29, a, 24, Direction.WEST);
+            m.marker(MarkerType.MAKI, 8, a, 30, Direction.NORTH);
+            m.marker(MarkerType.CHOPPING, 16, a, 26, Direction.NORTH);
+            m.marker(MarkerType.VENT, 26, a, 32, Direction.NORTH);
+            m.fill(4, a, 20, 4, a + 1, 24, Blocks.BARREL);
+            // ---- 湯治の間
+            m.marker(MarkerType.FUTON, 48, a, 32, Direction.SOUTH);
+            m.marker(MarkerType.FUTON, 54, a, 32, Direction.SOUTH);
+            m.marker(MarkerType.IRORI, 58, a, 42, Direction.NORTH);
+            m.marker(MarkerType.TEA, 47, a, 44, Direction.NORTH);
+            m.marker(MarkerType.SHOJI, 66, a, 38, Direction.WEST);
+            m.marker(MarkerType.ANDON, 64, a, 31, Direction.SOUTH);
+            // ---- 厨房
+            m.marker(MarkerType.SINK, 142, a, 7, Direction.SOUTH);
+            m.marker(MarkerType.KAMADO, 150, a, 7, Direction.SOUTH);
+            m.marker(MarkerType.OZEN, 158, a, 8, Direction.SOUTH);
+            m.marker(MarkerType.MOCHI, 140, a, 24, Direction.NORTH);
+            m.marker(MarkerType.CHOPPING, 156, a, 24, Direction.NORTH);
+            m.marker(MarkerType.VENT, 161, a, 29, Direction.NORTH);
+            m.fill(162, a, 14, 162, a + 1, 20, Blocks.BARREL);
+            // ---- 大浴場の釜（ボイラー）
+            m.marker(MarkerType.BOILER, 6, a, 48, Direction.SOUTH);
+            m.marker(MarkerType.BATH, 11, a, 62, Direction.EAST);
+            m.marker(MarkerType.WASHTUB, 6, a, 74, Direction.NORTH);
+            m.marker(MarkerType.TEOKE, 16, a, 74, Direction.NORTH);
+            m.marker(MarkerType.VENT, 18, a, 48, Direction.NORTH);
+            // ---- 見張り番所
+            m.marker(MarkerType.KANE, 36, a, 64, Direction.WEST);
+            m.marker(MarkerType.LEDGER, 32, a, 58, Direction.SOUTH);
+            m.marker(MarkerType.ANDON, 42, a, 71, Direction.NORTH);
+            m.marker(MarkerType.VENT, 31, a, 71, Direction.NORTH);
+            // ---- 番台
+            m.marker(MarkerType.LEDGER, 122, a, 58, Direction.SOUTH);
+            m.marker(MarkerType.MAILBOX, 132, a, 58, Direction.SOUTH);
+            m.marker(MarkerType.MANEKI, 128, a, 57, Direction.SOUTH);
+            m.marker(MarkerType.WIRING, 134, a, 66, Direction.WEST);
+            m.marker(MarkerType.HIBACHI, 124, a, 70, Direction.NORTH);
+            m.marker(MarkerType.VENT, 131, a, 73, Direction.NORTH);
+            // ---- 庭の池
+            m.pond(150, 50, 160, 58);
+            m.marker(MarkerType.GOLDFISH, 142, a, 50, Direction.SOUTH);
+            m.marker(MarkerType.BONSAI, 166, a, 48, Direction.SOUTH);
+            m.marker(MarkerType.WELL, 143, a, 59, Direction.NORTH);
+            m.marker(MarkerType.ZEN, 166, a, 58, Direction.NORTH);
+            m.marker(MarkerType.TOUROU, 162, a, 52, Direction.WEST);
+            m.marker(MarkerType.LAUNDRY, 150, a, 61, Direction.NORTH);
+            // ---- 物見櫓
+            m.marker(MarkerType.KANE, 190, a, 54, Direction.WEST);
+            m.marker(MarkerType.FURIN, 184, a, 49, Direction.SOUTH);
+            m.marker(MarkerType.CHOCHIN, 195, a, 70, Direction.WEST);
+            m.marker(MarkerType.AMADO, 196, a, 62, Direction.WEST);
+            m.marker(MarkerType.AMADO, 186, a, 76, Direction.NORTH);
+            m.marker(MarkerType.VENT, 180, a, 74, Direction.NORTH);
+            // ---- 下の釜場
+            m.marker(MarkerType.KAMADO, 10, a, 94, Direction.SOUTH);
+            m.marker(MarkerType.MAKI, 22, a, 94, Direction.SOUTH);
+            m.marker(MarkerType.CHOPPING, 8, a, 110, Direction.NORTH);
+            m.marker(MarkerType.TAIKO, 20, a, 114, Direction.NORTH);
+            m.marker(MarkerType.VENT, 28, a, 116, Direction.NORTH);
+            // ---- 配電室（停電を直す）
+            m.marker(MarkerType.BREAKER, 63, a + 1, 80, Direction.SOUTH);
+            m.marker(MarkerType.WIRING, 54, a, 80, Direction.SOUTH);
+            m.marker(MarkerType.WIRING, 72, a, 80, Direction.SOUTH);
+            m.marker(MarkerType.DUST, 62, a, 94, Direction.NORTH);
+            m.marker(MarkerType.VENT, 54, a, 98, Direction.NORTH);
+            // ---- 納戸
+            m.marker(MarkerType.TANSU, 86, a, 86, Direction.SOUTH);
+            m.marker(MarkerType.TANSU, 110, a, 86, Direction.SOUTH);
+            m.marker(MarkerType.DUST, 96, a, 100, Direction.NORTH);
+            m.marker(MarkerType.FUTON, 104, a, 96, Direction.SOUTH);
+            m.marker(MarkerType.KASA, 86, a, 120, Direction.NORTH);
+            m.marker(MarkerType.SHOE_RACK, 110, a, 122, Direction.WEST);
+            m.marker(MarkerType.VENT, 88, a, 108, Direction.NORTH);
+            m.fill(84, a, 112, 84, a + 1, 118, Blocks.BARREL);
+            // ---- 帳場
+            m.marker(MarkerType.LEDGER, 128, a, 100, Direction.SOUTH);
+            m.marker(MarkerType.SHOE_RACK, 141, a, 106, Direction.WEST);
+            m.marker(MarkerType.VASE, 124, a, 112, Direction.NORTH);
+            m.marker(MarkerType.VENT, 140, a, 112, Direction.NORTH);
+            // ---- 蔵
+            for (int x = 152; x <= 168; x += 4) {
+                m.marker(MarkerType.SAKE, x, a, 93, Direction.SOUTH);
+            }
+            m.marker(MarkerType.TSUBO, 176, a, 100, Direction.WEST);
+            m.marker(MarkerType.DUST, 162, a, 106, Direction.NORTH);
+            m.marker(MarkerType.MAKI, 154, a, 112, Direction.NORTH);
+            m.marker(MarkerType.VENT, 176, a, 112, Direction.NORTH);
+            // ---- 玄関（スタート）
+            m.marker(MarkerType.SPAWN, 98, a, 127, Direction.NORTH);
+            m.marker(MarkerType.TANUKI, 93, a, 127, Direction.EAST);
+            m.marker(MarkerType.KASA, 103, a, 127, Direction.WEST);
+            // ---- 廊下：提灯・雨戸・行灯（見回りのタスク）
+            m.marker(MarkerType.CHOCHIN, 50, a, 15, Direction.SOUTH);
+            m.marker(MarkerType.AMADO, 40, a, 14, Direction.SOUTH);
+            m.marker(MarkerType.CHOCHIN, 24, a, 60, Direction.EAST);
+            m.marker(MarkerType.AMADO, 22, a, 84, Direction.EAST);
+            m.marker(MarkerType.CHOCHIN, 60, a, 104, Direction.SOUTH);
+            m.marker(MarkerType.AMADO, 70, a, 106, Direction.NORTH);
+            m.marker(MarkerType.CHOCHIN, 95, a, 50, Direction.EAST);
+            m.marker(MarkerType.ANDON, 97, a, 74, Direction.WEST);
+            m.marker(MarkerType.CHOCHIN, 143, a, 38, Direction.EAST);
+            m.marker(MarkerType.CHOCHIN, 183, a, 92, Direction.EAST);
+            m.marker(MarkerType.AMADO, 186, a, 100, Direction.WEST);
+            m.marker(MarkerType.CHOCHIN, 150, a, 118, Direction.NORTH);
+            m.marker(MarkerType.AMADO, 130, a, 120, Direction.NORTH);
+            m.marker(MarkerType.ANDON, 170, a, 116, Direction.SOUTH);
         };
         return p;
     }
