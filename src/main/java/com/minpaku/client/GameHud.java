@@ -56,6 +56,10 @@ public final class GameHud {
                 }
                 topBar(g, s, w);
                 center(g, s, w, h, mc);
+            } else if (mc.options.keyPlayerList.isDown()) {
+                // ［Tab］：プレイヤーの一覧のかわりに、タスクの進み具合
+                ledger(g, s);
+                topBar(g, s, w);
             } else if (s.activeType() >= 0) {
                 Ui.ring(g, w / 2f, h / 2f, 13, 10, Mth.clamp(s.activeProgress(), 0f, 1f), 0xFFFFC94A, 0x66000000);
                 Ui.sansShadow(g, ClientGame.taskName(s.activeType()), w / 2f, h / 2f + 17, 0xFFFFE08A, 0.85f, 0);
@@ -100,6 +104,20 @@ public final class GameHud {
                 g.fill((int) (ex - ew), (int) (cy - eh), (int) (ex + ew), (int) (cy + eh), Ui.alpha(0xFFFF3A2A, 0.85f * fade));
                 g.fill((int) (ex - ew * 0.18f), (int) (cy - eh), (int) (ex + ew * 0.18f), (int) (cy + eh), Ui.alpha(0xFF100008, fade));
             }
+        }
+        // 悪神のミニキャラ（擬人化のドット絵）：下からせり上がり、ふわふわ浮く
+        float rise = Mth.clamp((t - 16) / 14f, 0f, 1f);
+        if (rise > 0) {
+            float e = 1f - (1f - rise) * (1f - rise);
+            int size = (int) (Math.min(w, h) * 0.42f);
+            float bob = (float) Math.sin(t * 0.15f) * size * 0.03f;
+            float cy2 = h * 0.62f + (1f - e) * h * 0.5f + bob;
+            boolean blink = (t % 50f) > 45f;
+            net.minecraft.resources.ResourceLocation tex = com.minpaku.MinpakuJinrou.id("textures/gui/role/evil_god.png");
+            com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+            g.setColor(1f, 1f, 1f, fade);
+            g.blit(tex, (int) (w / 2f - size / 2f), (int) (cy2 - size / 2f), size, size, blink ? 48 : 0, 0, 48, 48, 96, 48);
+            g.setColor(1f, 1f, 1f, 1f);
         }
     }
 

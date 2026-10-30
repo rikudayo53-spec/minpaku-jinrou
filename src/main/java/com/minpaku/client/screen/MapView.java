@@ -94,14 +94,14 @@ public final class MapView {
 
     public void render(GuiGraphics g, int sw, int sh, int mouseX, int mouseY) {
         if (overlay) {
-            w = Math.min(sw * 45 / 100, 320);
-            h = Math.min(sh * 55 / 100, w * 2 / 3 + 40);
+            w = Math.min(sw * 48 / 100, 360);
+            h = Math.min(sh * 60 / 100, w * 3 / 4 + 40);
             x = sw - w - 6;
             y = 6;
             floorPicked = false;   // いつも自分のいる階を出す
         } else {
-            w = Math.min(sw - 30, 520);
-            h = Math.min(sh - 30, 330);
+            w = Math.min(sw - 16, 900);
+            h = Math.min(sh - 16, 520);
             x = (sw - w) / 2;
             y = (sh - h) / 2;
             g.fill(0, 0, sw, sh, 0xA0000000);
@@ -168,29 +168,48 @@ public final class MapView {
         float scale = Math.min(aw / (float) Math.max(1, maxX - minX), ah / (float) Math.max(1, maxZ - minZ));
         float ox = ax + (aw - (maxX - minX) * scale) / 2f;
         float oz = ay + (ah - (maxZ - minZ) * scale) / 2f;
-        g.fill(ax, ay, ax + aw, ay + ah, 0xFFE9DFC6);
-        // 部屋
-        for (ClientGame.MapRoom r : ClientGame.rooms) {
-            boolean open = r.y2() - r.y1() > 4;
-            int f = floorOf(r.y1(), fl);
-            if (f != floor && !(open && floor > 0)) {
-                continue;
+        // 歩きながら見る小さい地図：自分のまわりを大きく（広いマップでも部屋が読める）
+        Vec3 me0 = me();
+        if (overlay && me0 != null) {
+            float span = 64f;
+            float zs = Math.min(aw, ah) / span;
+            if (zs > scale) {
+                scale = zs;
+                ox = ax + aw / 2f - (float) (me0.x - minX) * scale;
+                oz = ay + ah / 2f - (float) (me0.z - minZ) * scale;
+                // 端より外は見せない
+                ox = Math.min(ax, Math.max(ox, ax + aw - (maxX - minX) * scale));
+                oz = Math.min(ay, Math.max(oz, ay + ah - (maxZ - minZ) * scale));
             }
-            int rx1 = (int) (ox + (r.x1() - minX) * scale);
-            int rz1 = (int) (oz + (r.z1() - minZ) * scale);
-            int rx2 = (int) (ox + (r.x2() + 1 - minX) * scale);
-            int rz2 = (int) (oz + (r.z2() + 1 - minZ) * scale);
-            boolean dim = f != floor;
-            int fillC = open ? 0xFF9CC48A : 0xFFF4E7C4;
-            if (dim) {
-                fillC = 0xFFCFD8C4;
-            }
-            g.fill(rx1, rz1, rx2, rz2, 0xFF5A4632);
-            g.fill(rx1 + 1, rz1 + 1, rx2 - 1, rz2 - 1, fillC);
-            if (!dim) {
-                float cx = (rx1 + rx2) / 2f;
-                float cz = (rz1 + rz2) / 2f - 3;
-                Ui.fitSans(g, r.name(), cx, cz, Math.max(10, rx2 - rx1 - 4), open ? 0xFF2E5A22 : Ui.INK, 0.7f, 0);
+        }
+        g.fill(ax, ay, ax + aw, ay + ah, 0xFF3B3226);
+        g.enableScissor(ax, ay, ax + aw, ay + ah);
+        // 部屋：種類ごとに色を分け、太い壁で囲む。名前はいつも出す
+        for (int pass = 0; pass < 2; pass++) {
+            for (ClientGame.MapRoom r : ClientGame.rooms) {
+                boolean open = r.y2() - r.y1() > 4;
+                int f = floorOf(r.y1(), fl);
+                if (f != floor && !(open && floor > 0)) {
+                    continue;
+                }
+                int rx1 = (int) (ox + (r.x1() - minX) * scale);
+                int rz1 = (int) (oz + (r.z1() - minZ) * scale);
+                int rx2 = (int) (ox + (r.x2() + 1 - minX) * scale);
+                int rz2 = (int) (oz + (r.z2() + 1 - minZ) * scale);
+                boolean dim = f != floor;
+                if (pass == 0) {
+                    int fillC = dim ? 0xFF6D7A60 : roomColor(r.name(), open, r.x2() - r.x1(), r.z2() - r.z1());
+                    g.fill(rx1, rz1, rx2, rz2, 0xFF2A2118);
+                    g.fill(rx1 + 2, rz1 + 2, rx2 - 2, rz2 - 2, fillC);
+                } else if (!dim) {
+                    float cx = (rx1 + rx2) / 2f;
+                    float cz = (rz1 + rz2) / 2f - 4;
+                    int bw = rx2 - rx1 - 4;
+                    if (bw >= 18 && rz2 - rz1 >= 10) {
+                        float sc = Math.min(1.1f, Math.max(0.7f, Math.min(bw, rz2 - rz1) / 46f));
+                        Ui.fitSans(g, r.name(), cx, cz, Math.max(10, bw), open ? 0xFF1F4A16 : 0xFF2B1D12, sc, 0);
+                    }
+                }
             }
         }
         // 自分のタスク
@@ -201,8 +220,14 @@ public final class MapView {
             }
             float px = ox + (t.pos().getX() + 0.5f - minX) * scale;
             float pz = oz + (t.pos().getZ() + 0.5f - minZ) * scale;
-            Ui.disc(g, px, pz, 3.5f, t.done() ? 0xFF3FA34D : 0xFFFFC21F);
-            Ui.disc(g, px, pz, 1.6f, 0xFF2B1D12);
+            if (!t.done()) {
+                Ui.disc(g, px, pz, 7f + pulse * 2f, Ui.alpha(0xFFFFC21F, 0.35f));
+            }
+            Ui.disc(g, px, pz, 5f, 0xFF2B1D12);
+            Ui.disc(g, px, pz, 4f, t.done() ? 0xFF3FA34D : 0xFFFFC21F);
+            if (!t.done() && !overlay) {
+                Ui.sansShadow(g, ClientGame.taskName(t.type()), px, pz + 6, 0xFFFFE9A8, 0.7f, 0);
+            }
         }
         // 設備（呼び鈴・妨害を直す場所）
         boolean anyUrgent = false;
@@ -232,7 +257,8 @@ public final class MapView {
         if (me != null && taskFloor((int) Math.floor(me.y), fl) == floor) {
             float px = ox + (float) (me.x - minX) * scale;
             float pz = oz + (float) (me.z - minZ) * scale;
-            Ui.disc(g, px, pz, 5f, 0xFFC8372D);
+            Ui.disc(g, px, pz, 7f, 0xFFFFFFFF);
+            Ui.disc(g, px, pz, 5.5f, 0xFFC8372D);
             Ui.disc(g, px, pz, 2.5f, 0xFFFFFFFF);
             if (live) {
                 // 向いている方向の小さな矢印
@@ -246,8 +272,9 @@ public final class MapView {
                     }
                 }
             }
-            Ui.sans(g, "あなた", px, pz - 14, 0xFFC8372D, 0.75f, 0);
+            Ui.sansShadow(g, "あなた", px, pz - 16, 0xFFFF8A80, 0.8f, 0);
         }
+        g.disableScissor();
         // 凡例（小さい地図では省く）
         int ly = y + h - 18;
         if (overlay) {
@@ -268,6 +295,32 @@ public final class MapView {
             String what = s.blackout() ? "停電中：配電盤へ！" : "ガス漏れ：元栓とボイラーへ！";
             Ui.sans(g, what, x + w - 12, overlay ? y + h - 16 : y + h - 30, Ui.alpha(0xFFE53935, 0.7f + 0.3f * pulse), 0.85f, 1);
         }
+    }
+
+    /** 部屋の種類ごとの色（見分けやすく） */
+    private static int roomColor(String name, boolean open, int dx, int dz) {
+        if (open) {
+            return name.contains("池") || name.contains("湯") || name.contains("風呂") ? 0xFF9FD3E6 : 0xFFA9D48E;
+        }
+        if (Math.min(dx, dz) <= 3 || name.contains("廊下")) {
+            return 0xFFD9C9A8;
+        }
+        if (name.contains("厨房") || name.contains("板場") || name.contains("台所") || name.contains("食")) {
+            return 0xFFF5CFA0;
+        }
+        if (name.contains("浴") || name.contains("湯") || name.contains("風呂")) {
+            return 0xFFB9E1F2;
+        }
+        if (name.contains("広間") || name.contains("会議") || name.contains("宴会")) {
+            return 0xFFF4C3B8;
+        }
+        if (name.contains("機械") || name.contains("蔵") || name.contains("納屋") || name.contains("倉")) {
+            return 0xFFCFCFCA;
+        }
+        if (name.contains("客室") || name.contains("布団") || name.contains("離れ")) {
+            return 0xFFF7EBC6;
+        }
+        return 0xFFEADFC8;
     }
 
     /** ブロックの高さ（タスクの場所など）から階 */
