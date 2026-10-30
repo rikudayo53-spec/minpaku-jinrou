@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/ozen_shelf"
+  },
+  "facing=east": {
+   "model": "minpaku:block/ozen_shelf",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/ozen_shelf",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/ozen_shelf",
+   "y": 270
+  }
+ }
+}

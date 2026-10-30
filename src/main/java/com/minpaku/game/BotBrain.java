@@ -432,18 +432,29 @@ public class BotBrain {
         int need = switch (type.use) {
             case HOLD -> type.amount;
             case CLICK -> type.amount * 14;
+            case CARRY, PATROL -> 24;
             default -> 90;
         };
         if (work % 14 == 0) {
             bot.swing(InteractionHand.MAIN_HAND, true);
-            if (type.use != MarkerType.Use.WIRES && type.use != MarkerType.Use.NUMBERS && type.use != MarkerType.Use.HOLES) {
+            if (!type.miniGame()) {
                 gm.workFx(currentTask.pos, type, 14f / need);
             } else {
                 gm.animate(currentTask.pos, 14f / need);
             }
         }
         if (work >= need) {
-            gm.botCompleteTask(ps, currentTask);
+            if (type.use == MarkerType.Use.CARRY || type.use == MarkerType.Use.PATROL) {
+                // 運ぶ・見回り：次の場所へ（タスクの場所が変わる）
+                if (!gm.botAdvance(ps, currentTask)) {
+                    goal = currentTask.pos;
+                    work = 0;
+                    sinceRepath = 999;
+                    return;
+                }
+            } else {
+                gm.botCompleteTask(ps, currentTask);
+            }
             currentTask = null;
             goal = null;
         }

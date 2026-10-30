@@ -52,6 +52,15 @@ public enum MarkerType {
     ZEN("zen_garden", "枯山水", Use.HOLD, "砂紋を描く", 80),
     WASHTUB("washtub", "たらい", Use.HOLD, "洗濯板で洗う", 80),
 
+    // 第5弾：運ぶ・見回り・タイミング
+    MAKI("woodpile", "薪置き場", Use.CARRY, "薪を運ぶ", 0),
+    OZEN("ozen_shelf", "お膳棚", Use.CARRY, "お膳を運ぶ", 0),
+    TEOKE("teoke", "手桶", Use.CARRY, "打ち水をする", 0),
+    CHOCHIN("chochin", "提灯", Use.PATROL, "提灯に灯をともす", 4),
+    AMADO("amado", "雨戸", Use.PATROL, "雨戸を閉める", 4),
+    TAIKO("taiko", "太鼓", Use.RHYTHM, "太鼓を叩く", 8),
+    KANE("hansho", "半鐘", Use.RHYTHM, "半鐘を鳴らす", 5),
+
     // 飾り（タスクではない。置くだけ）
     TANSU("tansu", "箪笥（飾り）", Use.NONE, null, 0),
     CHABUDAI("chabudai", "ちゃぶ台（飾り）", Use.NONE, null, 0),
@@ -76,7 +85,13 @@ public enum MarkerType {
         /** 数字を順番に押すミニゲーム */
         NUMBERS,
         /** 障子の穴をふさぐミニゲーム */
-        HOLES
+        HOLES,
+        /** 運ぶ：ここで持って、運び先（dests）のどれかで渡す */
+        CARRY,
+        /** 見回り：同じ種類の家具を amount か所まわる（近い順に次が決まる） */
+        PATROL,
+        /** タイミング：合図に合わせて押すミニゲーム（amount = 当てる回数） */
+        RHYTHM
     }
 
     public final String blockId;
@@ -95,6 +110,21 @@ public enum MarkerType {
 
     public boolean isTask() {
         return taskName != null && this != GAS_VALVE && this != BOILER;
+    }
+
+    /** 運ぶタスクの運び先（前にあるほど優先。どれもなければ会議の座卓） */
+    public MarkerType[] dests() {
+        return switch (this) {
+            case MAKI -> new MarkerType[]{BATH, KAMADO, IRORI, HIBACHI};
+            case OZEN -> new MarkerType[]{CHABUDAI, MEETING};
+            case TEOKE -> new MarkerType[]{SPAWN};
+            default -> new MarkerType[0];
+        };
+    }
+
+    /** ミニゲーム画面を開くタスク */
+    public boolean miniGame() {
+        return use == Use.WIRES || use == Use.NUMBERS || use == Use.HOLES || use == Use.RHYTHM;
     }
 
     /** 飾りの家具（ゲームでは何もしない） */

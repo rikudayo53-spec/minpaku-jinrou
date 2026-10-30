@@ -58,5 +58,12 @@
  "block.minpaku.tanuki": "信楽たぬき（飾り）",
  "block.minpaku.maneki_neko": "招き猫（飾り）",
  "block.minpaku.hibachi": "火鉢（飾り）",
- "block.minpaku.tsubo": "壺（飾り）"
+ "block.minpaku.tsubo": "壺（飾り）",
+ "block.minpaku.woodpile": "薪置き場（タスク）",
+ "block.minpaku.ozen_shelf": "お膳棚（タスク）",
+ "block.minpaku.teoke": "手桶（タスク）",
+ "block.minpaku.chochin": "提灯（タスク）",
+ "block.minpaku.amado": "雨戸（タスク）",
+ "block.minpaku.taiko": "太鼓（タスク）",
+ "block.minpaku.hansho": "半鐘（タスク）"
 }

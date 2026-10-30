@@ -36,6 +36,17 @@ public class MarkerBlockEntity extends BlockEntity implements software.bernie.ge
         super(ModBlockEntities.MARKER, pos, state);
     }
 
+    /** サーバー：元の形に戻す（提灯の灯を消す・雨戸を開ける） */
+    public void resetWork() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        work = 0;
+        lastPulse = level.getGameTime() - 10000;
+        setChanged();
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
     /** サーバー：作業が少し進んだ（step = 進んだ割合）。まわりに知らせる */
     public void pulse(float step) {
         if (level == null || level.isClientSide()) {

@@ -309,6 +309,23 @@ public final class FurnitureGeo {
                     B.rot("shoe" + k, 0, (1f - neat) * seed * 18f + jig * seed * 3f, 0);
                 }
             }
+            case CHOCHIN -> {
+                float lit = sm(w);
+                B.show("flame", lit > 0.05f);
+                B.show("paper_off", lit <= 0.3f);
+                B.show("paper_on", lit > 0.3f);
+            }
+            case AMADO -> {
+                // 雨戸：戸袋から1枚ずつ滑り出て、窓をふさぐ
+                for (int k = 0; k < 3; k++) {
+                    float m = sm(w * 3f - k);
+                    B.pos("door" + k, -m * (5.4f * (k + 1)), 0, 0);
+                }
+            }
+            case MAKI, OZEN, TEOKE -> {
+                // 持ち上げた直後は、持っていった物が少し見えなくなる
+                B.show("item", s > 40 || w < 0.5f);
+            }
             case ANDON -> {
                 float lit = sm(w);
                 B.show("flame", lit > 0.05f);

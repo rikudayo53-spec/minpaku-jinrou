@@ -269,6 +269,8 @@ public class MinpakuClient implements ClientModInitializer {
                 case LEDGER -> mc.setScreen(new NumbersScreen(p.pos()));
                 case BREAKER -> mc.setScreen(new BreakerScreen(p.pos()));
                 case SHOJI -> mc.setScreen(new com.minpaku.client.screen.HolesScreen(p.pos()));
+                case TAIKO -> mc.setScreen(new com.minpaku.client.screen.RhythmScreen(p.pos(), false, type.amount));
+                case KANE -> mc.setScreen(new com.minpaku.client.screen.RhythmScreen(p.pos(), true, type.amount));
                 default -> {
                 }
             }

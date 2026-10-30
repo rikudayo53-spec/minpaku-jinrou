@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/chochin"
+  },
+  "facing=east": {
+   "model": "minpaku:block/chochin",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/chochin",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/chochin",
+   "y": 270
+  }
+ }
+}

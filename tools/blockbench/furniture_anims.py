@@ -190,12 +190,28 @@ def hibachi(a):
     i.scale("ember", [(0, (1, 1, 1)), (1.0, (1, 1.6, 1), "easeInOutSine"), (2.0, (1, 1, 1), "easeInOutSine")])
 
 
+def chochin(a):
+    flicker(a.add("idle", 1.2, loop=True), "flame", 0.2, 0.3, axis_y_only=False)
+
+
+def taiko(a):
+    use = a.add("use", 0.5)
+    use.scale("drum", [(0, (1, 1, 1)), (0.06, (1.04, 1.04, 0.96), "easeOutQuad"), (0.5, (1, 1, 1), "easeOutElastic")])
+
+
+def hansho(a):
+    use = a.add("use", 1.6)
+    use.rot("striker", [(0, (0, 0, 0)), (0.12, (0, 0, -30), "easeOutQuad"), (0.22, (0, 0, 8), "easeInQuad"),
+                        (0.6, (0, 0, 0), "easeOutBack")])
+    use.damped("bell", 0, 10, 0.9, 1.4, steps=16)
+
+
 ANIMS = {
     "call_bell": bell, "floor_hatch": vent, "boiler": boiler, "hokora": hokora, "ledger": ledger,
     "shoji_screen": shoji, "kamado": kamado, "bath_stove": bath, "chopping_block": chopping, "dust_pile": dust,
     "laundry_pole": laundry, "flower_vase": vase, "andon": andon, "irori": irori, "bonsai": bonsai, "tea_set": tea,
     "well": well, "mailbox": mailbox, "goldfish_bowl": goldfish, "wind_chime": furin, "mochi_mortar": mochi,
-    "zen_garden": zen, "washtub": washtub, "tourou": tourou, "maneki_neko": maneki, "hibachi": hibachi,
+    "zen_garden": zen, "washtub": washtub, "chochin": chochin, "taiko": taiko, "hansho": hansho, "tourou": tourou, "maneki_neko": maneki, "hibachi": hibachi,
 }
 
 

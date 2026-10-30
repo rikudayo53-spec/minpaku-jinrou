@@ -12,10 +12,13 @@ import java.util.UUID;
 /** ゲームに参加している1人ぶんの状態（サーバー側） */
 public class PlayerState {
     public static class TaskEntry {
-        public final BlockPos pos;
+        /** 今やる場所（運ぶ・見回りのタスクは進むと次の場所に変わる） */
+        public BlockPos pos;
         public final MarkerType type;
         public boolean done;
         public int progress;
+        /** 見回りで回り終えた場所 */
+        public final java.util.List<BlockPos> visited = new java.util.ArrayList<>();
 
         public TaskEntry(BlockPos pos, MarkerType type) {
             this.pos = pos;

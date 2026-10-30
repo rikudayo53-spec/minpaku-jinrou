@@ -2699,6 +2699,267 @@ def tsubo():
         m.cube("mimi", (x - 0.5, 14.0, z - 0.5), (x + 0.5, 15.0, z + 0.5), "tsubo_glaze")
     return m
 
+# ================================================================ 第5弾：運ぶ・見回り・タイミング
+MATS.update({
+    "maki_bark": Mat((96, 70, 48), "stone", accent=(70, 50, 34), noise=12),
+    "maki_cut": Mat((214, 178, 120), "wood", accent=(180, 140, 88), noise=4),
+    "chochin_red": Mat((196, 46, 36), "paper", accent=(220, 70, 50), noise=4),
+    "chochin_lit": Mat((255, 140, 70), "paper", accent=(255, 200, 120), glow=True),
+    "chochin_ink": Mat((24, 18, 16), "plain", noise=2),
+    "amado_wood": Mat((126, 92, 60), "wood", accent=(100, 70, 42), noise=5),
+    "taiko_hide": Mat((232, 220, 190), "paper", accent=(214, 200, 168), noise=4),
+    "miso": Mat((150, 100, 50), "plain", noise=4),
+    "shoji_paper": Mat((246, 242, 228), "paper", noise=3),
+    "kumiko": Mat((206, 178, 132), "wood", accent=(180, 150, 108), noise=3),
+    "taiko_body": Mat((150, 56, 36), "metal", accent=(120, 40, 26), noise=6),
+    "hansho": Mat((92, 104, 80), "metal", accent=(70, 110, 90), noise=10),
+})
+
+
+def _mitsudomoe(draw, face, x0, y0, w, h):
+    """太鼓の面：三つ巴"""
+    if face not in ("north", "south"):
+        return
+    cx, cy = x0 + w / 2, y0 + h / 2
+    r = min(w, h) * 0.3
+    for k in range(3):
+        a = k * 2.094
+        x, y = cx + r * 0.5 * math.cos(a), cy + r * 0.5 * math.sin(a)
+        draw.ellipse([x - r * 0.42, y - r * 0.42, x + r * 0.42, y + r * 0.42], fill=(180, 40, 30, 255))
+        draw.arc([cx - r, cy - r, cx + r, cy + r], math.degrees(a) - 40, math.degrees(a) + 40, fill=(180, 40, 30, 255), width=3)
+
+
+def _matsuri(draw, face, x0, y0, w, h):
+    """提灯の文字（祭）"""
+    if face not in ("north", "south"):
+        return
+    from items_hires import text_decal
+    text_decal("祭", color=(24, 18, 16, 255), faces=(face,), size=0.55)(draw, face, x0, y0, w, h)
+
+
+def woodpile():
+    import random
+    rng = random.Random(51)
+    m = F("woodpile", 6)
+    # 石の土台、薪棚（柱・横木・小さな板屋根）
+    rough(m, "base", (-2, 0, 2), (18, 1.0, 14), "granite_dark", rng, lumps=6, depth=0.2)
+    for x in (-1.6, 16.0):
+        for z in (2.6, 12.0):
+            bevel(m, "post", (x, 1.0, z), (x + 1.6, 19, z + 1.4), "hinoki_dark", b=0.25)
+    for y in (1.2, 9.6):
+        bevel(m, "rail", (-1.6, y, 3.0), (17.6, y + 0.8, 13.4), "hinoki_dark", b=0.15)
+    for sgn in (-1, 1):
+        z0, z1 = (0.6, 8.2) if sgn < 0 else (7.8, 15.4)
+        m.cube("roof", (-3, 19.4, z0), (19, 20.0, z1), "hinoki_dark", rot=[sgn * -18, 0, 0], pivot=[8, 20.4, 8])
+        for x in range(-2, 19, 3):
+            m.cube("roof_batten", (x, 20.0, z0), (x + 0.8, 20.4, z1), "hinoki", rot=[sgn * -18, 0, 0], pivot=[8, 20.4, 8])
+    # 割った薪を2段に積む（木口が見える）
+    for layer, (y0, y1) in enumerate(((2.0, 9.4), (10.4, 18.2))):
+        row = 0
+        y = y0
+        while y + 1.8 <= y1:
+            off = 0.9 if row % 2 else 0
+            x = -1.0 + off
+            while x + 1.8 <= 16.4:
+                d = rng.uniform(-0.15, 0.15)
+                cylz(m, "maki", x + 0.9, y + 0.9 + d, 3.4, 12.8, 0.9, "maki_bark", sides=3)
+                m.cube("kiguchi", (x + 0.2, y + 0.2 + d, 3.3), (x + 1.6, y + 1.6 + d, 3.45), "maki_cut")
+                x += 1.85
+            y += 1.75
+            row += 1
+    # 持っていく束（縄でしばった薪）
+    m.group("item", (8, 1.0, -2))
+    for k in range(5):
+        x = 5.0 + (k % 3) * 1.9
+        y = 1.0 + (k // 3) * 1.7
+        cylx(m, "maki_b", y + 0.85, -1.6, x - 3.6, x + 3.6, 0.85, "maki_bark", sides=3, group="item")
+    for x in (4.6, 9.6):
+        m.cube("nawa", (x, 0.9, -2.7), (x + 0.5, 4.6, -0.5), "rope", group="item")
+    return m
+
+
+def ozen_shelf():
+    m = F("ozen_shelf", 6)
+    # 棚：側板・3段の棚板・背板
+    for x in (0, 15):
+        bevel(m, "side", (x, 0, 4), (x + 1, 22, 15), "hinoki", b=0.2)
+    bevel(m, "back", (1, 0, 14.4), (15, 22, 15), "hinoki", b=0.1)
+    bevel(m, "top", (-0.4, 22, 3.6), (16.4, 23, 15.4), "hinoki", b=0.25)
+    for y in (0.6, 7.6, 14.6):
+        bevel(m, "shelf", (1, y, 4.2), (15, y + 0.6, 14.4), "hinoki", b=0.1)
+    # お膳（脚つきの塗りの台）に、ご飯・汁・小皿
+    def ozen(x, y, z, mat, g=None):
+        bevel(m, "zen", (x, y + 1.2, z), (x + 6, y + 1.7, z + 5.2), mat, b=0.15, group=g)
+        for (a, b) in (((x + 0.3, z + 0.3), (x + 5.7, z + 0.7)), ((x + 0.3, z + 4.5), (x + 5.7, z + 4.9)),
+                       ((x + 0.3, z + 0.7), (x + 0.7, z + 4.5)), ((x + 5.3, z + 0.7), (x + 5.7, z + 4.5))):
+            m.cube("zen_rim", (a[0], y + 1.7, a[1]), (b[0], y + 2.1, b[1]), mat, group=g)
+        for (lx, lz) in ((x + 0.3, z + 0.3), (x + 4.9, z + 0.3), (x + 0.3, z + 4.1), (x + 4.9, z + 4.1)):
+            m.cube("zen_leg", (lx, y, lz), (lx + 0.8, y + 1.2, lz + 0.8), mat, group=g)
+        m.cyl("wan", x + 1.7, z + 1.8, y + 1.7, y + 3.0, 1.0, "urushi_r", sides=4, group=g)
+        m.cyl("rice", x + 1.7, z + 1.8, y + 2.9, y + 3.2, 0.85, "rice", sides=4, group=g)
+        m.cyl("wan", x + 4.2, z + 1.8, y + 1.7, y + 2.9, 0.95, "urushi_k", sides=4, group=g)
+        m.cyl("soup", x + 4.2, z + 1.8, y + 2.8, y + 2.95, 0.8, "miso", sides=4, group=g)
+        m.cyl("kozara", x + 3.0, z + 3.8, y + 1.7, y + 2.1, 0.9, "plate", sides=4, group=g)
+        m.cube("hashi", (x + 0.6, y + 1.75, z + 4.4), (x + 5.4, y + 1.95, z + 4.6), "hinoki_dark", group=g)
+    for (y, mats) in ((0.6 + 0.6, ("urushi_r", "urushi_k")), (7.6 + 0.6, ("urushi_k", "urushi_r")), (14.6 + 0.6, ("urushi_r", "urushi_r"))):
+        ozen(1.6, y, 6.4, mats[0])
+        ozen(8.4, y, 6.4, mats[1])
+    # 持っていくお膳（棚の前の台の上）
+    bevel(m, "dai", (2, 0, -1.2), (14, 4.0, 3.6), "hinoki_dark", b=0.25)
+    m.group("item", (8, 4, 1))
+    ozen(5.0, 4.0, -1.0, "urushi_r", "item")
+    return m
+
+
+def teoke():
+    from items_hires import ring
+    import random
+    rng = random.Random(53)
+    m = F("teoke", 6)
+    # 石の水鉢（くぼみに水）
+    rough(m, "bachi", (1, 0, 4), (12, 5.6, 14), "granite", rng, lumps=6, depth=0.3)
+    m.cube("bachi_in", (2.6, 5.2, 5.6), (10.4, 5.62, 12.4), "deep_dark")
+    m.cube("glass_water", (2.6, 4.8, 5.6), (10.4, 5.5, 12.4), "water")
+    for (x, z) in ((1.2, 13.4), (10.6, 4.2)):
+        m.cube("moss", (x, 5.55, z - 0.6), (x + 1.4, 5.75, z + 0.4), "moss")
+    # 筧（竹の管から水）
+    cylz(m, "kakei", 6.5, 9.4, 13, 22, 0.6, "take")
+    m.cube("kakei_post", (5.9, 0, 18.5), (7.1, 9.4, 19.7), "take")
+    # 持っていく手桶（たが・取っ手・ひしゃく）
+    m.group("item", (14, 0, 0))
+    ring(m, "oke", 14.0, 2.4, 1.0, 2.4, 0.35, 4.8, "oke", seg=14, plane="xz", group="item")
+    m.cyl("oke_floor", 14.0, 1.0, 0, 0.4, 2.4, "oke", sides=4, group="item")
+    for y in (0.9, 3.8):
+        ring(m, "taga", 14.0, y, 1.0, 2.62, 0.18, 0.4, "hoop_copper", seg=14, plane="xz", group="item")
+    m.cyl("glass_water", 14.0, 1.0, 0.4, 4.0, 2.15, "water", sides=4, group="item")
+    for x in (11.4, 16.0):
+        m.cube("te", (x, 4.6, 0.7), (x + 0.6, 7.6, 1.3), "oke", group="item")
+    m.cube("te_bar", (11.4, 7.0, 0.7), (16.6, 7.6, 1.3), "oke", group="item")
+    m.cyl("hishaku", 6.0, 1.0, 5.6, 6.8, 0.9, "hinoki")
+    bent(m, "hishaku_e", [(6.0, 6.6, 1.8), (6.4, 6.0, 6.0), (7.0, 5.7, 9.0)], 0.35, "hinoki")
+    return m
+
+
+def chochin():
+    m = F("chochin", 6)
+    # 柱と腕木（提灯を吊るす）
+    rough_rng = __import__("random").Random(54)
+    rough(m, "base", (4.4, 0, 9.4), (11.6, 1.2, 15.6), "granite", rough_rng, lumps=3, depth=0.2)
+    bevel(m, "post", (7, 1.2, 11.4), (9, 27, 13.4), "hinoki_dark", b=0.3)
+    bevel(m, "arm", (7.4, 25, 4.6), (8.6, 26.2, 13.4), "hinoki_dark", b=0.2)
+    m.cube("hook", (7.8, 22.0, 6.8), (8.2, 25, 7.2), "iron_black")
+    # 提灯：ふくらんだ胴（輪切り）、上下の黒い輪、文字
+    m.group("paper_off", (8, 15, 7))
+    m.group("paper_on", (8, 15, 7))
+    prof = [(12.2, 2.2), (13.0, 3.0), (14.2, 3.4), (15.6, 3.5), (17.0, 3.4), (18.2, 3.0), (19.0, 2.3)]
+    for gname, mat in (("paper_off", "chochin_red"), ("paper_on", "chochin_lit")):
+        pre = "glow_" if gname == "paper_on" else ""
+        for (ya, ra), (yb, rb) in zip(prof, prof[1:]):
+            m.cyl(pre + "chochin", 8, 7, ya, yb, (ra + rb) / 2, mat, sides=4, group=gname)
+        for y in (13.4, 14.8, 16.2, 17.6):
+            m.cyl(pre + "hone", 8, 7, y, y + 0.12, 3.52, mat, sides=4, group=gname)
+        m.cube(pre + "moji", (6.4, 14.4, 3.45), (9.6, 17.4, 3.55), mat, group=gname, decal=_matsuri)
+    m.cyl("wa_top", 8, 7, 19.0, 20.2, 2.4, "chochin_ink", sides=4)
+    m.cyl("wa_bot", 8, 7, 11.2, 12.4, 2.4, "chochin_ink", sides=4)
+    m.cube("fusa", (7.6, 9.6, 6.6), (8.4, 11.2, 7.4), "red_cloth")
+    m.group("flame", (8, 14, 7))
+    m.cube("glow_flame", (7.5, 13.0, 6.5), (8.5, 15.0, 7.5), "glow_fire", group="flame")
+    return m
+
+
+def amado():
+    m = F("amado", 6)
+    # 窓の枠：柱・敷居・鴨居。奥に障子
+    for x in (-1.2, 16.2):
+        bevel(m, "hashira", (x, 0, 12.4), (x + 1.2, 28, 16), "hinoki_dark", b=0.25)
+    bevel(m, "shikii", (-1.2, 0, 11.6), (24, 1.2, 16), "hinoki_dark", b=0.2)
+    bevel(m, "kamoi", (-1.2, 26, 11.6), (24, 27.4, 16), "hinoki_dark", b=0.2)
+    m.cube("shoji", (0, 1.2, 15.2), (16.2, 26, 15.5), "shoji_paper")
+    for x in (4, 8, 12):
+        m.cube("kumiko", (x - 0.2, 1.2, 15.0), (x + 0.2, 26, 15.6), "kumiko")
+    for y in range(5, 26, 5):
+        m.cube("kumiko", (0, y - 0.2, 15.0), (16.2, y + 0.2, 15.6), "kumiko")
+    m.cube("rail", (-1.2, 1.2, 11.7), (24, 1.5, 12.4), "iron_fit")
+    # 戸袋（雨戸をしまう箱）：右の外
+    bevel(m, "tobukuro", (16.6, 0.6, 9.2), (23.8, 27.6, 11.6), "amado_wood", b=0.25)
+    for y in range(3, 27, 3):
+        m.cube("tobukuro_board", (16.4, y, 9.0), (24.0, y + 0.3, 9.3), "hinoki_dark")
+    # 雨戸3枚：はじめは戸袋の中（少し見える）。閉めると左へ滑って窓をふさぐ
+    for k in range(3):
+        z = 11.7 - k * 0.0
+        g = m.group(f"door{k}", (19.2, 1.2, 11))
+        x0 = 16.4
+        bevel(m, "amado", (x0, 1.5, 10.0 + k * 0.55), (x0 + 5.4, 25.8, 10.5 + k * 0.55), "amado_wood", b=0.12, group=g)
+        for y in (4, 10, 16, 22):
+            m.cube("sankin", (x0 + 0.2, y, 9.9 + k * 0.55), (x0 + 5.2, y + 0.4, 10.0 + k * 0.55), "hinoki_dark", group=g)
+        m.cube("hikite", (x0 + 0.4, 12, 9.85 + k * 0.55), (x0 + 1.0, 14, 9.95 + k * 0.55), "iron_black", group=g)
+    return m
+
+
+def taiko():
+    from items_hires import ring
+    m = F("taiko", 6)
+    # 台：斜めに組んだ脚
+    for x in (1.4, 13.0):
+        m.cube("leg", (x, 0, 7.2), (x + 1.6, 12.4, 8.8), "urushi_k", rot=[0, 0, 12 if x < 8 else -12], pivot=[x + 0.8, 0, 8])
+        m.cube("foot", (x - 1.2, 0, 4.4), (x + 2.8, 1.0, 11.6), "urushi_k")
+    m.cube("nuki", (2, 2.4, 7.6), (14, 3.4, 8.4), "urushi_k")
+    # 胴（たる形）と面、鋲
+    m.group("drum", (8, 14, 8))
+    for (z0, z1, r) in ((3.0, 4.2, 5.4), (4.2, 6.6, 6.0), (6.6, 9.4, 6.2), (9.4, 11.8, 6.0), (11.8, 13.0, 5.4)):
+        cylz(m, "do", 8, 14, z0, z1, r, "taiko_body", sides=6, group="drum")
+    for zf, sgn in ((2.8, -1), (13.2, 1)):
+        cylz(m, "men", 8, 14, min(zf, zf - 0.1 * sgn), max(zf, zf - 0.1 * sgn) + 0.2, 5.6, "taiko_hide", sides=6, group="drum")
+        for k in range(16):
+            a = 2 * math.pi * k / 16
+            m.cube("byo", (8 + 5.5 * math.cos(a) - 0.25, 14 + 5.5 * math.sin(a) - 0.25, zf - 0.25), (8 + 5.5 * math.cos(a) + 0.25,
+                   14 + 5.5 * math.sin(a) + 0.25, zf + 0.25), "gold", group="drum")
+    m.cube("tomoe", (4.4, 10.4, 2.6), (11.6, 17.6, 2.7), "taiko_hide", group="drum", decal=_mitsudomoe)
+    for x in (2.4, 13.6):
+        ring(m, "kan", x, 14, 8, 0.7, 0.25, 0.3, "gold", seg=8)
+    # ばち（2本）：台に立てかける
+    m.group("bachi", (8, 4, 1))
+    for x in (5.4, 9.6):
+        m.cube("bachi", (x, 1.0, 0.6), (x + 0.8, 11.0, 1.4), "hinoki", rot=[-14, 0, 0], pivot=[x, 1.0, 1.0], group="bachi")
+    return m
+
+
+def hansho():
+    import random
+    rng = random.Random(57)
+    m = F("hansho", 6)
+    # 火の見やぐら：4本の柱、筋交い、はしご、上に小さな屋根
+    rough(m, "base", (0, 0, 0), (16, 1.0, 16), "granite_dark", rng, lumps=6, depth=0.2)
+    for (x, z) in ((1.6, 1.6), (13.0, 1.6), (1.6, 13.0), (13.0, 13.0)):
+        bevel(m, "post", (x, 1.0, z), (x + 1.4, 30, z + 1.4), "hinoki_dark", b=0.25)
+    for y in (8, 16, 24):
+        for (a, b) in (((1.6, 1.9), (14.4, 2.7)), ((1.6, 13.3), (14.4, 14.1)), ((1.9, 1.6), (2.7, 14.4)), ((13.3, 1.6), (14.1, 14.4))):
+            m.cube("nuki", (a[0], y, a[1]), (b[0], y + 0.8, b[1]), "hinoki_dark")
+    for sgn in (-1, 1):
+        m.cube("sujikai", (2.2, 1.6, 14.2), (14.0, 2.4, 14.6), "hinoki_dark", rot=[0, 0, sgn * 33], pivot=[8, 8, 14.4])
+    # はしご（前）
+    for x in (5.8, 10.2):
+        m.cube("hashigo", (x - 0.3, 1.0, 1.0), (x + 0.3, 24, 1.6), "hinoki")
+    for y in range(3, 24, 2):
+        m.cube("dan", (5.8, y, 1.1), (10.2, y + 0.35, 1.5), "hinoki")
+    # 見張り台と屋根
+    bevel(m, "dai", (0.6, 24.6, 0.6), (15.4, 25.4, 15.4), "hinoki", b=0.2)
+    for (a, b) in (((0.6, 0.6), (15.4, 1.0)), ((0.6, 15.0), (15.4, 15.4)), ((0.6, 1.0), (1.0, 15.0)), ((15.0, 1.0), (15.4, 15.0))):
+        m.cube("tesuri", (a[0], 27.4, a[1]), (b[0], 27.8, b[1]), "hinoki")
+    for k in range(4):
+        m.cyl("yane", 8, 8, 30 + k * 0.7, 30.7 + k * 0.7, 10.6 - k * 2.6, "kawara", sides=2)
+    m.cube("hoju", (7.4, 32.8, 7.4), (8.6, 34.2, 8.6), "kawara")
+    # 半鐘と、木づち
+    m.group("bell", (8, 29.6, 8))
+    m.cube("kusari", (7.8, 27.6, 7.8), (8.2, 29.6, 8.2), "iron_black", group="bell")
+    for (ya, yb, r) in ((26.8, 27.6, 1.0), (24.2, 26.8, 1.6), (23.6, 24.2, 1.8)):
+        m.cyl("hansho", 8, 8, ya, yb, r, "hansho", sides=4, group="bell")
+    m.cyl("band", 8, 8, 25.4, 25.7, 1.7, "bronze_dark", sides=4, group="bell")
+    m.group("striker", (11, 26, 8))
+    m.cube("tsuchi_e", (10.8, 22.6, 7.8), (11.2, 26, 8.2), "hinoki", group="striker")
+    bevel(m, "tsuchi", (10.2, 21.6, 7.2), (11.8, 22.8, 8.8), "hinoki_dark", b=0.15, group="striker")
+    return m
+
 
 OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BREAKER": breaker,
              "GAS_VALVE": gas_valve, "BOILER": boiler, "MEETING": meeting_table, "HOKORA": hokora,
@@ -2710,4 +2971,6 @@ OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BRE
              "MAILBOX": mailbox, "GOLDFISH": goldfish_bowl, "FURIN": wind_chime, "MOCHI": mochi_mortar,
              "ZEN": zen_garden, "WASHTUB": washtub, "TANSU": tansu, "CHABUDAI": chabudai,
              "BYOBU": byobu, "TOUROU": tourou, "SAKE": sake_barrel, "KASA": kasa_tate,
-             "TANUKI": tanuki, "MANEKI": maneki_neko, "HIBACHI": hibachi, "TSUBO": tsubo}
+             "TANUKI": tanuki, "MANEKI": maneki_neko, "HIBACHI": hibachi, "TSUBO": tsubo,
+             "MAKI": woodpile, "OZEN": ozen_shelf, "TEOKE": teoke, "CHOCHIN": chochin, "AMADO": amado, "TAIKO": taiko,
+             "KANE": hansho}

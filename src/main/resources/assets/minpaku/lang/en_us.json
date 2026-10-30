@@ -58,5 +58,12 @@
  "block.minpaku.tanuki": "Tanuki statue (decor)",
  "block.minpaku.maneki_neko": "Maneki-neko (decor)",
  "block.minpaku.hibachi": "Hibachi (decor)",
- "block.minpaku.tsubo": "Vase (decor)"
+ "block.minpaku.tsubo": "Vase (decor)",
+ "block.minpaku.woodpile": "Woodpile (task)",
+ "block.minpaku.ozen_shelf": "Meal tray shelf (task)",
+ "block.minpaku.teoke": "Water pail (task)",
+ "block.minpaku.chochin": "Paper lantern (task)",
+ "block.minpaku.amado": "Storm shutter (task)",
+ "block.minpaku.taiko": "Taiko drum (task)",
+ "block.minpaku.hansho": "Fire bell (task)"
 }

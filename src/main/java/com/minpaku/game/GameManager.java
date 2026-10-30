@@ -233,7 +233,8 @@ public final class GameManager {
             case WELL -> "pull_rope";
             case SHOGI -> "tap";
             case GOLDFISH -> "sprinkle";
-            case FURIN -> "reach_up";
+            case FURIN, CHOCHIN -> "reach_up";
+            case AMADO -> "reach_work";
             default -> "reach_tap";
         };
     }
@@ -446,8 +447,22 @@ public final class GameManager {
         for (PlayerState ps : players.values()) {
             List<BlockPos> pick = new ArrayList<>(taskSpots);
             Collections.shuffle(pick, random);
-            for (int k = 0; k < Math.min(want, pick.size()); k++) {
-                ps.tasks.add(new PlayerState.TaskEntry(pick.get(k), taskTypes.get(pick.get(k))));
+            java.util.Set<MarkerType> patrol = new java.util.HashSet<>();
+            for (int k = 0; k < pick.size() && ps.tasks.size() < want; k++) {
+                MarkerType tt = taskTypes.get(pick.get(k));
+                if (tt.use == MarkerType.Use.PATROL && !patrol.add(tt)) {
+                    continue;   // 見回りは同じ種類を1人1つまで（ほかの家具は回る先になる）
+                }
+                ps.tasks.add(new PlayerState.TaskEntry(pick.get(k), tt));
+            }
+        }
+
+        // 提灯・雨戸を元に戻す（前のゲームでついた灯・閉めた戸）
+        for (MarkerType t : new MarkerType[]{MarkerType.CHOCHIN, MarkerType.AMADO}) {
+            for (BlockPos pos : map().get(t)) {
+                if (level.getBlockEntity(pos) instanceof com.minpaku.block.MarkerBlockEntity be) {
+                    be.resetWork();
+                }
             }
         }
 
@@ -1368,13 +1383,26 @@ public final class GameManager {
         if (p.distanceToSqr(Vec3.atCenterOf(pos)) > 36) {
             return;
         }
-        if (level.getBlockState(pos).getBlock() instanceof MarkerBlock mb && mb.type().isTask()) {
-            useMarker(p, ps, pos, mb.type(), false);
+        if (level.getBlockState(pos).getBlock() instanceof MarkerBlock mb) {
+            boolean dest = ps.tasks.stream().anyMatch(t -> !t.done && t.type.use == MarkerType.Use.CARRY && t.progress >= 1 && t.pos.equals(pos));
+            if (mb.type().isTask() || dest) {
+                useMarker(p, ps, pos, mb.type(), false);
+            }
         }
     }
 
     private void useMarker(ServerPlayer p, PlayerState ps, BlockPos pos, MarkerType type, boolean alive) {
-        if (ps.vent != null || type.isDecor()) {
+        if (ps.vent != null) {
+            return;
+        }
+        // 運んでいる物を、運び先で渡す（運び先がほかのタスクの家具でも、こちらを先に）
+        for (PlayerState.TaskEntry t : ps.tasks) {
+            if (!t.done && t.type.use == MarkerType.Use.CARRY && t.progress >= 1 && t.pos.equals(pos)) {
+                deliver(p, ps, t);
+                return;
+            }
+        }
+        if (type.isDecor()) {
             return;
         }
         switch (type) {
@@ -1464,13 +1492,144 @@ public final class GameManager {
                     completeTask(p, ps, entry);
                 }
             }
-            case WIRES, NUMBERS, HOLES -> {
+            case WIRES, NUMBERS, HOLES, RHYTHM -> {
                 animate(pos, 0.2f);
                 send(p, new Packets.OpenTask(pos, type.ordinal()));
+            }
+            case CARRY -> {
+                if (ticks - ps.lastClickTick < 4) {
+                    return;
+                }
+                ps.lastClickTick = ticks;
+                pickUp(p, ps, entry);
+            }
+            case PATROL -> {
+                if (ticks - ps.lastClickTick < 4) {
+                    return;
+                }
+                ps.lastClickTick = ticks;
+                playerAnim(p.getUUID(), clickAnim(type));
+                patrolStep(p, ps, entry);
             }
             default -> {
             }
         }
+    }
+
+    // ---- 運ぶ・見回り
+
+    /** 運ぶ：持ち上げて、運び先を決める（タスクの場所が運び先に変わる） */
+    private void pickUp(ServerPlayer p, PlayerState ps, PlayerState.TaskEntry entry) {
+        if (entry.progress >= 1) {
+            actionBar(p, "もう持っている！" + destName(entry) + " へ運ぼう", ChatFormatting.YELLOW);
+            return;
+        }
+        BlockPos from = entry.pos;
+        BlockPos to = carryDest(entry.type, from);
+        workFx(from, entry.type, 1f);
+        if (p != null) {
+            playerAnim(p.getUUID(), "pull_up");
+        }
+        entry.progress = 1;
+        entry.visited.add(from);
+        entry.pos = to;
+        if (p != null) {
+            actionBar(p, entry.type.taskName + "：" + destName(entry) + " へ運ぼう（" + map().roomAt(to) + "）", ChatFormatting.YELLOW);
+        }
+    }
+
+    private void deliver(ServerPlayer p, PlayerState ps, PlayerState.TaskEntry entry) {
+        workFx(entry.pos, entry.type, 1f);
+        if (p != null) {
+            playerAnim(p.getUUID(), entry.type == MarkerType.TEOKE ? "pour" : "crouch_tap");
+            completeTask(p, ps, entry);
+        } else {
+            entry.done = true;
+            checkWin();
+        }
+    }
+
+    /** 運び先：種類の順に探し、同じ種類なら近いところ */
+    private BlockPos carryDest(MarkerType type, BlockPos from) {
+        for (MarkerType d : type.dests()) {
+            BlockPos best = nearest(map().get(d), from, java.util.List.of());
+            if (best != null) {
+                return best;
+            }
+        }
+        BlockPos m = nearest(map().get(MarkerType.MEETING), from, java.util.List.of());
+        return m != null ? m : from;
+    }
+
+    private String destName(PlayerState.TaskEntry e) {
+        return level.getBlockState(e.pos).getBlock() instanceof MarkerBlock mb ? stripNote(mb.type().label) : "運び先";
+    }
+
+    private static String stripNote(String label) {
+        int i = label.indexOf('（');
+        return i > 0 ? label.substring(0, i) : label;
+    }
+
+    private static BlockPos nearest(List<BlockPos> list, BlockPos from, List<BlockPos> skip) {
+        BlockPos best = null;
+        double bd = Double.MAX_VALUE;
+        for (BlockPos q : list) {
+            if (skip.contains(q)) {
+                continue;
+            }
+            double d = q.distSqr(from);
+            if (d < bd) {
+                bd = d;
+                best = q;
+            }
+        }
+        return best;
+    }
+
+    /** 見回り：ここを済ませて、近い順に次へ。amount か所（家具が少なければその数）で完了 */
+    private void patrolStep(ServerPlayer p, PlayerState ps, PlayerState.TaskEntry entry) {
+        BlockPos here = entry.pos;
+        animate(here, 1f);
+        workFx(here, entry.type);
+        entry.visited.add(here);
+        entry.progress++;
+        List<BlockPos> all = map().get(entry.type);
+        int need = Math.max(1, Math.min(entry.type.amount, all.size()));
+        if (entry.progress >= need) {
+            if (p != null) {
+                completeTask(p, ps, entry);
+            } else {
+                entry.done = true;
+                checkWin();
+            }
+            return;
+        }
+        BlockPos next = nearest(all, here, entry.visited);
+        if (next == null) {
+            entry.done = true;
+            checkWin();
+            return;
+        }
+        entry.pos = next;
+        if (p != null) {
+            actionBar(p, entry.type.taskName + "  " + entry.progress + " / " + need + "　次は " + map().roomAt(next), ChatFormatting.YELLOW);
+        }
+    }
+
+    /** ボット：運ぶ・見回りを1歩進める（終わったら true） */
+    boolean botAdvance(PlayerState ps, PlayerState.TaskEntry t) {
+        if (t.type.use == MarkerType.Use.CARRY) {
+            if (t.progress < 1) {
+                pickUp(null, ps, t);
+            } else {
+                deliver(null, ps, t);
+            }
+        } else if (t.type.use == MarkerType.Use.PATROL) {
+            patrolStep(null, ps, t);
+        } else {
+            botCompleteTask(ps, t);
+        }
+        return t.done;
     }
 
     private void startActive(ServerPlayer p, BlockPos pos, MarkerType type, int need) {
@@ -1513,8 +1672,7 @@ public final class GameManager {
         }
         animate(pos, 1f);
         for (PlayerState.TaskEntry t : ps.tasks) {
-            if (t.pos.equals(pos) && !t.done && (t.type.use == MarkerType.Use.WIRES
-                    || t.type.use == MarkerType.Use.NUMBERS || t.type.use == MarkerType.Use.HOLES)) {
+            if (t.pos.equals(pos) && !t.done && t.type.miniGame()) {
                 completeTask(p, ps, t);
                 return;
             }
@@ -2179,9 +2337,13 @@ public final class GameManager {
                         workFx(pos, type, 1f / Math.max(1, type.amount));
                         actionBar(p, name + "（お試し）", ChatFormatting.YELLOW);
                     }
-                    case WIRES, NUMBERS, HOLES -> {
+                    case WIRES, NUMBERS, HOLES, RHYTHM -> {
                         animate(pos, 0.2f);
                         send(p, new Packets.OpenTask(pos, type.ordinal()));
+                    }
+                    case CARRY, PATROL -> {
+                        workFx(pos, type, 1f);
+                        actionBar(p, name + "（お試し）", ChatFormatting.YELLOW);
                     }
                     default -> actionBar(p, type.label, ChatFormatting.GRAY);
                 }

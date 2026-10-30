@@ -35,7 +35,10 @@ public class MarkerRenderer implements BlockEntityRenderer<MarkerBlockEntity> {
         float since = now - be.lastPulse;
         float work = be.work;
         // しばらく誰も触っていなければ元に戻る（終わった直後は少しのあいだ完成の形を見せる）
-        if (since > 80) {
+        // 提灯の灯・閉めた雨戸は、ゲームが終わるまでそのまま
+        boolean keep = work >= 1f && be.getBlockState().getBlock() instanceof com.minpaku.block.MarkerBlock mb
+                && (mb.type() == com.minpaku.game.MarkerType.CHOCHIN || mb.type() == com.minpaku.game.MarkerType.AMADO);
+        if (since > 80 && !keep) {
             work = 0f;
         }
         // 進み具合はタスクの区切りごとに飛ぶので、画面ではなめらかに追いつかせる

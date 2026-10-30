@@ -1,4 +1,5 @@
 {
+ "amado": [],
  "andon": [
   "idle"
  ],
@@ -19,6 +20,9 @@
   "use"
  ],
  "chabudai": [],
+ "chochin": [
+  "idle"
+ ],
  "chopping_block": [
   "use"
  ],
@@ -37,6 +41,9 @@
  "gas_valve": [],
  "goldfish_bowl": [
   "idle",
+  "use"
+ ],
+ "hansho": [
   "use"
  ],
  "hibachi": [
@@ -71,17 +78,22 @@
  "mochi_mortar": [
   "use"
  ],
+ "ozen_shelf": [],
  "sake_barrel": [],
  "shoe_rack": [],
  "shogi_board": [],
  "shoji_screen": [
   "work"
  ],
+ "taiko": [
+  "use"
+ ],
  "tansu": [],
  "tanuki": [],
  "tea_set": [
   "work"
  ],
+ "teoke": [],
  "tourou": [
   "idle"
  ],
@@ -99,6 +111,7 @@
   "use"
  ],
  "wiring_panel": [],
+ "woodpile": [],
  "zen_garden": [
   "work"
  ]

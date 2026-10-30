@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "minpaku:block/woodpile"
+  },
+  "facing=east": {
+   "model": "minpaku:block/woodpile",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "minpaku:block/woodpile",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "minpaku:block/woodpile",
+   "y": 270
+  }
+ }
+}
