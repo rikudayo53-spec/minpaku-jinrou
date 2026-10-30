@@ -234,8 +234,10 @@ def paint_real(img, x0, y0, w, h, mat, face, rng, along="u", seed=1):
                 c = shade(base, 1.0 + 0.06 * n1)
             # 焼き込んだ陰：側面は下ほど暗く、上面は少し明るく、底は暗く（なめらかな曲面の材質は陰もふちも描かない）
             smooth = getattr(mat, "smooth", False)
+            if smooth and k in ("metal", "polymer", "plaster", "plain"):
+                c = shade(base, 1.0 + 0.03 * n1)   # 面ごとの明暗の帯が出ないよう、平らな色に
             if smooth:
-                c = shade(base, 1.0 + 0.03 * n1)
+                pass
             elif side:
                 c = shade(c, 1.04 - 0.16 * v)
             elif face == "up":
@@ -272,9 +274,24 @@ class HiRes:
         self.mc = mc
 
     def cyl(self, name, cx, cz, y0, y1, r, mat, sides=4, group=None, rx=None):
-        """丸いもの（つぼ・鍋・柱など）。細長い板を sides 枚、向きを変えて重ねる → 正 2×sides 角形（4 なら八角形）"""
+        """丸いもの（つぼ・鍋・柱など）。
+        real（家具）のときは、外側にそって薄い板を輪に並べた「殻」で作る（長方形を重ねない）。
+        同じ中心・材質・グループで、すぐ上に続けて呼んだ輪切りは1つの回転体にまとめ、輪郭をなめらかにつなぐ。
+        細いもの（半径 0.7 未満）と rx つきは、今までどおり板を重ねる"""
+        if not self.real or rx is not None or r < 0.7 or getattr(self, "boxy", False):
+            self._cyl_boxes(name, cx, cz, y0, y1, r, mat, sides, group)
+            return
+        if not hasattr(self, "_lathes"):
+            self._lathes = []
+        if self._lathes:
+            L = self._lathes[-1]
+            if (L["cx"], L["cz"], L["mat"], L["group"]) == (cx, cz, mat, group) and abs(L["sl"][-1][1] - y0) < 0.08:
+                L["sl"].append((y0, y1, r))
+                return
+        self._lathes.append(dict(name=name, cx=cx, cz=cz, mat=mat, group=group, sl=[(y0, y1, r)]))
+
+    def _cyl_boxes(self, name, cx, cz, y0, y1, r, mat, sides, group, skip=(), smooth=False):
         if getattr(self, "light", False):
-            # 軽くする：細いものは板を少なく（見た目はほとんど変わらない）
             sides = min(sides, 2 if r < 0.8 else 3 if r < 1.8 else 4 if r < 3.2 else 6 if r < 5.5 else sides)
         half_w = r * math.tan(math.radians(90.0 / sides))
         for k in range(sides):
@@ -283,7 +300,44 @@ class HiRes:
                 ang -= 180
             e = k * 0.015   # 上面が重なってちらつかないように少しずらす
             self.cube(name, (cx - r, y0 + e, cz - half_w), (cx + r, y1 - e, cz + half_w), mat,
-                      rot=[0, ang, 0] if ang else None, pivot=[cx, y0, cz], group=group)
+                      rot=[0, ang, 0] if ang else None, pivot=[cx, y0, cz], group=group, skip=skip, smooth=smooth)
+
+    def _flush_lathes(self):
+        """まとめた回転体を、傾けた板の輪＋上下のふたにする"""
+        for L in getattr(self, "_lathes", []):
+            sl = L["sl"]
+            if len(sl) == 1:
+                pts = [(sl[0][0], sl[0][2]), (sl[0][1], sl[0][2])]
+            else:
+                pts = [(sl[0][0], sl[0][2])] + [((a + b) / 2, r) for (a, b, r) in sl] + [(sl[-1][1], sl[-1][2])]
+            rmax = max(p[1] for p in pts)
+            seg = max(10, min(28, int(2 * math.pi * rmax / 1.1)))
+            thick = min(0.35, rmax * 0.25)
+            for (ya, ra), (yb, rb) in zip(pts, pts[1:]):
+                dy, dr = yb - ya, rb - ra
+                ln = math.hypot(dy, dr)
+                if ln < 0.01:
+                    continue
+                rmid, ymid = (ra + rb) / 2, (ya + yb) / 2
+                tilt = math.degrees(math.atan2(dr, dy))
+                w = 2 * max(rmid, 0.05) * math.tan(math.pi / seg) * 1.06 + 0.04
+                for k in range(seg):
+                    a = 2 * math.pi * (k + 0.5) / seg
+                    x, z = L["cx"] + (rmid - thick / 2) * math.cos(a), L["cz"] + (rmid - thick / 2) * math.sin(a)
+                    # 外向きの面（south）だけ描く
+                    self.cube(L["name"], (x - w / 2, ymid - ln / 2 - 0.04, z - thick / 2), (x + w / 2, ymid + ln / 2 + 0.04, z + thick / 2),
+                              L["mat"], rot=[tilt, 90 - math.degrees(a), 0], pivot=[x, ymid, z], group=L["group"],
+                              skip=("north", "east", "west", "up", "down"), smooth=True)
+            # ふた（上と下）：上は上の面だけ、下は下の面だけ
+            (y0, r0), (y1, r1) = pts[0], pts[-1]
+            sides = 4 if max(r0, r1) < 3 else 6
+            if r1 > 0.3:
+                self._cyl_boxes(L["name"], L["cx"], L["cz"], y1 - 0.1, y1, r1 - thick * 0.2, L["mat"], sides, L["group"],
+                                skip=("north", "east", "south", "west", "down"), smooth=True)
+            if r0 > 0.3:
+                self._cyl_boxes(L["name"], L["cx"], L["cz"], y0, y0 + 0.1, r0 - thick * 0.2, L["mat"], sides, L["group"],
+                                skip=("north", "east", "south", "west", "up"), smooth=True)
+        self._lathes = []
 
     def group(self, name, origin=(0, 0, 0), parent=None, rot=None):
         """rot = 元から傾けておく角度（度）。アニメーションはこの傾きからの変化になる"""
@@ -293,10 +347,10 @@ class HiRes:
         self.group_order.append(name)
         return name
 
-    def cube(self, name, frm, to, mat, rot=None, pivot=None, group=None, decal=None, along=None, skip=()):
-        """decal = 面ごとに追加で描く関数 decal(draw, face, x0, y0, w, h)"""
+    def cube(self, name, frm, to, mat, rot=None, pivot=None, group=None, decal=None, along=None, skip=(), smooth=False):
+        """decal = 面ごとに追加で描く関数 decal(draw, face, x0, y0, w, h)。smooth = 陰やふちを描かない（曲面の板）"""
         self.cubes.append(dict(name=name, frm=list(frm), to=list(to), mat=mat, rot=rot, pivot=pivot, group=group,
-                               decal=decal, along=along, skip=tuple(skip)))
+                               decal=decal, along=along, skip=tuple(skip), smooth=smooth))
 
     # ---- アトラス
     def _face_size(self, c, f):
@@ -312,9 +366,12 @@ class HiRes:
         return max(1, int(round(a * self.D))), max(1, int(round(b * self.D)))
 
     def build_texture(self):
+        self._flush_lathes()
         rects = []
         for ci, c in enumerate(self.cubes):
             for f in FACES:
+                if f in c.get("skip", ()):
+                    continue
                 w, h = self._face_size(c, f)
                 rects.append((ci, f, w, h))
         # 棚に並べる（高い順）
@@ -345,6 +402,16 @@ class HiRes:
             c = self.cubes[ci]
             x0, y0 = pos[(ci, f)]
             mat = MATS[c["mat"]] if isinstance(c["mat"], str) else c["mat"]
+            if c.get("smooth") and not getattr(mat, "smooth", False):
+                import copy
+                key = id(mat)
+                if not hasattr(self, "_smooth_mats"):
+                    self._smooth_mats = {}
+                if key not in self._smooth_mats:
+                    sm_ = copy.copy(mat)
+                    sm_.smooth = True
+                    self._smooth_mats[key] = sm_
+                mat = self._smooth_mats[key]
             along = c["along"] or ("u" if f in ("north", "south", "up", "down") else "u")
             if self.real:
                 paint_real(img, x0, y0, w, h, mat, f, self.rng, along, seed=ci * 31 + FACES.index(f) * 7 + 1)
@@ -366,6 +433,9 @@ class HiRes:
             faces = {}
             for f in FACES:
                 w, h = self._face_size(c, f)
+                if (ci, f) not in self.uv:
+                    faces[f] = {"uv": [0, 0, 0, 0], "texture": None}
+                    continue
                 x0, y0 = self.uv[(ci, f)]
                 faces[f] = {"uv": [x0, y0, x0 + w, y0 + h], "texture": 0 if f not in c.get("skip", ()) else None}
             u = uid()
@@ -467,6 +537,8 @@ class HiRes:
                 continue
             any_glow = True
             for f in FACES:
+                if (ci, f) not in self.uv:
+                    continue
                 w, h = self._face_size(c, f)
                 x0, y0 = self.uv[(ci, f)]
                 mask.paste(self.atlas.crop((x0, y0, x0 + w, y0 + h)), (x0, y0))

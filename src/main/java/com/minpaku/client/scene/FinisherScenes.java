@@ -466,7 +466,7 @@ public final class FinisherScenes {
                 Ui.text(g, Ui.serif("おにぎりの力！"), w / 2f, h * 0.18f, Ui.alpha(0xFFFFF3B0, a), 3.0f, 0, true);
             }
             if (mid != null && gt < 12) {
-                Ui.text(g, Ui.serif("！"), mid[0], mid[1] - 40, Ui.alpha(0xFFFFFFFF, alpha), 3f, 0, true);
+                // （文字は出さない）
             }
         }
         // 猫又の反撃
@@ -625,7 +625,7 @@ public final class FinisherScenes {
             "ボフッ", "ボフッ！！", "カコーン", "バーン！！", "ピシャッ", "ワオーン！", "バリーン", "ポイッ！", "バタン！！", "ぽつーん…");
 
     static boolean sfx(String text) {
-        return SFX.contains(text.trim());
+        return true;   // フィニッシャーの中の文字（掛け声・擬音・「一本！」など）は出さない
     }
 
     static void pop(GuiGraphics g, float[] at, float t, float start, String text, int color, float size) {
@@ -1457,7 +1457,7 @@ public final class FinisherScenes {
                 int h = g.guiHeight();
                 float a = Mth.clamp((t - 46) / 4f, 0f, 1f);
                 float sc = 4.2f * (t < 50 ? 1.3f - (t - 46) / 4f * 0.3f : 1f);
-                Ui.text(g, Ui.serif("一本！"), w / 2f, h * 0.24f, Ui.alpha(0xFFFFFFFF, a), sc, 0, true);
+                // （文字は出さない）
             }
         }
 

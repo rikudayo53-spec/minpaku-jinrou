@@ -998,17 +998,17 @@ def chopping_block():
         m.cube("bark", (x - 0.5, rng.uniform(0, 1.5), z - 0.5), (x + 0.5, rng.uniform(5.5, 7.4), z + 0.5), "stump_bark")
     m.cyl("stump_top", 8, 8, 7.6, 8.0, 5.3, "stump_top", sides=8)
     m.cube("rings", (3.6, 7.98, 3.6), (12.4, 8.02, 12.4), "stump_top", decal=_wood_rings)
-    m.cube("scar", (5, 8.0, 7.8), (11, 8.08, 8.2), "hinoki_dark")
+    m.cube("scar", (5, 8.0, 7.8), (11, 8.08, 8.2), "hinoki_dark")   # 刃の向きの傷（X 方向）
     m.cube("root", (1.6, 0, 6.6), (3.4, 1.2, 9.4), "stump_bark")
     m.cube("root", (12.6, 0, 7.0), (14.6, 1.0, 9.6), "stump_bark")
-    # 割る薪（左右に割れる）
-    for name, x0, x1 in (("half_l", 5, 8), ("half_r", 8, 11)):
-        m.group(name, ((x0 + x1) / 2 + (-1.5 if name == "half_l" else 1.5), 8, 8))
-        bevel(m, "log", (x0 + (0.05 if name == "half_r" else 0), 8, 5), (x1 - (0.05 if name == "half_l" else 0), 16, 11), "split_wood",
+    # 割る薪：斧の刃（左右＝X の向き）で割れるので、手前と奥（Z）に分かれて倒れる
+    for name, z0, z1 in (("half_l", 5, 8), ("half_r", 8, 11)):
+        m.group(name, (8, 8, z0 if name == "half_l" else z1))
+        bevel(m, "log", (5, 8, z0 + (0.05 if name == "half_r" else 0)), (11, 16, z1 - (0.05 if name == "half_l" else 0)), "split_wood",
               b=0.3, group=name)
-        m.cube("log_bark", (x0 - 0.15 if name == "half_l" else x1 - 0.2, 8.2, 5.2), (x0 + 0.2 if name == "half_l" else x1 + 0.15, 15.8, 10.8),
+        m.cube("log_bark", (5.2, 8.2, z0 - 0.15 if name == "half_l" else z1 - 0.2), (10.8, 15.8, z0 + 0.2 if name == "half_l" else z1 + 0.15),
                "stump_bark", group=name)
-        m.cube("log_top", (x0 + 0.2, 15.95, 5.3), (x1 - 0.2, 16.05, 10.7), "stump_top", decal=_wood_rings, group=name)
+        m.cube("log_top", (5.3, 15.95, z0 + 0.2), (10.7, 16.05, z1 - 0.2), "stump_top", decal=_wood_rings, group=name)
     # 斧：柄は少し曲がり、刃は厚みと光る刃先
     m.group("axe", (21, 9, 8), rot=(0, 0, 50))
     bevel(m, "handle", (20.4, 9, 7.4), (21.6, 18, 8.6), "axe_handle", b=0.3, group="axe")

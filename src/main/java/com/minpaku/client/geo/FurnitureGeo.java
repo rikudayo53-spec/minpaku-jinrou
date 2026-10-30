@@ -264,8 +264,9 @@ public final class FurnitureGeo {
             }
             case CHOPPING -> {
                 float open = sm(w);
-                B.rot("half_l", 0, 0, open * 70f);
-                B.rot("half_r", 0, 0, -open * 70f);
+                // 斧の刃の向き（X）で割れて、手前と奥へ倒れる
+                B.rot("half_l", -open * 70f, 0, 0);
+                B.rot("half_r", open * 70f, 0, 0);
             }
             case FIELD -> {
                 for (int k = 0; k < 8; k++) {

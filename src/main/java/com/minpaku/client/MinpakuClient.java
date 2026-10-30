@@ -116,7 +116,7 @@ public class MinpakuClient implements ClientModInitializer {
                         return;
                     }
                     ps.pushPose();
-                    ps.translate(0.5, 0.5 - 1.8 / 16.0, 0.5 - 4.0 / 16.0);
+                    ps.translate(0.5, 0.5 - 3.0 / 16.0, 0.5 - 4.0 / 16.0);   // 持ち手を少し下に
                     m.render(ps, buffers, light, overlay, com.minpaku.client.model.HiRes.STILL);
                     ps.popPose();
                 });
