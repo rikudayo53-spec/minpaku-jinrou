@@ -85,7 +85,10 @@ public class FurnitureGeoRenderer extends GeoBlockRenderer<MarkerBlockEntity> {
         ps.mulPose(Axis.YP.rotationDegrees(MarkerRenderer.yaw(facing)));
         ps.scale(sz, sz, sz);
         ps.translate(-0.5, 0, -0.5);
-        FurnitureHiRes.extras(type, MarkerRenderer.anim(be, partialTick), ps, buffers, light);
+        FurnitureArt.Anim fxAnim = MarkerRenderer.anim(be, partialTick);
+        FurnitureHiRes.extras(type, fxAnim, ps, buffers, light);
+        // 炎と水（Blender のメッシュ）
+        FurnitureFx.render(type, be, getGeoModel(), fxAnim, ps, buffers, light);
         ps.popPose();
     }
 

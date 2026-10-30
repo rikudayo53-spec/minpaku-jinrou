@@ -176,6 +176,27 @@ from koi_hires import ALL as _KOI  # noqa: E402
 ITEMS.update(_KOI)
 
 
+# 炎と水は Blender のメッシュ（mesh/fx_*.json）で描くので、GeckoLib のモデルからは箱を抜く
+# （骨は残す。Java の FurnitureFx が骨の表示・大きさに合わせてメッシュを描く）
+FIRE = ("glow_fire", "glow_flame", "glow_tip")
+FX_STRIP = {
+    "andon": FIRE, "tourou": FIRE, "chochin": FIRE, "ledger": FIRE, "boiler": FIRE, "kamado": FIRE, "irori": FIRE,
+    "bath_stove": FIRE + ("glass_water",), "well": ("glass_water",), "washtub": ("glass_water",),
+    "teoke": ("glass_water",), "kitchen_sink": ("glass_water", "glass_stream"), "mochi_mortar": ("glass_water",),
+}
+FX_KEEP_GROUPS = {"item", "bucket"}   # 動く入れ物の水は箱のまま
+
+
+def strip_fx(m, n):
+    pre = FX_STRIP.get(n)
+    if not pre:
+        return
+    m.cubes = [c for c in m.cubes if not (c["name"].startswith(pre) and c.get("group") not in FX_KEEP_GROUPS)]
+    if hasattr(m, "atlas"):
+        del m.atlas
+    m.build_texture()
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     names = sys.argv[1:] or list(ITEMS)
@@ -192,6 +213,7 @@ def main():
         msg = ""
         if n in furn_ids:
             # 家具は GeckoLib 用にも書き出す（形・絵・アニメーション）
+            strip_fx(m, n)
             m.save_geo(assets, "block")
             a = furniture_anims.build(n)
             a.save(os.path.join(assets, "animations", "block", n + ".animation.json"))
