@@ -8,7 +8,9 @@
     "client.GunPoseMixin",
     "client.TabListMixin",
     "client.NameTagMixin",
-    "client.SkinSwapMixin"
+    "client.SkinSwapMixin",
+    "client.GhostHandMixin",
+    "client.GhostArmMixin"
   ],
   "injectors": {
     "defaultRequire": 1

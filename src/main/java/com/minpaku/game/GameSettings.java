@@ -36,7 +36,7 @@ public final class GameSettings {
     }
 
     /** 設定画面のタブ（この順に並ぶ） */
-    public static final String[] GROUPS = {"マップ", "役職", "能力", "人狼", "会議", "タスク", "ボット", "フィニッシャー"};
+    public static final String[] GROUPS = {"マップ", "霧", "役職", "能力", "人狼", "妨害", "会議", "タスク", "ボット", "フィニッシャー"};
 
     private static final List<Def> DEFS = new ArrayList<>();
 
@@ -45,7 +45,10 @@ public final class GameSettings {
         DEFS.add(new Def("map", "建てるマップ", "マップ", Kind.CHOICE, 1, Plans.ALL.size(), 1, 3, Plans.labels()));
         DEFS.add(new Def("evil_god", "祠の悪神（役職シャッフル）", "マップ", Kind.CHOICE, 1, 3, 1, 2,
                 new String[]{"起きない", "ときどき起きる", "かならず起きる"}));
-        DEFS.add(new Def("fog", "霧で見えるブロック数（0 で霧なし）", "マップ", Kind.NUMBER, 0, 128, 8, 48));
+        // 霧（プレイ中だけ）
+        DEFS.add(new Def("fog", "霧で見えるブロック数（0 で霧なし）", "霧", Kind.NUMBER, 0, 128, 4, 48));
+        DEFS.add(new Def("fog_density", "霧の濃さ", "霧", Kind.CHOICE, 1, 5, 1, 3,
+                new String[]{"とてもうすい", "うすい", "ふつう", "こい", "とてもこい"}));
         // 役職の人数（Role に登録した役職ぶん自動で作る）
         for (Role role : Role.special()) {
             boolean basic = role == Role.WOLF || role == Role.SEER || role == Role.KNIGHT || role == Role.MEDIUM;
@@ -71,8 +74,13 @@ public final class GameSettings {
                 new String[]{"役職ごと（倒され方で役職が分かる）", "各自が選んだもの（役職を隠す）"}));
         DEFS.add(new Def("shinobi_hide", "忍び狼の死体が見えない時間", "人狼", Kind.SECONDS, 5, 40, 5, 15));
         DEFS.add(new Def("kill_range", "キルできる距離（ブロック）", "人狼", Kind.NUMBER, 1, 4, 1, 2));
-        DEFS.add(new Def("sabotage_cooldown", "妨害のクールダウン", "人狼", Kind.SECONDS, 10, 90, 5, 30));
-        DEFS.add(new Def("gas_time", "ガス漏れの制限時間", "人狼", Kind.SECONDS, 20, 90, 5, 45));
+        // 妨害（プレイ中に使えるものを選ぶ）
+        DEFS.add(new Def("sab_blackout", "停電", "妨害", Kind.TOGGLE, 0, 1, 1, 1));
+        DEFS.add(new Def("sab_gas", "ガス漏れ", "妨害", Kind.TOGGLE, 0, 1, 1, 1));
+        DEFS.add(new Def("sab_skin", "全員が同じスキンになる", "妨害", Kind.TOGGLE, 0, 1, 1, 1));
+        DEFS.add(new Def("sab_swap", "全員の位置を入れ替える", "妨害", Kind.TOGGLE, 0, 1, 1, 1));
+        DEFS.add(new Def("sabotage_cooldown", "妨害のクールダウン", "妨害", Kind.SECONDS, 10, 90, 5, 30));
+        DEFS.add(new Def("gas_time", "ガス漏れの制限時間", "妨害", Kind.SECONDS, 20, 90, 5, 45));
         DEFS.add(new Def("meeting_style", "会議の方式", "会議", Kind.CHOICE, 1, 2, 1, 1,
                 new String[]{"アモアス式（席について話し合う）", "井戸端会議（集まって自由に動ける）"}));
         DEFS.add(new Def("discussion_time", "議論の時間", "会議", Kind.SECONDS, 0, 180, 15, 45));

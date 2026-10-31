@@ -1861,6 +1861,11 @@ public final class GameManager {
             actionBar(feedback, "妨害まであと " + (sabotageCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
             return false;
         }
+        String[] sabKeys = {"sab_blackout", "sab_gas", "sab_skin", "sab_swap"};
+        if (kind < 0 || kind > 3 || settings().get(sabKeys[kind]) == 0) {
+            actionBar(feedback, "この妨害は管理画面で使えないようになっている", ChatFormatting.GRAY);
+            return false;
+        }
         if (kind == 2 || kind == 3) {
             // すぐ効く妨害：スキン入れ替え・位置入れ替え
             List<PlayerState> alive = new ArrayList<>();
@@ -1879,17 +1884,19 @@ public final class GameManager {
             List<PlayerState> from = new ArrayList<>(to);
             Collections.rotate(to, 1);
             if (kind == 2) {
+                // 全員が同じスキン（ランダムに選んだ1人のスキン）になる
+                PlayerState model = alive.get(random.nextInt(alive.size()));
                 StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < from.size(); i++) {
+                for (PlayerState o : players.values()) {
                     if (sb.length() > 0) {
                         sb.append(';');
                     }
-                    sb.append(from.get(i).id).append('>').append(to.get(i).id);
+                    sb.append(o.id).append('>').append(model.id);
                 }
                 skinSwap = sb.toString();
                 for (ServerPlayer o : online()) {
                     send(o, new Packets.Info("skins", skinSwap));
-                    send(o, new Packets.Announce("スキンが入れ替わった！", "次の会議まで、見た目ではだれか分からない", 0xC060FF, 2));
+                    send(o, new Packets.Announce("全員が同じ姿に！", "次の会議まで、見た目ではだれか分からない", 0xC060FF, 2));
                 }
             } else {
                 List<Vec3> pos = new ArrayList<>();
@@ -2509,7 +2516,8 @@ public final class GameManager {
         send(p, new Packets.Info("rooms", sb.toString()));
         // 妨害を直す場所と呼び鈴（見取り図に出す）
         StringBuilder fx = new StringBuilder();
-        for (MarkerType t : new MarkerType[]{MarkerType.BREAKER, MarkerType.GAS_VALVE, MarkerType.BOILER, MarkerType.BELL}) {
+        for (MarkerType t : new MarkerType[]{MarkerType.BREAKER, MarkerType.GAS_VALVE, MarkerType.BOILER, MarkerType.BELL,
+                MarkerType.VENT, MarkerType.VENT_B, MarkerType.VENT_C}) {
             for (net.minecraft.core.BlockPos pos : map().get(t)) {
                 if (fx.length() > 0) {
                     fx.append(';');
@@ -2522,8 +2530,12 @@ public final class GameManager {
 
     public void sendBounds(ServerPlayer p) {
         int[] b = map().lastBuilt;
-        String data = b.length == 6 ? b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "," + b[4] + "," + b[5] + "," + settings().get("fog") : "";
+        String data = b.length == 6 ? b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "," + b[4] + "," + b[5] + "," + settings().get("fog")
+                + "," + settings().get("fog_density") : "";
         send(p, new Packets.Info("bounds", data));
+        // 使える妨害（停電・ガス漏れ・スキン・位置）
+        send(p, new Packets.Info("sabotages", settings().get("sab_blackout") + "," + settings().get("sab_gas") + ","
+                + settings().get("sab_skin") + "," + settings().get("sab_swap")));
     }
 
     // ================================================================= 神（女将）：全員の役職が見える

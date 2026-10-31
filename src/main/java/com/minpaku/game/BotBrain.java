@@ -262,8 +262,20 @@ public class BotBrain {
         if (gm.sabotageCooldown > 0 || gm.blackout || gm.gasTicks >= 0 || r.nextFloat() > 0.08f) {
             return;
         }
-        float k = r.nextFloat();
-        gm.sabotageBy(ps, null, k < 0.45f ? 0 : k < 0.75f ? 1 : k < 0.88f ? 2 : 3);
+        // 管理画面で使えるようにしてある妨害から選ぶ
+        java.util.List<Integer> ok = new java.util.ArrayList<>();
+        String[] keys = {"sab_blackout", "sab_gas", "sab_skin", "sab_swap"};
+        int[] weight = {5, 3, 1, 1};
+        for (int i = 0; i < 4; i++) {
+            if (gm.settings().get(keys[i]) != 0) {
+                for (int w = 0; w < weight[i]; w++) {
+                    ok.add(i);
+                }
+            }
+        }
+        if (!ok.isEmpty()) {
+            gm.sabotageBy(ps, null, ok.get(r.nextInt(ok.size())));
+        }
     }
 
     // ----------------------------------------------------------------- 妨害を直す

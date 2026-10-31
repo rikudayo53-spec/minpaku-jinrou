@@ -48,7 +48,10 @@ public abstract class FogMixin {
             RenderSystem.setShaderFogStart(0f);
             RenderSystem.setShaderFogEnd(Math.min(far, end * 0.6f));
         } else {
-            RenderSystem.setShaderFogStart(Math.min(RenderSystem.getShaderFogStart(), end * 0.35f));
+            // 濃さ：霧が始まる近さ（とてもうすい＝遠くから、とてもこい＝すぐ目の前から）
+            float[] startK = {0.85f, 0.6f, 0.35f, 0.15f, 0.0f};
+            float k = startK[Math.max(0, Math.min(4, ClientGame.fogDensity - 1))];
+            RenderSystem.setShaderFogStart(Math.min(RenderSystem.getShaderFogStart(), end * k));
             RenderSystem.setShaderFogEnd(Math.min(RenderSystem.getShaderFogEnd(), end));
         }
     }

@@ -229,7 +229,22 @@ public final class MapView {
         }
         // 設備（呼び鈴・妨害を直す場所）
         boolean anyUrgent = false;
+        com.minpaku.game.Role myRole = ClientGame.role();
+        boolean wolfSide = myRole != null && myRole.team == com.minpaku.game.Role.Team.WOLF;
         for (ClientGame.MapFix f : ClientGame.fixes) {
+            if (f.type().isVent()) {
+                // ベントは人狼陣営にだけ見える（A 赤・B 青・C 緑）
+                if (!wolfSide || taskFloor(f.pos().getY(), fl) != floor) {
+                    continue;
+                }
+                float vx = ox + (f.pos().getX() + 0.5f - minX) * scale;
+                float vz = oz + (f.pos().getZ() + 0.5f - minZ) * scale;
+                int vc = f.type() == com.minpaku.game.MarkerType.VENT_B ? 0xFF2F5BB0 : f.type() == com.minpaku.game.MarkerType.VENT_C ? 0xFF2E8A40 : 0xFFB02A24;
+                g.fill((int) vx - 5, (int) vz - 5, (int) vx + 5, (int) vz + 5, 0xFF1A1410);
+                g.fill((int) vx - 4, (int) vz - 4, (int) vx + 4, (int) vz + 4, vc);
+                Ui.sans(g, f.type().ventName(), vx, vz - 3.5f, 0xFFFFFFFF, 0.7f, 0);
+                continue;
+            }
             if (taskFloor(f.pos().getY(), fl) != floor) {
                 anyUrgent |= urgent(f);
                 continue;

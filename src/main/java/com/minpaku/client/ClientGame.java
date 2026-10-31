@@ -91,8 +91,18 @@ public final class ClientGame {
     public static int[] bounds;
     /** 祠の悪神が目覚めた演出（残り tick） */
     public static int evilGodTicks;
+    /** プレイ中に死んで幽霊になっているか */
+    public static boolean isGhost() {
+        return inGame() && !state.alive() && Minecraft.getInstance().player != null
+                && Minecraft.getInstance().player.isSpectator();
+    }
+
     /** 霧で見えるブロック数（0 = 霧なし）。設定「マップ」の値 */
     public static int fogDistance = 48;
+    /** 霧の濃さ（1 = とてもうすい 〜 5 = とてもこい） */
+    public static int fogDensity = 3;
+    /** 使える妨害（停電・ガス漏れ・スキン・位置） */
+    public static boolean[] sabotages = {true, true, true, true};
     public static final int EVIL_GOD_LEN = 90;
 
     /** 小さな通知を受け取る */
@@ -148,11 +158,18 @@ public final class ClientGame {
                     }
                     bounds = b;
                     fogDistance = v.length >= 7 ? Integer.parseInt(v[6].trim()) : 48;
+                    fogDensity = v.length >= 8 ? Integer.parseInt(v[7].trim()) : 3;
                 } else {
                     bounds = null;
                 }
             }
             case "skins" -> SkinSwap.set(p.data());
+            case "sabotages" -> {
+                String[] v = p.data().split(",");
+                for (int i = 0; i < Math.min(4, v.length); i++) {
+                    sabotages[i] = !v[i].trim().equals("0");
+                }
+            }
             case "evil_god" -> {
                 evilGodTicks = EVIL_GOD_LEN;
                 announce("悪神 降臨", "祠の封印が解けた…役職がすべて入れかわる！", 0xC060FF);
