@@ -13,7 +13,7 @@ import org.joml.Matrix4f;
 
 /**
  * 妨害（停電・ガス漏れ）が起きているあいだ、直す場所の方向へ短いレーザーを出す。
- * 自分の画面にだけ描く（ほかの人には見えない）。人狼側には出さない。
+ * 自分の画面にだけ描く（ほかの人には見えない）。村陣営の役職のときだけ出す。
  */
 public final class SabotageLaser {
     private SabotageLaser() {
@@ -30,8 +30,9 @@ public final class SabotageLaser {
         if (!s.blackout() && s.gasTicks() < 0) {
             return;
         }
+        // 村陣営にだけ見せる（人狼陣営・第三陣営には出さない）。幽霊にも出す
         com.minpaku.game.Role role = ClientGame.role();
-        if (role != null && role.canSabotage()) {
+        if (role == null || role.team != com.minpaku.game.Role.Team.VILLAGE) {
             return;
         }
         Vec3 cam = ctx.camera().getPosition();
