@@ -1,0 +1,691 @@
+Compiled from "AbstractFadeModifier.java"
+public abstract class dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier extends dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier {
+  protected int time;
+  protected int length;
+  protected dev.kosmx.playerAnim.api.layered.IAnimation beginAnimation;
+  protected dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier(int);
+  public boolean isActive();
+  public boolean canRemove();
+  public void setupAnim(float);
+  public void tick();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  protected float calculateProgress(float);
+  protected abstract float getAlpha(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float);
+  public static dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier standardFadeIn(int, dev.kosmx.playerAnim.core.util.Ease);
+  public static dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier functionalFadeIn(int, dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier$EasingFunction);
+  public void setBeginAnimation(dev.kosmx.playerAnim.api.layered.IAnimation);
+}
+Compiled from "ModifierLayer.java"
+public class dev.kosmx.playerAnim.api.layered.ModifierLayer<T extends dev.kosmx.playerAnim.api.layered.IAnimation> implements dev.kosmx.playerAnim.api.layered.IAnimation {
+  T animation;
+  public dev.kosmx.playerAnim.api.layered.ModifierLayer(T, dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier...);
+  public dev.kosmx.playerAnim.api.layered.ModifierLayer();
+  public void tick();
+  public void addModifier(dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier, int);
+  public void addModifierBefore(dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier);
+  public void addModifierLast(dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier);
+  public void removeModifier(int);
+  public void setAnimation(T);
+  public void replaceAnimationWithFade(dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier, T);
+  public void replaceAnimationWithFade(dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier, T, boolean);
+  public int size();
+  protected void linkModifiers();
+  public boolean isActive();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  public void setupAnim(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+  public T getAnimation();
+}
+Compiled from "PlayerAnimationRegistry.java"
+public final class dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry {
+  public dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry();
+  public static dev.kosmx.playerAnim.api.IPlayable getAnimation(net.minecraft.resources.ResourceLocation);
+  public static java.util.Optional<dev.kosmx.playerAnim.api.IPlayable> getAnimationOptional(net.minecraft.resources.ResourceLocation);
+  public static java.util.Map<net.minecraft.resources.ResourceLocation, dev.kosmx.playerAnim.api.IPlayable> getAnimations();
+  public static java.util.Map<java.lang.String, dev.kosmx.playerAnim.api.IPlayable> getModAnimations(java.lang.String);
+  public static void resourceLoaderCallback(net.minecraft.server.packs.resources.ResourceManager);
+  public static java.lang.String serializeTextToString(java.lang.String);
+  static {};
+}
+Compiled from "QuarkParsingError.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError extends java.lang.Exception {
+  final java.lang.String message;
+  public dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError(java.lang.String, int);
+  public dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError();
+}
+Compiled from "Event.java"
+public class dev.kosmx.playerAnim.core.impl.event.Event<T> {
+  final java.util.ArrayList<T> listeners;
+  final dev.kosmx.playerAnim.core.impl.event.Event$Invoker<T> _invoker;
+  public dev.kosmx.playerAnim.core.impl.event.Event(java.lang.Class<T>, dev.kosmx.playerAnim.core.impl.event.Event$Invoker<T>);
+  public final T invoker();
+  public void register(T);
+  public void unregister(T);
+}
+Compiled from "QuarkReader.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.QuarkReader {
+  final dev.kosmx.playerAnim.core.data.quarktool.PartMap head;
+  final dev.kosmx.playerAnim.core.data.quarktool.PartMap torso;
+  final dev.kosmx.playerAnim.core.data.quarktool.PartMap rightLeg;
+  final dev.kosmx.playerAnim.core.data.quarktool.PartMap leftLeg;
+  final dev.kosmx.playerAnim.core.data.quarktool.PartMap rightArm;
+  final dev.kosmx.playerAnim.core.data.quarktool.PartMap leftArm;
+  public dev.kosmx.playerAnim.core.data.quarktool.QuarkReader();
+  public void deserialize(java.io.BufferedReader, java.lang.String) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public dev.kosmx.playerAnim.core.data.KeyframeAnimation getEmote();
+  public static java.util.List<java.lang.String> read(java.lang.String);
+  public int getMethod(java.util.List<java.lang.String>, int, java.util.List<java.util.List<java.lang.String>>) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public dev.kosmx.playerAnim.core.data.quarktool.PartMap getBPFromStr(java.lang.String[]) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public dev.kosmx.playerAnim.core.data.quarktool.PartMap$PartValue getPFromStr(java.lang.String) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+}
+Compiled from "IActualAnimation.java"
+public interface dev.kosmx.playerAnim.api.layered.IActualAnimation<T extends dev.kosmx.playerAnim.api.layered.IActualAnimation<T>> extends dev.kosmx.playerAnim.api.layered.IAnimation {
+  public abstract T setFirstPersonMode(dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode);
+  public abstract T setFirstPersonConfiguration(dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration);
+}
+Compiled from "AnimationJson.java"
+public class dev.kosmx.playerAnim.core.data.gson.AnimationJson implements com.google.gson.JsonDeserializer<java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation>>, com.google.gson.JsonSerializer<dev.kosmx.playerAnim.core.data.KeyframeAnimation> {
+  public static final com.google.gson.Gson GSON;
+  public dev.kosmx.playerAnim.core.data.gson.AnimationJson();
+  public static java.lang.reflect.Type getListedTypeToken();
+  public java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation> deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+  public com.google.gson.JsonElement serialize(dev.kosmx.playerAnim.core.data.KeyframeAnimation, java.lang.reflect.Type, com.google.gson.JsonSerializationContext);
+  public static com.google.gson.JsonElement asJson(java.lang.String);
+  public static com.google.gson.JsonObject emoteSerializer(dev.kosmx.playerAnim.core.data.KeyframeAnimation);
+  public static com.google.gson.JsonArray moveSerializer(dev.kosmx.playerAnim.core.data.KeyframeAnimation);
+  public java.lang.Object deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+  public com.google.gson.JsonElement serialize(java.lang.Object, java.lang.reflect.Type, com.google.gson.JsonSerializationContext);
+  static {};
+}
+Compiled from "Yoyo.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.Yoyo extends dev.kosmx.playerAnim.core.data.quarktool.Repeat {
+  public dev.kosmx.playerAnim.core.data.quarktool.Yoyo(dev.kosmx.playerAnim.core.data.quarktool.Playable, int, int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public int playForward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+}
+Compiled from "PlayerAnimationFrame.java"
+public abstract class dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame implements dev.kosmx.playerAnim.api.layered.IAnimation {
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart head;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart body;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart rightArm;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart leftArm;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart rightLeg;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart leftLeg;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart rightItem;
+  protected dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart leftItem;
+  java.util.HashMap<java.lang.String, dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame$PlayerPart> parts;
+  public dev.kosmx.playerAnim.api.layered.PlayerAnimationFrame();
+  public void tick();
+  public boolean isActive();
+  public void resetPose();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+}
+Compiled from "LeftHandedHelperModifier.java"
+public class dev.kosmx.playerAnim.minecraftApi.layers.LeftHandedHelperModifier extends dev.kosmx.playerAnim.api.layered.modifier.MirrorModifier {
+  public dev.kosmx.playerAnim.minecraftApi.layers.LeftHandedHelperModifier(net.minecraft.world.entity.player.Player);
+  public boolean isEnabled();
+}
+Compiled from "Vec3f.java"
+public class dev.kosmx.playerAnim.core.util.Vec3f extends dev.kosmx.playerAnim.core.util.Vector3<java.lang.Float> {
+  public static final dev.kosmx.playerAnim.core.util.Vec3f ZERO;
+  public dev.kosmx.playerAnim.core.util.Vec3f(float, float, float);
+  public double squaredDistanceTo(dev.kosmx.playerAnim.core.util.Vec3d);
+  public dev.kosmx.playerAnim.core.util.Vec3f scale(float);
+  public dev.kosmx.playerAnim.core.util.Vec3f add(dev.kosmx.playerAnim.core.util.Vec3f);
+  public float dotProduct(dev.kosmx.playerAnim.core.util.Vec3f);
+  public dev.kosmx.playerAnim.core.util.Vec3f crossProduct(dev.kosmx.playerAnim.core.util.Vec3f);
+  public dev.kosmx.playerAnim.core.util.Vec3f subtract(dev.kosmx.playerAnim.core.util.Vec3f);
+  public double distanceTo(dev.kosmx.playerAnim.core.util.Vec3d);
+  static {};
+}
+Compiled from "Easing.java"
+public class dev.kosmx.playerAnim.core.util.Easing {
+  public dev.kosmx.playerAnim.core.util.Easing();
+  public static float easingFromEnum(dev.kosmx.playerAnim.core.util.Ease, float);
+  public static dev.kosmx.playerAnim.core.util.Ease easeFromString(java.lang.String);
+  public static float sine(float);
+  public static float cubic(float);
+  public static float quadratic(float);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> pow(float);
+  public static float exp(float);
+  public static float circle(float);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> back(java.lang.Float);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> elastic(java.lang.Float);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> bounce(java.lang.Float);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> step(java.lang.Float);
+  public static float catmullRom(float);
+}
+Compiled from "IPlayer.java"
+public interface dev.kosmx.playerAnim.api.IPlayer {
+  public abstract dev.kosmx.playerAnim.api.layered.AnimationStack getAnimationStack();
+}
+Compiled from "Section.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.Section implements dev.kosmx.playerAnim.core.data.quarktool.Playable {
+  public boolean isForward;
+  public final java.util.List<dev.kosmx.playerAnim.core.data.quarktool.Playable> elements;
+  public dev.kosmx.playerAnim.core.data.quarktool.Section(dev.kosmx.playerAnim.core.data.quarktool.QuarkReader, int, java.util.List<java.util.List<java.lang.String>>) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public void setMoveOperator(dev.kosmx.playerAnim.core.data.quarktool.Playable) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public int getLine();
+  public dev.kosmx.playerAnim.core.data.quarktool.Playable getMoveOperator();
+  public int playForward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public int playBackward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+}
+Compiled from "PartMap.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.PartMap {
+  public dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection part;
+  public dev.kosmx.playerAnim.core.data.quarktool.PartMap$PartValue x;
+  public dev.kosmx.playerAnim.core.data.quarktool.PartMap$PartValue y;
+  public dev.kosmx.playerAnim.core.data.quarktool.PartMap$PartValue z;
+  public dev.kosmx.playerAnim.core.data.quarktool.PartMap(dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection);
+}
+Compiled from "Vector3.java"
+public class dev.kosmx.playerAnim.core.util.Vector3<N extends java.lang.Number> {
+  N x;
+  N y;
+  N z;
+  public dev.kosmx.playerAnim.core.util.Vector3(N, N, N);
+  public N getX();
+  public N getY();
+  public N getZ();
+  public boolean equals(java.lang.Object);
+  public int hashCode();
+  public java.lang.String toString();
+}
+Compiled from "PlayerAnimationFactory.java"
+public interface dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory {
+  public static final dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory$FactoryHolder ANIMATION_DATA_FACTORY;
+  public abstract dev.kosmx.playerAnim.api.layered.IAnimation invoke(net.minecraft.client.player.AbstractClientPlayer);
+  static {};
+}
+Compiled from "NBS.java"
+public class dev.kosmx.playerAnim.core.data.opennbs.NBS {
+  public final dev.kosmx.playerAnim.core.data.opennbs.format.Header header;
+  final java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.Layer> layers;
+  int length;
+  byte customInstrumentCount;
+  final java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.CustomInstrument> customInstruments;
+  public dev.kosmx.playerAnim.core.data.opennbs.NBS(dev.kosmx.playerAnim.core.data.opennbs.format.Header, java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.Layer>, java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.CustomInstrument>);
+  public java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.Layer> getLayers();
+  java.util.List<dev.kosmx.playerAnim.core.data.opennbs.format.Layer$Note> getNotesUntilTick(int, int);
+  public int getLength();
+  public void setLength(int);
+}
+Compiled from "FirstPersonConfiguration.java"
+public class dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration {
+  boolean showRightArm;
+  boolean showLeftArm;
+  boolean showRightItem;
+  boolean showLeftItem;
+  public boolean isShowRightArm();
+  public boolean isShowLeftArm();
+  public boolean isShowRightItem();
+  public boolean isShowLeftItem();
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration setShowRightArm(boolean);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration setShowLeftArm(boolean);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration setShowRightItem(boolean);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration setShowLeftItem(boolean);
+  public boolean equals(java.lang.Object);
+  protected boolean canEqual(java.lang.Object);
+  public int hashCode();
+  public java.lang.String toString();
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration();
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration(boolean, boolean, boolean, boolean);
+}
+Compiled from "InverseEase.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.InverseEase {
+  public dev.kosmx.playerAnim.core.data.quarktool.InverseEase();
+  public static dev.kosmx.playerAnim.core.util.Ease inverse(dev.kosmx.playerAnim.core.util.Ease);
+}
+Compiled from "Ease.java"
+public final class dev.kosmx.playerAnim.core.util.Ease extends java.lang.Enum<dev.kosmx.playerAnim.core.util.Ease> {
+  public static final dev.kosmx.playerAnim.core.util.Ease LINEAR;
+  public static final dev.kosmx.playerAnim.core.util.Ease CONSTANT;
+  public static final dev.kosmx.playerAnim.core.util.Ease INSINE;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTSINE;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTSINE;
+  public static final dev.kosmx.playerAnim.core.util.Ease INCUBIC;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTCUBIC;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTCUBIC;
+  public static final dev.kosmx.playerAnim.core.util.Ease INQUAD;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTQUAD;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTQUAD;
+  public static final dev.kosmx.playerAnim.core.util.Ease INQUART;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTQUART;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTQUART;
+  public static final dev.kosmx.playerAnim.core.util.Ease INQUINT;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTQUINT;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTQUINT;
+  public static final dev.kosmx.playerAnim.core.util.Ease INEXPO;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTEXPO;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTEXPO;
+  public static final dev.kosmx.playerAnim.core.util.Ease INCIRC;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTCIRC;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTCIRC;
+  public static final dev.kosmx.playerAnim.core.util.Ease INBACK;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTBACK;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTBACK;
+  public static final dev.kosmx.playerAnim.core.util.Ease INELASTIC;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTELASTIC;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTELASTIC;
+  public static final dev.kosmx.playerAnim.core.util.Ease INBOUNCE;
+  public static final dev.kosmx.playerAnim.core.util.Ease OUTBOUNCE;
+  public static final dev.kosmx.playerAnim.core.util.Ease INOUTBOUNCE;
+  public static final dev.kosmx.playerAnim.core.util.Ease CATMULLROM;
+  public static final dev.kosmx.playerAnim.core.util.Ease STEP;
+  final byte id;
+  public static dev.kosmx.playerAnim.core.util.Ease[] values();
+  public static dev.kosmx.playerAnim.core.util.Ease valueOf(java.lang.String);
+  public float invoke(float);
+  public float invoke(float, java.lang.Float);
+  public static dev.kosmx.playerAnim.core.util.Ease getEase(byte);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> easeIn(java.util.function.Function<java.lang.Float, java.lang.Float>);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> easeOut(java.util.function.Function<java.lang.Float, java.lang.Float>);
+  public static java.util.function.Function<java.lang.Float, java.lang.Float> easeInOut(java.util.function.Function<java.lang.Float, java.lang.Float>);
+  public byte getId();
+  static {};
+}
+Compiled from "Header.java"
+public class dev.kosmx.playerAnim.core.data.opennbs.format.Header {
+  public byte NBS_version;
+  public byte Vanilla_instrument_count;
+  public short Song_length;
+  public short Layer_count;
+  public java.lang.String Song_name;
+  public java.lang.String Song_author;
+  public java.lang.String Song_original_author;
+  public java.lang.String Song_description;
+  public short Song_tempo;
+  public byte Auto_saving;
+  public byte Auto_saving_duration;
+  public byte Time_signature;
+  public int Minutes_spent;
+  public int Left_clicks;
+  public int Right_clicks;
+  public int Note_blocks_added;
+  public int Note_blocks_removed;
+  public java.lang.String MIDI_Schematic_file_name;
+  public byte Loop_on_off;
+  public byte Max_loop_count;
+  public short Loop_start_tick;
+  public dev.kosmx.playerAnim.core.data.opennbs.format.Header();
+  public boolean Auto_saving();
+  public boolean Loop_on_off();
+}
+Compiled from "AbstractModifier.java"
+public abstract class dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier extends dev.kosmx.playerAnim.api.layered.AnimationContainer<dev.kosmx.playerAnim.api.layered.IAnimation> {
+  protected dev.kosmx.playerAnim.api.layered.ModifierLayer host;
+  public dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier();
+  public boolean canRemove();
+  public void setHost(dev.kosmx.playerAnim.api.layered.ModifierLayer);
+}
+Compiled from "AnimationSerializing.java"
+public class dev.kosmx.playerAnim.core.data.gson.AnimationSerializing {
+  public dev.kosmx.playerAnim.core.data.gson.AnimationSerializing();
+  public static java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation> deserializeAnimation(java.io.Reader);
+  public static java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation> deserializeAnimation(java.io.InputStream) throws java.io.IOException;
+  public static java.lang.String serializeAnimation(dev.kosmx.playerAnim.core.data.KeyframeAnimation);
+  public static java.io.Writer writeAnimation(dev.kosmx.playerAnim.core.data.KeyframeAnimation, java.io.Writer) throws java.io.IOException;
+}
+Compiled from "Layer.java"
+public class dev.kosmx.playerAnim.core.data.opennbs.format.Layer {
+  public java.lang.String name;
+  public byte lock;
+  public byte volume;
+  public byte stereo;
+  public final java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.Layer$Note> notes;
+  public dev.kosmx.playerAnim.core.data.opennbs.format.Layer();
+  public boolean getLock();
+  public void setLock(boolean);
+  public int findAtTick(int);
+  public dev.kosmx.playerAnim.core.data.opennbs.format.Layer$Note addNote(int);
+  public java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.Layer$Note> getNotesFrom(int, int);
+  public java.util.ArrayList<dev.kosmx.playerAnim.core.data.opennbs.format.Layer$Note> getNotesFrom(int);
+}
+Compiled from "AnimationCodec.java"
+public interface dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodec<T extends dev.kosmx.playerAnim.api.IPlayable> extends dev.kosmx.playerAnim.minecraftApi.codec.AnimationEncoder<T>, dev.kosmx.playerAnim.minecraftApi.codec.AnimationDecoder<T> {
+  public default void encode(java.io.OutputStream, net.minecraft.resources.ResourceLocation, T) throws java.io.IOException;
+  public abstract java.lang.String getFormatName();
+  public abstract java.lang.String getExtension();
+}
+Compiled from "IPlayable.java"
+public interface dev.kosmx.playerAnim.api.IPlayable extends java.util.function.Supplier<java.util.UUID> {
+  public abstract dev.kosmx.playerAnim.api.layered.IActualAnimation<?> playAnimation();
+  public abstract java.lang.String getName();
+}
+Compiled from "GeckoLibSerializer.java"
+public class dev.kosmx.playerAnim.core.data.gson.GeckoLibSerializer implements com.google.gson.JsonDeserializer<java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation>> {
+  public static final com.google.gson.Gson GSON;
+  public dev.kosmx.playerAnim.core.data.gson.GeckoLibSerializer();
+  public static java.lang.reflect.Type getListedTypeToken();
+  public java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation> deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+  public static java.util.List<dev.kosmx.playerAnim.core.data.KeyframeAnimation> deserialize(com.google.gson.JsonObject);
+  public static com.google.gson.JsonArray getVector(com.google.gson.JsonElement);
+  public static java.lang.String snake2Camel(java.lang.String);
+  public static dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection$State[] getTargetVec(dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection, dev.kosmx.playerAnim.api.TransformType);
+  public java.lang.Object deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+  static {};
+}
+Compiled from "Pause.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.Pause implements dev.kosmx.playerAnim.core.data.quarktool.Playable {
+  public dev.kosmx.playerAnim.core.data.quarktool.Pause(int);
+  public int playForward(int);
+  public int playBackward(int);
+}
+Compiled from "AnimationEncoder.java"
+public interface dev.kosmx.playerAnim.minecraftApi.codec.AnimationEncoder<T extends dev.kosmx.playerAnim.api.IPlayable> {
+  public abstract void encode(java.io.OutputStream, net.minecraft.resources.ResourceLocation, T) throws java.io.IOException;
+}
+Compiled from "TransformType.java"
+public final class dev.kosmx.playerAnim.api.TransformType extends java.lang.Enum<dev.kosmx.playerAnim.api.TransformType> {
+  public static final dev.kosmx.playerAnim.api.TransformType POSITION;
+  public static final dev.kosmx.playerAnim.api.TransformType ROTATION;
+  public static final dev.kosmx.playerAnim.api.TransformType BEND;
+  public static final dev.kosmx.playerAnim.api.TransformType SCALE;
+  public static dev.kosmx.playerAnim.api.TransformType[] values();
+  public static dev.kosmx.playerAnim.api.TransformType valueOf(java.lang.String);
+  static {};
+}
+Compiled from "Repeat.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.Repeat implements dev.kosmx.playerAnim.core.data.quarktool.Playable {
+  protected final dev.kosmx.playerAnim.core.data.quarktool.Playable playable;
+  protected final int delay;
+  protected int count;
+  public dev.kosmx.playerAnim.core.data.quarktool.Repeat(dev.kosmx.playerAnim.core.data.quarktool.Playable, int, int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public int playForward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public int playBackward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+}
+Compiled from "AbstractGsonCodec.java"
+public abstract class dev.kosmx.playerAnim.minecraftApi.codec.AbstractGsonCodec<T extends dev.kosmx.playerAnim.api.IPlayable> implements dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodec<T> {
+  public dev.kosmx.playerAnim.minecraftApi.codec.AbstractGsonCodec();
+  protected abstract com.google.gson.Gson getGson();
+  protected abstract java.lang.reflect.Type getListedTypeToken();
+  public java.util.Collection<T> decode(java.io.InputStream) throws java.io.IOException;
+  public java.lang.String getExtension();
+}
+Compiled from "FirstPersonModifier.java"
+public class dev.kosmx.playerAnim.api.layered.modifier.FirstPersonModifier extends dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier {
+  public dev.kosmx.playerAnim.api.layered.modifier.FirstPersonModifier();
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode(float);
+  public void setCurrentFirstPersonConfig(dev.kosmx.playerAnim.api.layered.modifier.FirstPersonModifier$FirstPersonConfigEnum);
+  public void setCurrentFirstPersonMode(dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode);
+}
+Compiled from "AnimUtils.java"
+public abstract class dev.kosmx.playerAnim.api.AnimUtils {
+  public static boolean disableFirstPersonAnim;
+  public dev.kosmx.playerAnim.api.AnimUtils();
+  public static dev.kosmx.playerAnim.api.layered.AnimationStack getPlayerAnimLayer(java.lang.Object) throws java.lang.IllegalArgumentException;
+  static {};
+}
+Compiled from "KeyframeAnimation.java"
+public final class dev.kosmx.playerAnim.core.data.KeyframeAnimation implements dev.kosmx.playerAnim.api.IPlayable {
+  public static final dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection$State EMPTY_STATE;
+  public final int beginTick;
+  public final int endTick;
+  public final int stopTick;
+  public final boolean isInfinite;
+  public final int returnToTick;
+  public final boolean isEasingBefore;
+  public final boolean nsfw;
+  public final boolean isUUIDGenerated;
+  public final java.util.HashMap<java.lang.String, java.lang.Object> extraData;
+  public final dev.kosmx.playerAnim.core.data.AnimationFormat animationFormat;
+  static final boolean $assertionsDisabled;
+  public boolean equals(java.lang.Object);
+  public int hashCode();
+  public dev.kosmx.playerAnim.core.data.KeyframeAnimation copy();
+  public dev.kosmx.playerAnim.core.data.KeyframeAnimation$AnimationBuilder mutableCopy();
+  public boolean isPlayingAt(int);
+  public java.util.UUID get();
+  public int getLength();
+  public boolean isInfinite();
+  public dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection getPart(java.lang.String);
+  public java.util.Optional<dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection> getPartOptional(java.lang.String);
+  public dev.kosmx.playerAnim.api.layered.IActualAnimation<dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer> playAnimation();
+  public java.lang.String getName();
+  public java.lang.String toString();
+  public java.util.Map<java.lang.String, dev.kosmx.playerAnim.core.data.KeyframeAnimation$StateCollection> getBodyParts();
+  public java.util.UUID getUuid();
+  public java.lang.Object get();
+  static {};
+}
+Compiled from "Vec3d.java"
+public class dev.kosmx.playerAnim.core.util.Vec3d extends dev.kosmx.playerAnim.core.util.Vector3<java.lang.Double> {
+  public dev.kosmx.playerAnim.core.util.Vec3d(java.lang.Double, java.lang.Double, java.lang.Double);
+  public double squaredDistanceTo(dev.kosmx.playerAnim.core.util.Vec3d);
+  public dev.kosmx.playerAnim.core.util.Vec3d scale(double);
+  public dev.kosmx.playerAnim.core.util.Vec3d add(dev.kosmx.playerAnim.core.util.Vec3d);
+  public double dotProduct(dev.kosmx.playerAnim.core.util.Vec3d);
+  public dev.kosmx.playerAnim.core.util.Vec3d crossProduct(dev.kosmx.playerAnim.core.util.Vec3d);
+  public dev.kosmx.playerAnim.core.util.Vec3d subtract(dev.kosmx.playerAnim.core.util.Vec3d);
+  public double distanceTo(dev.kosmx.playerAnim.core.util.Vec3d);
+}
+Compiled from "MirrorModifier.java"
+public class dev.kosmx.playerAnim.api.layered.modifier.MirrorModifier extends dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier {
+  public static final java.util.Map<java.lang.String, java.lang.String> mirrorMap;
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+  protected dev.kosmx.playerAnim.core.util.Vec3f transformVector(dev.kosmx.playerAnim.core.util.Vec3f, dev.kosmx.playerAnim.api.TransformType);
+  public dev.kosmx.playerAnim.api.layered.modifier.MirrorModifier();
+  public dev.kosmx.playerAnim.api.layered.modifier.MirrorModifier(boolean);
+  public boolean isEnabled();
+  public void setEnabled(boolean);
+  static {};
+}
+Compiled from "CustomInstrument.java"
+public interface dev.kosmx.playerAnim.core.data.opennbs.format.CustomInstrument {
+  public abstract void setName(java.lang.String);
+  public abstract void setToSongFile(java.lang.String);
+  public abstract void setsetSoundPitch(byte);
+  public abstract void setPressKey(boolean);
+}
+Compiled from "Move.java"
+public class dev.kosmx.playerAnim.core.data.quarktool.Move implements dev.kosmx.playerAnim.core.data.quarktool.Playable {
+  public dev.kosmx.playerAnim.core.data.quarktool.Move(dev.kosmx.playerAnim.core.data.quarktool.PartMap$PartValue, float, int, dev.kosmx.playerAnim.core.util.Ease);
+  public int playForward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public int playBackward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+}
+Compiled from "SetableSupplier.java"
+public class dev.kosmx.playerAnim.core.util.SetableSupplier<T> implements java.util.function.Supplier<T> {
+  T object;
+  public dev.kosmx.playerAnim.core.util.SetableSupplier();
+  public void set(T);
+  public T get();
+}
+Compiled from "NBSFileUtils.java"
+public class dev.kosmx.playerAnim.core.data.opennbs.NBSFileUtils {
+  static final int maxWorkingVersion;
+  public dev.kosmx.playerAnim.core.data.opennbs.NBSFileUtils();
+  public static dev.kosmx.playerAnim.core.data.opennbs.NBS read(java.io.DataInputStream) throws java.io.IOException;
+  static java.lang.String readString(java.io.DataInputStream) throws java.io.IOException;
+  static int readInt(java.io.DataInputStream) throws java.io.IOException;
+  static short readShort(java.io.DataInputStream) throws java.io.IOException;
+}
+Compiled from "AnimationProcessor.java"
+public class dev.kosmx.playerAnim.core.impl.AnimationProcessor {
+  public dev.kosmx.playerAnim.core.impl.AnimationProcessor(dev.kosmx.playerAnim.api.layered.IAnimation);
+  public void tick();
+  public boolean isActive();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, dev.kosmx.playerAnim.core.util.Vec3f);
+  public void setTickDelta(float);
+  public boolean isFirstPersonAnimationDisabled();
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode();
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration();
+  public dev.kosmx.playerAnim.core.util.Pair<java.lang.Float, java.lang.Float> getBend(java.lang.String);
+}
+Compiled from "MathHelper.java"
+public class dev.kosmx.playerAnim.core.util.MathHelper {
+  public dev.kosmx.playerAnim.core.util.MathHelper();
+  public static float lerp(float, float, float);
+  public static double lerp(double, double, double);
+  public static int colorHelper(int, int, int, int);
+  public static float clampToRadian(float);
+  public static java.nio.ByteBuffer readFromIStream(java.io.InputStream) throws java.io.IOException;
+}
+Compiled from "NetworkHelper.java"
+public final class dev.kosmx.playerAnim.core.util.NetworkHelper {
+  public dev.kosmx.playerAnim.core.util.NetworkHelper();
+  public static java.lang.String readString(java.nio.ByteBuffer) throws java.io.IOException;
+  public static void writeString(java.nio.ByteBuffer, java.lang.String);
+  public static java.lang.String readVarString(java.nio.ByteBuffer) throws java.io.IOException;
+  public static void writeVarString(java.nio.ByteBuffer, java.lang.String);
+  public static java.util.UUID readUUID(java.nio.ByteBuffer);
+  public static void writeUUID(java.nio.ByteBuffer, java.util.UUID);
+  public static int readVarInt(java.nio.ByteBuffer);
+  public static void writeVarInt(java.nio.ByteBuffer, int);
+}
+Compiled from "IAnimation.java"
+public interface dev.kosmx.playerAnim.api.layered.IAnimation {
+  public default void tick();
+  public abstract boolean isActive();
+  public abstract dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  public abstract void setupAnim(float);
+  public default dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode(float);
+  public default dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+}
+Compiled from "KeyframeAnimationPlayer.java"
+public class dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer implements dev.kosmx.playerAnim.api.layered.IActualAnimation<dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer> {
+  protected float tickDelta;
+  public final java.util.HashMap<java.lang.String, dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer$BodyPart> bodyParts;
+  public int perspective;
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode(float);
+  public dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer(dev.kosmx.playerAnim.core.data.KeyframeAnimation, int, boolean);
+  public dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer(dev.kosmx.playerAnim.core.data.KeyframeAnimation, int);
+  public dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer(dev.kosmx.playerAnim.core.data.KeyframeAnimation);
+  public void tick();
+  public int getTick();
+  public void stop();
+  public boolean isActive();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  public void setupAnim(float);
+  public boolean isLoopStarted();
+  public dev.kosmx.playerAnim.core.data.KeyframeAnimation getData();
+  public dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer$BodyPart getPart(java.lang.String);
+  public int getStopTick();
+  public int getCurrentTick();
+  public boolean isInfinite();
+  public dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer setFirstPersonConfiguration(dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration);
+  public dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer setFirstPersonMode(dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode);
+  public dev.kosmx.playerAnim.api.layered.IActualAnimation setFirstPersonConfiguration(dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration);
+  public dev.kosmx.playerAnim.api.layered.IActualAnimation setFirstPersonMode(dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode);
+}
+Compiled from "LegacyGeckoJsonCodec.java"
+public class dev.kosmx.playerAnim.minecraftApi.codec.LegacyGeckoJsonCodec extends dev.kosmx.playerAnim.minecraftApi.codec.AbstractGsonCodec<dev.kosmx.playerAnim.core.data.KeyframeAnimation> {
+  public static final dev.kosmx.playerAnim.minecraftApi.codec.LegacyGeckoJsonCodec INSTANCE;
+  public dev.kosmx.playerAnim.minecraftApi.codec.LegacyGeckoJsonCodec();
+  protected com.google.gson.Gson getGson();
+  protected java.lang.reflect.Type getListedTypeToken();
+  public java.lang.String getFormatName();
+  static {};
+}
+Compiled from "Playable.java"
+public interface dev.kosmx.playerAnim.core.data.quarktool.Playable {
+  public abstract int playForward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+  public abstract int playBackward(int) throws dev.kosmx.playerAnim.core.data.quarktool.QuarkParsingError;
+}
+Compiled from "PlayerAnimationAccess.java"
+public final class dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess {
+  public static final dev.kosmx.playerAnim.core.impl.event.Event<dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess$AnimationRegister> REGISTER_ANIMATION_EVENT;
+  public dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess();
+  public static dev.kosmx.playerAnim.api.layered.AnimationStack getPlayerAnimLayer(net.minecraft.client.player.AbstractClientPlayer) throws java.lang.IllegalArgumentException;
+  public static dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess$PlayerAssociatedAnimationData getPlayerAssociatedData(net.minecraft.client.player.AbstractClientPlayer);
+  static {};
+}
+Compiled from "UUIDMap.java"
+public class dev.kosmx.playerAnim.core.util.UUIDMap<T extends java.util.function.Supplier<java.util.UUID>> extends java.util.HashMap<java.util.UUID, T> implements java.lang.Iterable<T> {
+  public dev.kosmx.playerAnim.core.util.UUIDMap();
+  public T put(T);
+  public void addAll(java.util.Collection<T>);
+  public java.util.Iterator<T> iterator();
+  public void add(T);
+  public boolean contains(T);
+  public void removeIf(java.util.function.Predicate<T>);
+}
+Compiled from "AnimationContainer.java"
+public class dev.kosmx.playerAnim.api.layered.AnimationContainer<T extends dev.kosmx.playerAnim.api.layered.IAnimation> implements dev.kosmx.playerAnim.api.layered.IAnimation {
+  protected T anim;
+  public dev.kosmx.playerAnim.api.layered.AnimationContainer(T);
+  public dev.kosmx.playerAnim.api.layered.AnimationContainer();
+  public void setAnim(T);
+  public T getAnim();
+  public boolean isActive();
+  public void tick();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  public void setupAnim(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+}
+Compiled from "AnimationCodecs.java"
+public class dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodecs {
+  public static final dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodecs INSTANCE;
+  public void registerCodec(dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodec<?>);
+  public java.util.List<dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodec<?>> getCodec(java.lang.String);
+  public java.util.List<dev.kosmx.playerAnim.minecraftApi.codec.AnimationCodec<?>> getAllCodecs();
+  public static java.lang.String getExtension(java.lang.String);
+  public static java.util.Collection<dev.kosmx.playerAnim.api.IPlayable> deserialize(java.lang.String, java.io.InputStream) throws java.io.IOException;
+  public static java.util.Collection<dev.kosmx.playerAnim.api.IPlayable> deserialize(java.lang.String, java.util.function.Supplier<java.io.InputStream>);
+  static {};
+}
+Compiled from "EventResult.java"
+public final class dev.kosmx.playerAnim.core.impl.event.EventResult extends java.lang.Enum<dev.kosmx.playerAnim.core.impl.event.EventResult> {
+  public static final dev.kosmx.playerAnim.core.impl.event.EventResult PASS;
+  public static final dev.kosmx.playerAnim.core.impl.event.EventResult SUCCESS;
+  public static final dev.kosmx.playerAnim.core.impl.event.EventResult FAIL;
+  public static final dev.kosmx.playerAnim.core.impl.event.EventResult CONSUME;
+  public static dev.kosmx.playerAnim.core.impl.event.EventResult[] values();
+  public static dev.kosmx.playerAnim.core.impl.event.EventResult valueOf(java.lang.String);
+  static {};
+}
+Compiled from "Pair.java"
+public class dev.kosmx.playerAnim.core.util.Pair<L, R> {
+  final L left;
+  final R right;
+  public dev.kosmx.playerAnim.core.util.Pair(L, R);
+  public boolean equals(java.lang.Object);
+  public int hashCode();
+  public java.lang.String toString();
+  public L getLeft();
+  public R getRight();
+}
+Compiled from "EmotecraftGsonCodec.java"
+public class dev.kosmx.playerAnim.minecraftApi.codec.EmotecraftGsonCodec extends dev.kosmx.playerAnim.minecraftApi.codec.AbstractGsonCodec<dev.kosmx.playerAnim.core.data.KeyframeAnimation> {
+  public static final dev.kosmx.playerAnim.minecraftApi.codec.EmotecraftGsonCodec INSTANCE;
+  public dev.kosmx.playerAnim.minecraftApi.codec.EmotecraftGsonCodec();
+  protected com.google.gson.Gson getGson();
+  protected java.lang.reflect.Type getListedTypeToken();
+  public java.lang.String getFormatName();
+  public void encode(java.io.OutputStream, net.minecraft.resources.ResourceLocation, dev.kosmx.playerAnim.core.data.KeyframeAnimation) throws java.io.IOException;
+  public void encode(java.io.OutputStream, net.minecraft.resources.ResourceLocation, dev.kosmx.playerAnim.api.IPlayable) throws java.io.IOException;
+  static {};
+}
+Compiled from "AnimationDecoder.java"
+public interface dev.kosmx.playerAnim.minecraftApi.codec.AnimationDecoder<T extends dev.kosmx.playerAnim.api.IPlayable> {
+  public abstract java.util.Collection<T> decode(java.io.InputStream) throws java.io.IOException;
+}
+Compiled from "AdjustmentModifier.java"
+public class dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier extends dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier {
+  public boolean enabled;
+  protected java.util.function.Function<java.lang.String, java.util.Optional<dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier$PartModifier>> source;
+  protected int instructedFadeout;
+  public dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier(java.util.function.Function<java.lang.String, java.util.Optional<dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier$PartModifier>>);
+  protected float getFadeIn(float);
+  public void tick();
+  public void fadeOut(int);
+  protected float getFadeOut(float);
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  protected dev.kosmx.playerAnim.core.util.Vec3f transformVector(dev.kosmx.playerAnim.core.util.Vec3f, dev.kosmx.playerAnim.api.TransformType, dev.kosmx.playerAnim.api.layered.modifier.AdjustmentModifier$PartModifier, float);
+}
+Compiled from "AnimationStack.java"
+public class dev.kosmx.playerAnim.api.layered.AnimationStack implements dev.kosmx.playerAnim.api.layered.IAnimation {
+  public dev.kosmx.playerAnim.api.layered.AnimationStack();
+  public boolean isActive();
+  public void tick();
+  public dev.kosmx.playerAnim.core.util.Vec3f get3DTransform(java.lang.String, dev.kosmx.playerAnim.api.TransformType, float, dev.kosmx.playerAnim.core.util.Vec3f);
+  public void setupAnim(float);
+  public void addAnimLayer(int, dev.kosmx.playerAnim.api.layered.IAnimation);
+  public boolean removeLayer(dev.kosmx.playerAnim.api.layered.IAnimation);
+  public boolean removeLayer(int);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode getFirstPersonMode(float);
+  public dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration getFirstPersonConfiguration(float);
+}
