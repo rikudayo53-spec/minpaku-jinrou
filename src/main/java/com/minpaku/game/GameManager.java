@@ -602,6 +602,7 @@ public final class GameManager {
             return;
         }
         clearSkinSwap();
+        swapCountdown = -1;
         // 妖狐が生き残っていたら、妖狐の勝ち（てるてるの勝ちはそのまま）
         if (winner == Role.Team.VILLAGE || winner == Role.Team.WOLF) {
             for (PlayerState ps : players.values()) {
@@ -772,6 +773,7 @@ public final class GameManager {
         if (sabotageCooldown > 0) {
             sabotageCooldown--;
         }
+        tickSwapCountdown();
         tickPendingBodies();
         tickEvilGod();
         if (doorsOpenAt >= 0 && ticks >= doorsOpenAt) {
@@ -1899,27 +1901,9 @@ public final class GameManager {
                     send(o, new Packets.Announce("全員が同じ姿に！", "次の会議まで、見た目ではだれか分からない", 0xC060FF, 2));
                 }
             } else {
-                List<Vec3> pos = new ArrayList<>();
-                List<float[]> rot = new ArrayList<>();
-                for (PlayerState o : to) {
-                    net.minecraft.world.entity.Entity e = entityOf(o);
-                    pos.add(e.position());
-                    rot.add(new float[]{e.getYRot(), e.getXRot()});
-                }
-                for (int i = 0; i < from.size(); i++) {
-                    net.minecraft.world.entity.Entity e = entityOf(from.get(i));
-                    Vec3 v = pos.get(i);
-                    if (e instanceof ServerPlayer sp) {
-                        active.remove(sp.getUUID());
-                        sp.teleportTo(level, v.x, v.y, v.z, rot.get(i)[0], rot.get(i)[1]);
-                    } else if (e != null) {
-                        e.teleportTo(v.x, v.y, v.z);
-                    }
-                }
-                for (ServerPlayer o : online()) {
-                    send(o, new Packets.Announce("位置が入れ替わった！", "ここはどこ…？", 0xC060FF, 2));
-                    o.playNotifySound(SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1f, 1f);
-                }
+                // 位置入れ替え：3秒数えてから入れ替える
+                swapCountdown = 60;
+                countdownAnnounce(3);
             }
             sabotageCooldown = settings().get("sabotage_cooldown") * 20;
             return true;
@@ -1952,6 +1936,69 @@ public final class GameManager {
         }
         sabotageCooldown = settings().get("sabotage_cooldown") * 20;
         return true;
+    }
+
+    /** 位置入れ替えまでの残り（tick）。-1 なら予定なし */
+    private int swapCountdown = -1;
+
+    private void countdownAnnounce(int n) {
+        for (ServerPlayer o : online()) {
+            send(o, new Packets.Announce(String.valueOf(n), "位置が入れ替わる…！", 0xC060FF, 0));
+            o.playNotifySound(SoundEvents.NOTE_BLOCK_HAT.value(), SoundSource.PLAYERS, 1f, n == 1 ? 1.6f : 1.2f);
+        }
+    }
+
+    private void tickSwapCountdown() {
+        if (swapCountdown < 0) {
+            return;
+        }
+        swapCountdown--;
+        if (swapCountdown == 40) {
+            countdownAnnounce(2);
+        } else if (swapCountdown == 20) {
+            countdownAnnounce(1);
+        } else if (swapCountdown == 0) {
+            swapCountdown = -1;
+            doPositionSwap();
+        }
+    }
+
+    /** 生きている全員（ベントの中にいない人）の位置を入れ替える。だれも自分の場所には残らない */
+    private void doPositionSwap() {
+        List<PlayerState> alive = new ArrayList<>();
+        for (PlayerState o : players.values()) {
+            if (o.alive && !o.left && o.vent == null && entityOf(o) != null) {
+                alive.add(o);
+            }
+        }
+        if (alive.size() < 2) {
+            return;
+        }
+        List<PlayerState> to = new ArrayList<>(alive);
+        Collections.shuffle(to, random);
+        List<PlayerState> from = new ArrayList<>(to);
+        Collections.rotate(to, 1);
+        List<Vec3> pos = new ArrayList<>();
+        List<float[]> rot = new ArrayList<>();
+        for (PlayerState o : to) {
+            net.minecraft.world.entity.Entity e = entityOf(o);
+            pos.add(e.position());
+            rot.add(new float[]{e.getYRot(), e.getXRot()});
+        }
+        for (int i = 0; i < from.size(); i++) {
+            net.minecraft.world.entity.Entity e = entityOf(from.get(i));
+            Vec3 v = pos.get(i);
+            if (e instanceof ServerPlayer sp) {
+                active.remove(sp.getUUID());
+                sp.teleportTo(level, v.x, v.y, v.z, rot.get(i)[0], rot.get(i)[1]);
+            } else if (e != null) {
+                e.teleportTo(v.x, v.y, v.z);
+            }
+        }
+        for (ServerPlayer o : online()) {
+            send(o, new Packets.Announce("位置が入れ替わった！", "ここはどこ…？", 0xC060FF, 2));
+            o.playNotifySound(SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1f, 1f);
+        }
     }
 
     /** スキン入れ替えの組み合わせ（あとから入ってきた人にも送る） */
@@ -2048,6 +2095,7 @@ public final class GameManager {
     private void startMeeting(int reason, PlayerState caller, @Nullable BodyEntity body) {
         reopenDoors();
         clearSkinSwap();
+        swapCountdown = -1;
         pendingBodies.clear();
         meetingCount++;
         usedLines.clear();
