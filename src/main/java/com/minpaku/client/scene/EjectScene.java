@@ -263,8 +263,7 @@ public final class EjectScene {
                 if (bt > 0 && bt < 9 && heads[b % n] != null) {
                     float a = bt < 6 ? 1f : 1f - (bt - 6) / 3f;
                     float sc = 1.2f + Math.min(1f, bt / 2f) * 0.4f;
-                    Ui.text(g, Ui.serif("わっしょい！"), heads[b % n][0], heads[b % n][1] - 18 - bt * 2, Ui.alpha(0xFFFFFFFF, a),
-                            sc, 0, true);
+                    // （掛け声・セリフの文字は出さない）
                 }
             }
         }
@@ -273,7 +272,7 @@ public final class EjectScene {
             if (st > 0 && st < 10) {
                 float a = st < 7 ? 1f : 1f - (st - 7) / 3f;
                 String word = k == 0 ? "せーの…" : "せーのっ！";
-                Ui.text(g, Ui.serif(word), w / 2f, h * 0.22f, Ui.alpha(0xFFFFE08A, a), 2.6f + st * 0.05f, 0, true);
+                // （掛け声・セリフの文字は出さない）
             }
         }
         if (t >= 76 && t < 90) {
@@ -296,14 +295,13 @@ public final class EjectScene {
                 float st = t - (12 + k * 20);
                 if (st > 0 && st < 14) {
                     float a = st < 10 ? 1f : 1f - (st - 10) / 4f;
-                    Ui.text(g, Ui.serif(k == 0 ? "やったー！" : "もっと遠くへー！"), eHead[0], eHead[1] - 14 - st, Ui.alpha(0xFFFFE08A, a),
-                            1.6f, 0, true);
+                    // （掛け声・セリフの文字は出さない）
                 }
             }
         }
         if (cast.teru() && t >= 96 && t < 124) {
             float a = t < 118 ? 1f : 1f - (t - 118) / 6f;
-            Ui.text(g, Ui.serif("計画どおり〜！"), w / 2f, h * 0.3f, Ui.alpha(0xFFFFE08A, a), 2.2f, 0, true);
+            // （掛け声・セリフの文字は出さない）
         }
         // 結果
         if (t >= 128) {

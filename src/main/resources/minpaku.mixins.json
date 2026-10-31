@@ -6,7 +6,9 @@
   "client": [
     "client.FogMixin",
     "client.GunPoseMixin",
-    "client.TabListMixin"
+    "client.TabListMixin",
+    "client.NameTagMixin",
+    "client.SkinSwapMixin"
   ],
   "injectors": {
     "defaultRequire": 1

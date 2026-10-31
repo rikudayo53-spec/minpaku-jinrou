@@ -1,7 +1,7 @@
 {
  "block.minpaku.entrance_mat": "玄関マット（スタート地点）",
  "block.minpaku.call_bell": "呼び鈴（緊急ボタン）",
- "block.minpaku.floor_hatch": "床下点検口（ベント）",
+ "block.minpaku.floor_hatch": "床下点検口（ベントA）",
  "block.minpaku.breaker": "配電盤",
  "block.minpaku.gas_valve": "ガスの元栓",
  "block.minpaku.boiler": "ボイラー",
@@ -65,5 +65,7 @@
  "block.minpaku.chochin": "提灯（タスク）",
  "block.minpaku.amado": "雨戸（タスク）",
  "block.minpaku.taiko": "太鼓（タスク）",
- "block.minpaku.hansho": "半鐘（タスク）"
+ "block.minpaku.hansho": "半鐘（タスク）",
+ "block.minpaku.floor_hatch_b": "床下点検口（ベントB）",
+ "block.minpaku.floor_hatch_c": "床下点検口（ベントC）"
 }

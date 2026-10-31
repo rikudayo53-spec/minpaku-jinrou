@@ -105,7 +105,7 @@ public class SettingsScreen extends Screen {
             int cx = px + 14;
             int cy = py + 40;
             for (String[] c : new String[][]{{"スタート", cnt(s, MarkerType.SPAWN)}, {"呼び鈴", cnt(s, MarkerType.BELL)},
-                    {"ベント", cnt(s, MarkerType.VENT)}, {"配電盤", cnt(s, MarkerType.BREAKER)},
+                    {"ベント", String.valueOf(s.counts().getOrDefault(MarkerType.VENT.ordinal(), 0) + s.counts().getOrDefault(MarkerType.VENT_B.ordinal(), 0) + s.counts().getOrDefault(MarkerType.VENT_C.ordinal(), 0))}, {"配電盤", cnt(s, MarkerType.BREAKER)},
                     {"元栓", cnt(s, MarkerType.GAS_VALVE)}, {"ボイラー", cnt(s, MarkerType.BOILER)},
                     {"タスク", String.valueOf(taskCount(s))}}) {
                 String label = c[0] + " " + c[1];

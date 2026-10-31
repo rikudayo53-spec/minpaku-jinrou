@@ -601,6 +601,7 @@ public final class GameManager {
         if (!running()) {
             return;
         }
+        clearSkinSwap();
         // 妖狐が生き残っていたら、妖狐の勝ち（てるてるの勝ちはそのまま）
         if (winner == Role.Team.VILLAGE || winner == Role.Team.WOLF) {
             for (PlayerState ps : players.values()) {
@@ -1424,7 +1425,7 @@ public final class GameManager {
                     startMeeting(0, ps, null);
                 }
             }
-            case VENT -> {
+            case VENT, VENT_B, VENT_C -> {
                 if (!alive) {
                     return;
                 }
@@ -1786,7 +1787,7 @@ public final class GameManager {
         p.setGameMode(GameType.SPECTATOR);
         p.teleportTo(level, pos.getX() + 0.5, pos.getY() + 0.1, pos.getZ() + 0.5, p.getYRot(), p.getXRot());
         level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.8f, 0.8f);
-        actionBar(p, "ベントの中… A/D で移動、スニークで出る", ChatFormatting.LIGHT_PURPLE);
+        actionBar(p, "ベント" + ventType(pos).ventName() + "の中… A/D で同じ系統のベントへ移動、スニークで出る", ChatFormatting.LIGHT_PURPLE);
     }
 
     public void ventMove(ServerPlayer p, int dir) {
@@ -1802,9 +1803,10 @@ public final class GameManager {
             exitVent(p, ps, true);
             return;
         }
-        List<BlockPos> vents = map().get(MarkerType.VENT);
+        MarkerType vt = ventType(ps.vent);
+        List<BlockPos> vents = map().get(vt);
         if (vents.size() < 2) {
-            actionBar(p, "つながっているベントがない", ChatFormatting.GRAY);
+            actionBar(p, "つながっているベント" + vt.ventName() + "がない", ChatFormatting.GRAY);
             return;
         }
         int idx = vents.indexOf(ps.vent);
@@ -1814,7 +1816,12 @@ public final class GameManager {
         animate(ps.vent, 0f);
         p.teleportTo(level, ps.vent.getX() + 0.5, ps.vent.getY() + 0.1, ps.vent.getZ() + 0.5, p.getYRot(), p.getXRot());
         p.playNotifySound(SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.5f, 1.4f);
-        actionBar(p, "ベント " + (next + 1) + " / " + vents.size() + "  （A/D で移動、スニークで出る）", ChatFormatting.LIGHT_PURPLE);
+        actionBar(p, "ベント" + vt.ventName() + " " + (next + 1) + " / " + vents.size() + "  （A/D で移動、スニークで出る）", ChatFormatting.LIGHT_PURPLE);
+    }
+
+    /** その場所のベントの系統（A・B・C） */
+    private MarkerType ventType(BlockPos pos) {
+        return pos != null && level.getBlockState(pos).getBlock() instanceof MarkerBlock mb && mb.type().isVent() ? mb.type() : MarkerType.VENT;
     }
 
     private void exitVent(@Nullable ServerPlayer p, @Nullable PlayerState ps, boolean sound) {
@@ -1854,6 +1861,62 @@ public final class GameManager {
             actionBar(feedback, "妨害まであと " + (sabotageCooldown / 20 + 1) + " 秒", ChatFormatting.RED);
             return false;
         }
+        if (kind == 2 || kind == 3) {
+            // すぐ効く妨害：スキン入れ替え・位置入れ替え
+            List<PlayerState> alive = new ArrayList<>();
+            for (PlayerState o : players.values()) {
+                if (o.alive && !o.left && o.vent == null && entityOf(o) != null) {
+                    alive.add(o);
+                }
+            }
+            if (alive.size() < 2) {
+                actionBar(feedback, "入れ替える相手がいない", ChatFormatting.GRAY);
+                return false;
+            }
+            List<PlayerState> to = new ArrayList<>(alive);
+            // だれも自分と同じにならないよう、ずらして並べる
+            Collections.shuffle(to, random);
+            List<PlayerState> from = new ArrayList<>(to);
+            Collections.rotate(to, 1);
+            if (kind == 2) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < from.size(); i++) {
+                    if (sb.length() > 0) {
+                        sb.append(';');
+                    }
+                    sb.append(from.get(i).id).append('>').append(to.get(i).id);
+                }
+                skinSwap = sb.toString();
+                for (ServerPlayer o : online()) {
+                    send(o, new Packets.Info("skins", skinSwap));
+                    send(o, new Packets.Announce("スキンが入れ替わった！", "次の会議まで、見た目ではだれか分からない", 0xC060FF, 2));
+                }
+            } else {
+                List<Vec3> pos = new ArrayList<>();
+                List<float[]> rot = new ArrayList<>();
+                for (PlayerState o : to) {
+                    net.minecraft.world.entity.Entity e = entityOf(o);
+                    pos.add(e.position());
+                    rot.add(new float[]{e.getYRot(), e.getXRot()});
+                }
+                for (int i = 0; i < from.size(); i++) {
+                    net.minecraft.world.entity.Entity e = entityOf(from.get(i));
+                    Vec3 v = pos.get(i);
+                    if (e instanceof ServerPlayer sp) {
+                        active.remove(sp.getUUID());
+                        sp.teleportTo(level, v.x, v.y, v.z, rot.get(i)[0], rot.get(i)[1]);
+                    } else if (e != null) {
+                        e.teleportTo(v.x, v.y, v.z);
+                    }
+                }
+                for (ServerPlayer o : online()) {
+                    send(o, new Packets.Announce("位置が入れ替わった！", "ここはどこ…？", 0xC060FF, 2));
+                    o.playNotifySound(SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1f, 1f);
+                }
+            }
+            sabotageCooldown = settings().get("sabotage_cooldown") * 20;
+            return true;
+        }
         if (kind == 0) {
             if (map().count(MarkerType.BREAKER) == 0) {
                 actionBar(feedback, "配電盤が置かれていないので停電を起こせない", ChatFormatting.GRAY);
@@ -1882,6 +1945,25 @@ public final class GameManager {
         }
         sabotageCooldown = settings().get("sabotage_cooldown") * 20;
         return true;
+    }
+
+    /** スキン入れ替えの組み合わせ（あとから入ってきた人にも送る） */
+    private String skinSwap = "";
+
+    private void clearSkinSwap() {
+        if (!skinSwap.isEmpty()) {
+            skinSwap = "";
+            sendAll(new Packets.Info("skins", ""));
+        }
+    }
+
+    /** 参加者の体（人間のプレイヤーかボット） */
+    @Nullable
+    net.minecraft.world.entity.Entity entityOf(PlayerState ps) {
+        if (ps.bot) {
+            return bots.get(ps.id);
+        }
+        return player(ps.id);
     }
 
     void fixBlackout(@Nullable ServerPlayer by) {
@@ -1967,6 +2049,7 @@ public final class GameManager {
 
     private void startMeeting(int reason, PlayerState caller, @Nullable BodyEntity body) {
         reopenDoors();
+        clearSkinSwap();
         pendingBodies.clear();
         meetingCount++;
         usedLines.clear();
@@ -2311,7 +2394,7 @@ public final class GameManager {
                 level.playSound(null, pos, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 1f, 1.2f);
                 actionBar(p, "呼び鈴（ゲーム中に鳴らすと緊急会議）", ChatFormatting.GRAY);
             }
-            case VENT -> {
+            case VENT, VENT_B, VENT_C -> {
                 lobbyVentModes.put(p.getUUID(), p.gameMode.getGameModeForPlayer());
                 lobbyVents.put(p.getUUID(), pos.immutable());
                 animate(pos, 0f);
@@ -2379,9 +2462,10 @@ public final class GameManager {
             exitLobbyVent(p);
             return;
         }
-        List<BlockPos> vents = map().get(MarkerType.VENT);
+        MarkerType vt = ventType(cur);
+        List<BlockPos> vents = map().get(vt);
         if (vents.size() < 2) {
-            actionBar(p, "つながっているベントがない", ChatFormatting.GRAY);
+            actionBar(p, "つながっているベント" + vt.ventName() + "がない", ChatFormatting.GRAY);
             return;
         }
         int idx = vents.indexOf(cur);
@@ -2392,7 +2476,7 @@ public final class GameManager {
         animate(nv, 0f);
         p.teleportTo(level, nv.getX() + 0.5, nv.getY() + 0.1, nv.getZ() + 0.5, p.getYRot(), p.getXRot());
         p.playNotifySound(SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.5f, 1.4f);
-        actionBar(p, "ベント " + (next + 1) + " / " + vents.size() + "（お試し）  A/D で移動、スニークで出る", ChatFormatting.LIGHT_PURPLE);
+        actionBar(p, "ベント" + vt.ventName() + " " + (next + 1) + " / " + vents.size() + "（お試し）  A/D で移動、スニークで出る", ChatFormatting.LIGHT_PURPLE);
     }
 
     private void exitLobbyVent(ServerPlayer p) {
@@ -2447,7 +2531,7 @@ public final class GameManager {
 
     public void sendBounds(ServerPlayer p) {
         int[] b = map().lastBuilt;
-        String data = b.length == 6 ? b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "," + b[4] + "," + b[5] : "";
+        String data = b.length == 6 ? b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "," + b[4] + "," + b[5] + "," + settings().get("fog") : "";
         send(p, new Packets.Info("bounds", data));
     }
 

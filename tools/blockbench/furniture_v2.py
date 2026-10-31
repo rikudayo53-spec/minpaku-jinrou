@@ -7,6 +7,9 @@ import math
 from hires import HiRes, MATS, Mat
 
 MATS.update({
+    "vent_tag_a": Mat((178, 40, 36), "plain", noise=3),
+    "vent_tag_b": Mat((40, 80, 168), "plain", noise=3),
+    "vent_tag_c": Mat((44, 138, 64), "plain", noise=3),
     # 玄関
     "igusa": Mat((190, 176, 116), "bamboo", accent=(160, 146, 88), noise=4),
     "mat_edge": Mat((52, 46, 70), "plain", noise=4),
@@ -312,10 +315,15 @@ def call_bell():
 
 # ---------------------------------------------------------------- 3 床下点検口（ベント）
 
-def floor_hatch():
+def _vent_letter(ch, color):
+    from items_hires import text_decal
+    return text_decal(ch, color=color, faces=("up",), size=0.7, vertical=False)
+
+
+def floor_hatch(variant="A"):
     import random
     rng = random.Random(3)
-    m = F("floor_hatch")
+    m = F({"A": "floor_hatch", "B": "floor_hatch_b", "C": "floor_hatch_c"}[variant])
     # 枠：面取りした黒い木、四隅に鋲を打った鉄の金物
     bevel(m, "frame_n", (0, 0, 0), (16, 1.6, 2), "hinoki_dark", b=0.25)
     bevel(m, "frame_s", (0, 0, 14), (16, 1.6, 16), "hinoki_dark", b=0.25)
@@ -341,7 +349,19 @@ def floor_hatch():
     for x in (3.5, 11.5):
         m.cube("hinge", (x, 1.5, 12.8), (x + 1.2, 1.68, 14.6), "iron_fit")
         cylx(m, "hinge_pin", 1.5, 14.6, x - 0.2, x + 1.4, 0.3, "iron_fit", sides=3)
+    # 系統の札（A 赤・B 青・C 緑）：ふたの上の小さな板に文字
+    col = {"A": "vent_tag_a", "B": "vent_tag_b", "C": "vent_tag_c"}[variant]
+    bevel(m, "tag", (10.2, 1.5, 6.4), (12.8, 1.75, 9.0), col, b=0.1, group="lid")
+    m.cube("tag_face", (10.5, 1.74, 6.7), (12.5, 1.76, 8.7), col, group="lid", decal=_vent_letter(variant, (250, 246, 236, 255)))
     return m
+
+
+def floor_hatch_b():
+    return floor_hatch("B")
+
+
+def floor_hatch_c():
+    return floor_hatch("C")
 
 
 # ---------------------------------------------------------------- 4 配電盤（停電を直す）
@@ -2973,4 +2993,4 @@ OVERRIDES = {"SPAWN": entrance_mat, "BELL": call_bell, "VENT": floor_hatch, "BRE
              "BYOBU": byobu, "TOUROU": tourou, "SAKE": sake_barrel, "KASA": kasa_tate,
              "TANUKI": tanuki, "MANEKI": maneki_neko, "HIBACHI": hibachi, "TSUBO": tsubo,
              "MAKI": woodpile, "OZEN": ozen_shelf, "TEOKE": teoke, "CHOCHIN": chochin, "AMADO": amado, "TAIKO": taiko,
-             "KANE": hansho}
+             "KANE": hansho, "VENT_B": floor_hatch_b, "VENT_C": floor_hatch_c}

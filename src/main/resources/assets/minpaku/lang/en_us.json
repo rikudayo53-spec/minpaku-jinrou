@@ -65,5 +65,7 @@
  "block.minpaku.chochin": "Paper lantern (task)",
  "block.minpaku.amado": "Storm shutter (task)",
  "block.minpaku.taiko": "Taiko drum (task)",
- "block.minpaku.hansho": "Fire bell (task)"
+ "block.minpaku.hansho": "Fire bell (task)",
+ "block.minpaku.floor_hatch_b": "Floor hatch (vent B)",
+ "block.minpaku.floor_hatch_c": "Floor hatch (vent C)"
 }

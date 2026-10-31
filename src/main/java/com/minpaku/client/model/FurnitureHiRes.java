@@ -73,7 +73,7 @@ public final class FurnitureHiRes {
                         HiRes.rotate(ps, ox, oy, oz, -hit(an, 14) * 22f, 0, 0);
                     }
                 }
-                case VENT -> {
+                case VENT, VENT_B, VENT_C -> {
                     if (g.equals("lid")) {
                         float open = s < 40 ? (s < 8 ? sm(s / 8f) : 1f - sm((s - 22) / 18f)) : 0f;
                         HiRes.rotate(ps, ox, oy, oz, -open * 75f, 0, 0);

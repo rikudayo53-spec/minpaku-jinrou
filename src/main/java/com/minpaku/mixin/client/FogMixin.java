@@ -23,7 +23,8 @@ public abstract class FogMixin {
     /** 霧の濃さ（0 = 霧なし）。カメラが敷地の近くにいるときだけ */
     private static float minpaku$end(Camera camera) {
         int[] b = ClientGame.bounds;
-        if (b == null || b.length != 6) {
+        // 霧はプレイ中だけ。見えるブロック数は設定で変えられる（0 で霧なし）
+        if (b == null || b.length != 6 || !ClientGame.inGame() || ClientGame.fogDistance <= 0) {
             return -1;
         }
         double x = camera.getPosition().x;
@@ -33,7 +34,7 @@ public abstract class FogMixin {
         if (d < -48) {
             return -1;
         }
-        return (float) Math.max(28, Math.min(80, d + 16));
+        return ClientGame.fogDistance;
     }
 
     @Inject(method = "setupFog", at = @At("TAIL"))

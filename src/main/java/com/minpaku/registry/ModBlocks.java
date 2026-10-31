@@ -42,7 +42,7 @@ public final class ModBlocks {
 
     private static SoundType soundFor(MarkerType type) {
         return switch (type) {
-            case BELL, BREAKER, GAS_VALVE, BOILER, VENT -> SoundType.METAL;
+            case BELL, BREAKER, GAS_VALVE, BOILER, VENT, VENT_B, VENT_C -> SoundType.METAL;
             case FUTON, SPAWN, DUST -> SoundType.WOOL;
             case FIELD -> SoundType.GRASS;
             case KAMADO, BATH -> SoundType.STONE;

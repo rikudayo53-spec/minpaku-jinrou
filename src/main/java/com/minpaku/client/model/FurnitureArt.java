@@ -173,7 +173,7 @@ public final class FurnitureArt {
         switch (type) {
             case SPAWN -> entranceMat(a);
             case BELL -> bell(a, an, t);
-            case VENT -> hatch(a, an);
+            case VENT, VENT_B, VENT_C -> hatch(a, an);
             case BREAKER -> breaker(a, w, act, t);
             case GAS_VALVE -> gasValve(a, w, act, t);
             case BOILER -> boiler(a, w, act, t);

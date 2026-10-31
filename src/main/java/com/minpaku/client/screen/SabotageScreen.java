@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 
 /** 人狼の妨害メニュー（お札） */
 public class SabotageScreen extends Screen {
-    private int px, py, pw = 260, ph = 150;
+    private int px, py, pw = 280, ph = 214;
 
     public SabotageScreen() {
         super(Component.literal("妨害"));
@@ -43,25 +43,30 @@ public class SabotageScreen extends Screen {
         Ui.sans(g, info, px + 42, py + 30, ready() ? 0xFF2E7D32 : Ui.INK_SOFT, 0.85f, -1);
         boolean r = ready();
         int bw = (pw - 36) / 2;
-        Ui.button(g, px + 12, py + 50, bw, 30, "停電させる", true, r && in(mouseX, mouseY, px + 12, py + 50, bw, 30), r, 1.1f);
-        Ui.button(g, px + 24 + bw, py + 50, bw, 30, "ガス漏れ", true, r && in(mouseX, mouseY, px + 24 + bw, py + 50, bw, 30), r, 1.1f);
-        Ui.sans(g, "村人の視界が暗くなる", px + 12 + bw / 2f, py + 86, Ui.INK_SOFT, 0.7f, 0);
-        Ui.sans(g, "時間内に止められないと人狼の勝ち", px + 24 + bw * 1.5f, py + 86, Ui.INK_SOFT, 0.7f, 0);
+        for (int i = 0; i < 4; i++) {
+            int bx = px + 12 + (i % 2) * (bw + 12);
+            int by = py + 50 + (i / 2) * 62;
+            Ui.button(g, bx, by, bw, 30, NAMES[i], true, r && in(mouseX, mouseY, bx, by, bw, 30), r, 1.1f);
+            Ui.sans(g, NOTES[i], bx + bw / 2f, by + 36, Ui.INK_SOFT, 0.7f, 0);
+        }
         Ui.button(g, px + pw / 2 - 40, py + ph - 30, 80, 20, "閉じる", false, in(mouseX, mouseY, px + pw / 2 - 40, py + ph - 30, 80, 20), true, 1f);
     }
+
+    private static final String[] NAMES = {"停電させる", "ガス漏れ", "スキン入れ替え", "位置入れ替え"};
+    private static final String[] NOTES = {"村人の視界が暗くなる", "時間内に止められないと人狼の勝ち",
+            "全員のスキンがランダムに入れ替わる", "全員の居場所がランダムに入れ替わる"};
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int bw = (pw - 36) / 2;
-        if (ready() && in(mx, my, px + 12, py + 50, bw, 30)) {
-            ClientPlayNetworking.send(new Packets.Sabotage(0));
-            onClose();
-            return true;
-        }
-        if (ready() && in(mx, my, px + 24 + bw, py + 50, bw, 30)) {
-            ClientPlayNetworking.send(new Packets.Sabotage(1));
-            onClose();
-            return true;
+        for (int i = 0; i < 4; i++) {
+            int bx = px + 12 + (i % 2) * (bw + 12);
+            int by = py + 50 + (i / 2) * 62;
+            if (ready() && in(mx, my, bx, by, bw, 30)) {
+                ClientPlayNetworking.send(new Packets.Sabotage(i));
+                onClose();
+                return true;
+            }
         }
         if (in(mx, my, px + pw / 2 - 40, py + ph - 30, 80, 20)) {
             onClose();

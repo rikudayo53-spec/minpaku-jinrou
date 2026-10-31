@@ -24,7 +24,8 @@ public class BotRenderer extends LivingEntityRenderer<BotEntity, PlayerModel<Bot
 
     @Override
     public void render(BotEntity bot, float yaw, float pt, PoseStack ps, MultiBufferSource buffers, int light) {
-        PlayerSkin skin = DefaultPlayerSkin.get(bot.getUUID());
+        PlayerSkin sw = com.minpaku.client.SkinSwap.skinOf(bot.getUUID());
+        PlayerSkin skin = sw != null ? sw : DefaultPlayerSkin.get(bot.getUUID());
         this.model = skin.model() == PlayerSkin.Model.SLIM ? slim : wide;
         super.render(bot, yaw, pt, ps, buffers, light);
     }
@@ -36,6 +37,7 @@ public class BotRenderer extends LivingEntityRenderer<BotEntity, PlayerModel<Bot
 
     @Override
     public ResourceLocation getTextureLocation(BotEntity bot) {
-        return DefaultPlayerSkin.get(bot.getUUID()).texture();
+        PlayerSkin sw = com.minpaku.client.SkinSwap.skinOf(bot.getUUID());
+        return (sw != null ? sw : DefaultPlayerSkin.get(bot.getUUID())).texture();
     }
 }

@@ -33,6 +33,12 @@
  "floor_hatch": [
   "use"
  ],
+ "floor_hatch_b": [
+  "use"
+ ],
+ "floor_hatch_c": [
+  "use"
+ ],
  "flower_vase": [
   "idle",
   "use"

@@ -9,7 +9,9 @@ public enum MarkerType {
     // 設備
     SPAWN("entrance_mat", "玄関マット（スタート地点）", Use.NONE, null, 0),
     BELL("call_bell", "呼び鈴（緊急ボタン）", Use.NONE, null, 0),
-    VENT("floor_hatch", "床下点検口（ベント）", Use.NONE, null, 0),
+    VENT("floor_hatch", "床下点検口（ベントA）", Use.NONE, null, 0),
+    VENT_B("floor_hatch_b", "床下点検口（ベントB）", Use.NONE, null, 0),
+    VENT_C("floor_hatch_c", "床下点検口（ベントC）", Use.NONE, null, 0),
     BREAKER("breaker", "配電盤（停電を直す）", Use.NONE, null, 0),
     GAS_VALVE("gas_valve", "ガスの元栓（ガス漏れを直す）", Use.HOLD, "ガスの元栓を閉める", 40),
     BOILER("boiler", "ボイラー（ガス漏れを直す）", Use.HOLD, "ボイラーを止める", 40),
@@ -120,6 +122,15 @@ public enum MarkerType {
             case TEOKE -> new MarkerType[]{SPAWN};
             default -> new MarkerType[0];
         };
+    }
+
+    /** ベント（A・B・C の系統。同じ系統どうしでしか移動できない） */
+    public boolean isVent() {
+        return this == VENT || this == VENT_B || this == VENT_C;
+    }
+
+    public String ventName() {
+        return this == VENT_B ? "B" : this == VENT_C ? "C" : "A";
     }
 
     /** ミニゲーム画面を開くタスク */

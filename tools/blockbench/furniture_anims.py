@@ -207,7 +207,7 @@ def hansho(a):
 
 
 ANIMS = {
-    "call_bell": bell, "floor_hatch": vent, "boiler": boiler, "hokora": hokora, "ledger": ledger,
+    "call_bell": bell, "floor_hatch": vent, "floor_hatch_b": vent, "floor_hatch_c": vent, "boiler": boiler, "hokora": hokora, "ledger": ledger,
     "shoji_screen": shoji, "kamado": kamado, "bath_stove": bath, "chopping_block": chopping, "dust_pile": dust,
     "laundry_pole": laundry, "flower_vase": vase, "andon": andon, "irori": irori, "bonsai": bonsai, "tea_set": tea,
     "well": well, "mailbox": mailbox, "goldfish_bowl": goldfish, "wind_chime": furin, "mochi_mortar": mochi,

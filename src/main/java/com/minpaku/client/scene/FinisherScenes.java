@@ -463,7 +463,7 @@ public final class FinisherScenes {
             }
             if (gt > 8) {
                 float a = Mth.clamp((gt - 8) / 4f, 0f, 1f) * alpha;
-                Ui.text(g, Ui.serif("おにぎりの力！"), w / 2f, h * 0.18f, Ui.alpha(0xFFFFF3B0, a), 3.0f, 0, true);
+                // （掛け声・セリフの文字は出さない）
             }
             if (mid != null && gt < 12) {
                 // （文字は出さない）
@@ -477,8 +477,8 @@ public final class FinisherScenes {
             }
             if (ct > 6) {
                 float a = Mth.clamp((ct - 6) / 4f, 0f, 1f) * alpha;
-                Ui.text(g, Ui.serif("猫又の祟り！"), w / 2f, h * 0.16f, Ui.alpha(0xFFE1B3FF, a), 3.0f, 0, true);
-                Ui.text(g, Ui.sans(c.killerName + " も道連れに"), w / 2f, h * 0.16f + 34, Ui.alpha(0xFFFFFFFF, a), 1.2f, 0, true);
+                // （掛け声・セリフの文字は出さない）
+                // （掛け声・セリフの文字は出さない）
             }
         }
         // 上下の黒帯

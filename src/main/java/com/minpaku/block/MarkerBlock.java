@@ -57,7 +57,7 @@ public class MarkerBlock extends Block implements EntityBlock {
     private static VoxelShape shapeFor(MarkerType type) {
         return switch (type) {
             case SPAWN, DUST -> Block.box(0, 0, 0, 16, 1.5, 16);
-            case VENT -> Block.box(0, 0, 0, 16, 1, 16);
+            case VENT, VENT_B, VENT_C -> Block.box(0, 0, 0, 16, 1, 16);
             case BELL -> Block.box(3, 0, 3, 13, 9, 13);
             case FIELD -> Block.box(0, 0, 0, 16, 7, 16);
             case FUTON -> Block.box(0, 0, 0, 16, 7, 16);
@@ -110,7 +110,7 @@ public class MarkerBlock extends Block implements EntityBlock {
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
         // 床に置くもの（マット・ベント・ほこり）は踏んでも引っかからない
-        if (type == MarkerType.SPAWN || type == MarkerType.VENT || type == MarkerType.DUST) {
+        if (type == MarkerType.SPAWN || type.isVent() || type == MarkerType.DUST) {
             return Block.box(0, 0, 0, 16, 0.5, 16);
         }
         return shape;

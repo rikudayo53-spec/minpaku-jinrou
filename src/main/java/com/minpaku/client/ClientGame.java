@@ -91,6 +91,8 @@ public final class ClientGame {
     public static int[] bounds;
     /** 祠の悪神が目覚めた演出（残り tick） */
     public static int evilGodTicks;
+    /** 霧で見えるブロック数（0 = 霧なし）。設定「マップ」の値 */
+    public static int fogDistance = 48;
     public static final int EVIL_GOD_LEN = 90;
 
     /** 小さな通知を受け取る */
@@ -139,16 +141,18 @@ public final class ClientGame {
             }
             case "bounds" -> {
                 String[] v = p.data().split(",");
-                if (v.length == 6) {
+                if (v.length >= 6) {
                     int[] b = new int[6];
                     for (int i = 0; i < 6; i++) {
                         b[i] = Integer.parseInt(v[i].trim());
                     }
                     bounds = b;
+                    fogDistance = v.length >= 7 ? Integer.parseInt(v[6].trim()) : 48;
                 } else {
                     bounds = null;
                 }
             }
+            case "skins" -> SkinSwap.set(p.data());
             case "evil_god" -> {
                 evilGodTicks = EVIL_GOD_LEN;
                 announce("悪神 降臨", "祠の封印が解けた…役職がすべて入れかわる！", 0xC060FF);

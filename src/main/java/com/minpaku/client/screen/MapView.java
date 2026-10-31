@@ -94,8 +94,8 @@ public final class MapView {
 
     public void render(GuiGraphics g, int sw, int sh, int mouseX, int mouseY) {
         if (overlay) {
-            w = Math.min(sw * 48 / 100, 360);
-            h = Math.min(sh * 60 / 100, w * 3 / 4 + 40);
+            w = Math.min(sw * 62 / 100, 520);
+            h = Math.min(sh * 72 / 100, w * 3 / 4 + 40);
             x = sw - w - 6;
             y = 6;
             floorPicked = false;   // いつも自分のいる階を出す
@@ -168,20 +168,6 @@ public final class MapView {
         float scale = Math.min(aw / (float) Math.max(1, maxX - minX), ah / (float) Math.max(1, maxZ - minZ));
         float ox = ax + (aw - (maxX - minX) * scale) / 2f;
         float oz = ay + (ah - (maxZ - minZ) * scale) / 2f;
-        // 歩きながら見る小さい地図：自分のまわりを大きく（広いマップでも部屋が読める）
-        Vec3 me0 = me();
-        if (overlay && me0 != null) {
-            float span = 64f;
-            float zs = Math.min(aw, ah) / span;
-            if (zs > scale) {
-                scale = zs;
-                ox = ax + aw / 2f - (float) (me0.x - minX) * scale;
-                oz = ay + ah / 2f - (float) (me0.z - minZ) * scale;
-                // 端より外は見せない
-                ox = Math.min(ax, Math.max(ox, ax + aw - (maxX - minX) * scale));
-                oz = Math.min(ay, Math.max(oz, ay + ah - (maxZ - minZ) * scale));
-            }
-        }
         g.fill(ax, ay, ax + aw, ay + ah, 0xFF3B3226);
         g.enableScissor(ax, ay, ax + aw, ay + ah);
         // 部屋：種類ごとに色を分け、太い壁で囲む。名前はいつも出す
@@ -257,20 +243,15 @@ public final class MapView {
         if (me != null && taskFloor((int) Math.floor(me.y), fl) == floor) {
             float px = ox + (float) (me.x - minX) * scale;
             float pz = oz + (float) (me.z - minZ) * scale;
-            Ui.disc(g, px, pz, 7f, 0xFFFFFFFF);
-            Ui.disc(g, px, pz, 5.5f, 0xFFC8372D);
-            Ui.disc(g, px, pz, 2.5f, 0xFFFFFFFF);
-            if (live) {
-                // 向いている方向の小さな矢印
-                var mc = net.minecraft.client.Minecraft.getInstance();
-                if (mc.player != null) {
-                    double yaw = Math.toRadians(mc.player.getYRot());
-                    float dx = (float) -Math.sin(yaw);
-                    float dz = (float) Math.cos(yaw);
-                    for (int k = 1; k <= 3; k++) {
-                        Ui.disc(g, px + dx * (5 + k * 2.5f), pz + dz * (5 + k * 2.5f), 1.8f - k * 0.3f, 0xFFC8372D);
-                    }
-                }
+            if (live && net.minecraft.client.Minecraft.getInstance().player != null) {
+                // 向いている方向の矢印（白いふちの赤い矢じり）
+                float yaw = net.minecraft.client.Minecraft.getInstance().player.getYRot();
+                arrow(g, px, pz, yaw, 9f, 0xFFFFFFFF);
+                arrow(g, px, pz, yaw, 7f, 0xFFC8372D);
+            } else {
+                Ui.disc(g, px, pz, 7f, 0xFFFFFFFF);
+                Ui.disc(g, px, pz, 5.5f, 0xFFC8372D);
+                Ui.disc(g, px, pz, 2.5f, 0xFFFFFFFF);
             }
             Ui.sansShadow(g, "あなた", px, pz - 16, 0xFFFF8A80, 0.8f, 0);
         }
@@ -295,6 +276,28 @@ public final class MapView {
             String what = s.blackout() ? "停電中：配電盤へ！" : "ガス漏れ：元栓とボイラーへ！";
             Ui.sans(g, what, x + w - 12, overlay ? y + h - 16 : y + h - 30, Ui.alpha(0xFFE53935, 0.7f + 0.3f * pulse), 0.85f, 1);
         }
+    }
+
+    /** 矢印（矢じりの形）。yaw はマイクラの向き（0 = 南）。地図は北が上 */
+    private static void arrow(GuiGraphics g, float cx, float cy, float yaw, float size, int color) {
+        g.pose().pushPose();
+        g.pose().translate(cx, cy, 0);
+        // 地図の上（-Z）が北。yaw 0（南）は下向き
+        g.pose().mulPose(com.mojang.math.Axis.ZP.rotationDegrees(yaw + 180f));
+        int s = Math.round(size);
+        // 先（上）から下へ幅を広げ、うしろを少しへこませる
+        for (int y = -s; y <= s; y++) {
+            float t = (y + s) / (2f * s);
+            int half = Math.round(t * size * 0.8f);
+            if (y > s * 0.4f) {
+                int notch = Math.round((y - s * 0.4f) / (s * 0.6f) * size * 0.5f);
+                g.fill(-half, y, -notch, y + 1, color);
+                g.fill(notch, y, half + 1, y + 1, color);
+            } else {
+                g.fill(-half, y, half + 1, y + 1, color);
+            }
+        }
+        g.pose().popPose();
     }
 
     /** 部屋の種類ごとの色（見分けやすく） */

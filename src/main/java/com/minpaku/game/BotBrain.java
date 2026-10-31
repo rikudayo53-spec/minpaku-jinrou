@@ -262,7 +262,8 @@ public class BotBrain {
         if (gm.sabotageCooldown > 0 || gm.blackout || gm.gasTicks >= 0 || r.nextFloat() > 0.08f) {
             return;
         }
-        gm.sabotageBy(ps, null, r.nextFloat() < 0.6f ? 0 : 1);
+        float k = r.nextFloat();
+        gm.sabotageBy(ps, null, k < 0.45f ? 0 : k < 0.75f ? 1 : k < 0.88f ? 2 : 3);
     }
 
     // ----------------------------------------------------------------- 妨害を直す

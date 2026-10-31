@@ -60,6 +60,7 @@ public class MinpakuClient implements ClientModInitializer {
                 new net.minecraft.client.KeyMapping("key.minpaku.map", org.lwjgl.glfw.GLFW.GLFW_KEY_M, "key.categories.minpaku"));
         WorldRenderEvents.AFTER_SETUP.register(ctx -> com.minpaku.client.geo.FurnitureGeoRenderer.frustum = ctx.frustum());
         WorldRenderEvents.AFTER_ENTITIES.register(TaskHighlight::render);
+        WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.SabotageLaser::render);
         WorldRenderEvents.AFTER_ENTITIES.register(com.minpaku.client.render.RoleTags::render);
 
         ClientBridge.openSettings = () -> Minecraft.getInstance().setScreen(new SettingsScreen());

@@ -45,6 +45,7 @@ public final class GameSettings {
         DEFS.add(new Def("map", "建てるマップ", "マップ", Kind.CHOICE, 1, Plans.ALL.size(), 1, 3, Plans.labels()));
         DEFS.add(new Def("evil_god", "祠の悪神（役職シャッフル）", "マップ", Kind.CHOICE, 1, 3, 1, 2,
                 new String[]{"起きない", "ときどき起きる", "かならず起きる"}));
+        DEFS.add(new Def("fog", "霧で見えるブロック数（0 で霧なし）", "マップ", Kind.NUMBER, 0, 128, 8, 48));
         // 役職の人数（Role に登録した役職ぶん自動で作る）
         for (Role role : Role.special()) {
             boolean basic = role == Role.WOLF || role == Role.SEER || role == Role.KNIGHT || role == Role.MEDIUM;
