@@ -1329,7 +1329,9 @@ public final class Plans {
      * 建物の中は空洞（家具は置かない）。渡り廊下のふちはフェンス＋その上にトラップドア。
      * 中庭：池と太鼓橋、桜、飛び石、岩、木、石灯籠。南のまん中に門（スタート）。
      */
-    private static final int[][] NK_BUILD = {
+    /** 中庭の屋敷の建物と廊下（クラスの初期化の順に左右されないよう、入れ子のクラスに置く） */
+    private static final class NK {
+    static final int[][] BUILD = {
             // x1, z1, x2, z2
             {44, 3, 76, 23},     // 0 本殿
             {6, 4, 38, 14},      // 1 北西棟
@@ -1341,8 +1343,8 @@ public final class Plans {
             {20, 56, 38, 70},    // 7 南棟
             {89, 54, 116, 74},   // 8 南東棟
     };
-    private static final String[] NK_NAMES = {"本殿", "北西棟", "西棟", "北東棟", "東棟", "東の離れ", "南西の離れ", "南棟", "南東棟"};
-    private static final int[][] NK_HALL = {
+    static final String[] NAMES = {"本殿", "北西棟", "西棟", "北東棟", "東棟", "東の離れ", "南西の離れ", "南棟", "南東棟"};
+    static final int[][] HALL = {
             // 渡り廊下 x1, z1, x2, z2（幅5）
             {23, 24, 99, 28},    // 北の渡り廊下（西棟 → 東棟）
             {26, 15, 30, 23},    // 北西棟 → 北の渡り廊下
@@ -1354,14 +1356,15 @@ public final class Plans {
             {39, 59, 48, 63},    // 南棟から中庭へ（行き止まりの縁側）
             {78, 60, 88, 64},    // 東の渡り廊下 → 南東棟
     };
+    }
 
     private static MapPlan nakaniwa() {
         MapPlan p = new MapPlan("nakaniwa", "中庭の屋敷", "6人〜・大", 120, 80);
-        for (int i = 0; i < NK_BUILD.length; i++) {
-            int[] b = NK_BUILD[i];
-            p.room(NK_NAMES[i], 0, b[0], b[1], b[2], b[3], Blocks.SPRUCE_PLANKS);
+        for (int i = 0; i < NK.BUILD.length; i++) {
+            int[] b = NK.BUILD[i];
+            p.room(NK.NAMES[i], 0, b[0], b[1], b[2], b[3], Blocks.SPRUCE_PLANKS);
         }
-        for (int[] h : NK_HALL) {
+        for (int[] h : NK.HALL) {
             p.room("渡り廊下", 0, h[0], h[1], h[2], h[3], Blocks.DARK_OAK_PLANKS);
         }
         p.garden("中庭", 1, 1, 119, 79, Blocks.GRAVEL);
@@ -1389,7 +1392,7 @@ public final class Plans {
             for (int z = 0; z <= 80; z++) {
                 BlockState g = Blocks.GRAVEL.defaultBlockState();
                 boolean nearB = false;
-                for (int[] b : NK_BUILD) {
+                for (int[] b : NK.BUILD) {
                     if (x >= b[0] - 2 && x <= b[2] + 2 && z >= b[1] - 2 && z <= b[3] + 2) {
                         nearB = true;
                     }
@@ -1407,12 +1410,12 @@ public final class Plans {
         // ---- 中庭：池・橋・桜・飛び石・岩・木・石灯籠
         nkGarden(m, rnd);
         // ---- 渡り廊下（先に床と屋根、ふちのフェンスはあとで）
-        for (int[] h : NK_HALL) {
+        for (int[] h : NK.HALL) {
             nkHall(m, h);
         }
         nkHallEdges(m);
         // ---- 建物（中は空洞）
-        for (int[] b : NK_BUILD) {
+        for (int[] b : NK.BUILD) {
             nkBuilding(m, b);
         }
     }
@@ -1429,7 +1432,7 @@ public final class Plans {
         // 縁石
         for (int x = x1 - 1; x <= x2 + 1; x++) {
             for (int z = z1 - 1; z <= z2 + 1; z++) {
-                if ((x == x1 - 1 || x == x2 + 1 || z == z1 - 1 || z == z2 + 1) && !nkIn(NK_HALL, x, z)) {
+                if ((x == x1 - 1 || x == x2 + 1 || z == z1 - 1 || z == z2 + 1) && !nkIn(NK.HALL, x, z)) {
                     m.set(x, 0, z, Blocks.STONE_BRICKS);
                 }
             }
@@ -1489,7 +1492,7 @@ public final class Plans {
         // 軒下の灯り（四隅）
         BlockState lantern = Blocks.LANTERN.defaultBlockState().setValue(net.minecraft.world.level.block.LanternBlock.HANGING, true);
         for (int[] c : new int[][]{{x1 - 1, z1 - 1}, {x2 + 1, z1 - 1}, {x1 - 1, z2 + 1}, {x2 + 1, z2 + 1}}) {
-            if (!nkIn(NK_HALL, c[0], c[1])) {
+            if (!nkIn(NK.HALL, c[0], c[1])) {
                 m.set(c[0], wallTop, c[1], lantern);
             }
         }
@@ -1503,7 +1506,7 @@ public final class Plans {
         if (ox == 0 && oz == 0) {
             return false;
         }
-        for (int[] h : NK_HALL) {
+        for (int[] h : NK.HALL) {
             if (!(x + ox >= h[0] && x + ox <= h[2] && z + oz >= h[1] && z + oz <= h[3])) {
                 continue;
             }
@@ -1571,7 +1574,7 @@ public final class Plans {
     }
 
     private static boolean nkInBuilding(int x, int z) {
-        return nkIn(NK_BUILD, x, z);
+        return nkIn(NK.BUILD, x, z);
     }
 
     // 廊下のふち：中庭に面した所にフェンス、その上にトラップドア。ところどころ庭へ下りる切れ目
@@ -1581,13 +1584,13 @@ public final class Plans {
                 .setValue(net.minecraft.world.level.block.TrapDoorBlock.HALF, net.minecraft.world.level.block.state.properties.Half.BOTTOM)
                 .setValue(net.minecraft.world.level.block.TrapDoorBlock.OPEN, false);
         int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-        for (int[] h : NK_HALL) {
+        for (int[] h : NK.HALL) {
             for (int x = h[0]; x <= h[2]; x++) {
                 for (int z = h[1]; z <= h[3]; z++) {
                     boolean outer = false;
                     for (int[] d : dirs) {
                         int nx = x + d[0], nz = z + d[1];
-                        if (!nkIn(NK_HALL, nx, nz) && !nkInBuilding(nx, nz)) {
+                        if (!nkIn(NK.HALL, nx, nz) && !nkInBuilding(nx, nz)) {
                             outer = true;
                         }
                     }
@@ -1731,7 +1734,7 @@ public final class Plans {
         int[][] trees = {{30, 33}, {38, 32}, {68, 34}, {78, 32}, {28, 46}, {42, 50}, {72, 52}, {80, 48}, {46, 66}, {74, 66},
                 {16, 44}, {96, 38}, {32, 74}, {84, 76}, {50, 34}, {104, 52}};
         for (int[] t : trees) {
-            if (m.isAir(t[0], 1, t[1]) && !nkInBuilding(t[0], t[1]) && !nkIn(NK_HALL, t[0], t[1])) {
+            if (m.isAir(t[0], 1, t[1]) && !nkInBuilding(t[0], t[1]) && !nkIn(NK.HALL, t[0], t[1])) {
                 gardenTree(m, t[0], t[1], rnd);
             }
         }
@@ -1740,7 +1743,7 @@ public final class Plans {
             for (int k = 0; k < 4; k++) {
                 int x = r[0] + rnd.nextInt(3) - 1;
                 int z = r[1] + rnd.nextInt(3) - 1;
-                if (m.isAir(x, 1, z) && !nkIn(NK_HALL, x, z)) {
+                if (m.isAir(x, 1, z) && !nkIn(NK.HALL, x, z)) {
                     m.set(x, 1, z, rnd.nextBoolean() ? Blocks.ANDESITE : Blocks.MOSSY_COBBLESTONE);
                 }
             }
@@ -1802,7 +1805,7 @@ public final class Plans {
             for (int dz = -2; dz <= 2; dz++) {
                 for (int dy = h - 1; dy <= h + 1; dy++) {
                     if (dx * dx + dz * dz + (dy - h) * (dy - h) <= 5 && m.isAir(x + dx, dy, z + dz)
-                            && !nkInBuilding(x + dx, z + dz) && !nkIn(NK_HALL, x + dx, z + dz)) {
+                            && !nkInBuilding(x + dx, z + dz) && !nkIn(NK.HALL, x + dx, z + dz)) {
                         m.set(x + dx, dy, z + dz, leaf);
                     }
                 }
