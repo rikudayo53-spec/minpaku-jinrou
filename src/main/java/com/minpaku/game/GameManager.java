@@ -2579,7 +2579,7 @@ public final class GameManager {
     public void sendBounds(ServerPlayer p) {
         int[] b = map().lastBuilt;
         String data = b.length == 6 ? b[0] + "," + b[1] + "," + b[2] + "," + b[3] + "," + b[4] + "," + b[5] + "," + settings().get("fog")
-                + "," + settings().get("fog_density") : "";
+                + "," + settings().get("fog_density") + "," + map().buildTurns : "";
         send(p, new Packets.Info("bounds", data));
         // 使える妨害（停電・ガス漏れ・スキン・位置）
         send(p, new Packets.Info("sabotages", settings().get("sab_blackout") + "," + settings().get("sab_gas") + ","

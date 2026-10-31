@@ -107,6 +107,29 @@ public final class MapBuilder {
         set(x, y, z, ModBlocks.BLOCKS.get(type).defaultBlockState().setValue(MarkerBlock.FACING, facing));
     }
 
+    /**
+     * ワールドから切り出したマップ（data/minpaku/structure/<名前>.nbt）を置く。
+     * srcRot = 切り出したときに建っていた向き、srcMin = 切り出した範囲の角の、そのときの原点からの差（ワールドの軸）
+     */
+    public boolean placeTemplate(String name, Rotation srcRot, BlockPos srcMin) {
+        var mgr = level.getStructureManager();
+        var tpl = mgr.get(com.minpaku.MinpakuJinrou.id(name)).orElse(null);
+        if (tpl == null) {
+            return false;
+        }
+        Rotation inv = switch (srcRot) {
+            case CLOCKWISE_90 -> Rotation.COUNTERCLOCKWISE_90;
+            case COUNTERCLOCKWISE_90 -> Rotation.CLOCKWISE_90;
+            default -> srcRot;
+        };
+        Rotation rc = rotation.getRotated(inv);
+        BlockPos at = origin.offset(srcMin.rotate(rc));
+        var settings = new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings()
+                .setRotation(rc).setIgnoreEntities(true);
+        tpl.placeInWorld(level, at, at, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        return true;
+    }
+
     public boolean isWater(int x, int y, int z) {
         return level.getBlockState(world(x, y, z)).is(Blocks.WATER);
     }
@@ -207,6 +230,13 @@ public final class MapBuilder {
     private void run() {
         MapData data = MapData.get(level);
         data.clearAll();
+        data.buildTurns = switch (rotation) {
+            case CLOCKWISE_90 -> 1;
+            case CLOCKWISE_180 -> 2;
+            case COUNTERCLOCKWISE_90 -> 3;
+            default -> 0;
+        };
+        data.setDirty();
         clearPrevious(data);
         clearSite();
         if (plan.custom != null) {

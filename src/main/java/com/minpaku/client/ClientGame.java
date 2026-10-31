@@ -101,6 +101,8 @@ public final class ClientGame {
     public static int fogDistance = 48;
     /** 霧の濃さ（1 = とてもうすい 〜 5 = とてもこい） */
     public static int fogDensity = 3;
+    /** マップを建てた向き（時計回りに 90° × この数）。見取り図はこれを戻して玄関を下にする */
+    public static int buildTurns;
     /** 使える妨害（停電・ガス漏れ・スキン・位置） */
     public static boolean[] sabotages = {true, true, true, true};
     public static final int EVIL_GOD_LEN = 90;
@@ -159,6 +161,7 @@ public final class ClientGame {
                     bounds = b;
                     fogDistance = v.length >= 7 ? Integer.parseInt(v[6].trim()) : 48;
                     fogDensity = v.length >= 8 ? Integer.parseInt(v[7].trim()) : 3;
+                    buildTurns = v.length >= 9 ? Integer.parseInt(v[8].trim()) : 0;
                 } else {
                     bounds = null;
                 }

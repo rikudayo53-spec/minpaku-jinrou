@@ -25,8 +25,9 @@ public final class Plans {
     public static final MapPlan GRAND = grand();
     public static final MapPlan KARAKURI = karakuri();
     public static final MapPlan NAKANIWA = nakaniwa();
+    public static final MapPlan BON = minpakuBon();
 
-    public static final List<MapPlan> ALL = List.of(MACHIYA, HIRAYA, KOMINKA, YASHIKI, RYOKAN, SHUKUBO, GRAND, KARAKURI, NAKANIWA);
+    public static final List<MapPlan> ALL = List.of(MACHIYA, HIRAYA, KOMINKA, YASHIKI, RYOKAN, SHUKUBO, GRAND, KARAKURI, NAKANIWA, BON);
 
     /** 設定の値（1〜6）からマップ */
     public static MapPlan byIndex(int i) {
@@ -1375,6 +1376,35 @@ public final class Plans {
         p.spawnZ = 46;
         p.custom = Plans::buildNakaniwa;
         p.furnish = m -> m.marker(MarkerType.SPAWN, 39, 1, 46, Direction.NORTH);
+        return p;
+    }
+
+    // ================================================================ 民泊ぼん（ワールドで作ったマップを取り込んだもの）
+    /**
+     * 中庭の屋敷をもとに、ワールドの中で家具を置いて作ったマップ。80 × 50、南（下）が門。
+     * 建物・家具はまるごと data/minpaku/structure/minpaku_bon.nbt（切り出したときの向き：時計回り90°）
+     */
+    private static MapPlan minpakuBon() {
+        MapPlan p = new MapPlan("minpaku_bon", "民泊ぼん", "6人〜", NK.W, NK.D);
+        for (int i = 0; i < NK.BUILD.length; i++) {
+            int[] b = NK.BUILD[i];
+            p.room(NK.NAMES[i], 0, b[0], b[1], b[2], b[3], Blocks.SPRUCE_PLANKS);
+        }
+        for (int[] h : NK.HALL) {
+            p.room("渡り廊下", 0, h[0], h[1], h[2], h[3], Blocks.DARK_OAK_PLANKS);
+        }
+        p.garden("中庭", 1, 1, NK.W - 1, NK.D - 1, Blocks.GRAVEL);
+        p.entranceX = 38;
+        p.spawnX = 39;
+        p.spawnZ = 46;
+        p.custom = m -> {
+            if (!m.placeTemplate("minpaku_bon", net.minecraft.world.level.block.Rotation.CLOCKWISE_90,
+                    new net.minecraft.core.BlockPos(-53, -1, -3))) {
+                buildNakaniwa(m);   // 取り込んだデータがなければ、もとの中庭の屋敷
+            }
+        };
+        p.furnish = m -> {
+        };
         return p;
     }
 

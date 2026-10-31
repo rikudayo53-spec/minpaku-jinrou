@@ -94,6 +94,8 @@ public class MapData extends SavedData {
 
     /** 最後に建てたマップの範囲（minX, minY, minZ, maxX, maxY, maxZ）。建て直すときに片づける */
     public int[] lastBuilt = new int[0];
+    /** 建てた向き（時計回りに 90° × この数）。見取り図をいつも玄関が下になるよう回すのに使う */
+    public int buildTurns;
 
     public void setLastBuilt(int[] box) {
         lastBuilt = box;
@@ -127,6 +129,7 @@ public class MapData extends SavedData {
         }
         tag.put("rooms", list);
         tag.putIntArray("lastBuilt", lastBuilt);
+        tag.putInt("buildTurns", buildTurns);
         return tag;
     }
 
@@ -152,6 +155,7 @@ public class MapData extends SavedData {
             }
         }
         data.lastBuilt = tag.getIntArray("lastBuilt");
+        data.buildTurns = tag.getInt("buildTurns");
         return data;
     }
 }

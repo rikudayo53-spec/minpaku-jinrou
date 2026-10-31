@@ -156,10 +156,13 @@ public final class MapView {
         // 範囲（全部の部屋の外枠）
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
         for (ClientGame.MapRoom r : ClientGame.rooms) {
-            minX = Math.min(minX, r.x1());
-            minZ = Math.min(minZ, r.z1());
-            maxX = Math.max(maxX, r.x2() + 1);
-            maxZ = Math.max(maxZ, r.z2() + 1);
+            // 建てた向きに合わせて回す（いつも玄関が下になるように）
+            for (int[] c : new int[][]{{r.x1(), r.z1()}, {r.x2() + 1, r.z2() + 1}}) {
+                minX = (int) Math.min(minX, Math.floor(U(c[0], c[1])));
+                minZ = (int) Math.min(minZ, Math.floor(V(c[0], c[1])));
+                maxX = (int) Math.max(maxX, Math.ceil(U(c[0], c[1])));
+                maxZ = (int) Math.max(maxZ, Math.ceil(V(c[0], c[1])));
+            }
         }
         int ax = x + 12;
         int ay = y + 32;
@@ -190,10 +193,12 @@ public final class MapView {
                 if (f != floor && !(open && floor > 0)) {
                     continue;
                 }
-                int rx1 = (int) (ox + (r.x1() - minX) * scale);
-                int rz1 = (int) (oz + (r.z1() - minZ) * scale);
-                int rx2 = (int) (ox + (r.x2() + 1 - minX) * scale);
-                int rz2 = (int) (oz + (r.z2() + 1 - minZ) * scale);
+                float ua = U(r.x1(), r.z1()), va = V(r.x1(), r.z1());
+                float ub = U(r.x2() + 1, r.z2() + 1), vb = V(r.x2() + 1, r.z2() + 1);
+                int rx1 = (int) (ox + (Math.min(ua, ub) - minX) * scale);
+                int rz1 = (int) (oz + (Math.min(va, vb) - minZ) * scale);
+                int rx2 = (int) (ox + (Math.max(ua, ub) - minX) * scale);
+                int rz2 = (int) (oz + (Math.max(va, vb) - minZ) * scale);
                 boolean dim = f != floor;
                 if (pass == 0) {
                     int fillC = dim ? 0xFF6D7A60 : roomColor(r.name(), open, r.x2() - r.x1(), r.z2() - r.z1());
@@ -216,8 +221,8 @@ public final class MapView {
             if (f != floor) {
                 continue;
             }
-            float px = ox + (t.pos().getX() + 0.5f - minX) * scale;
-            float pz = oz + (t.pos().getZ() + 0.5f - minZ) * scale;
+            float px = ox + (U(t.pos().getX() + 0.5f, t.pos().getZ() + 0.5f) - minX) * scale;
+            float pz = oz + (V(t.pos().getX() + 0.5f, t.pos().getZ() + 0.5f) - minZ) * scale;
             if (!t.done()) {
                 Ui.disc(g, px, pz, 7f + pulse * 2f, Ui.alpha(0xFFFFC21F, 0.35f));
             }
@@ -237,8 +242,8 @@ public final class MapView {
                 if (!wolfSide || taskFloor(f.pos().getY(), fl) != floor) {
                     continue;
                 }
-                float vx = ox + (f.pos().getX() + 0.5f - minX) * scale;
-                float vz = oz + (f.pos().getZ() + 0.5f - minZ) * scale;
+                float vx = ox + (U(f.pos().getX() + 0.5f, f.pos().getZ() + 0.5f) - minX) * scale;
+                float vz = oz + (V(f.pos().getX() + 0.5f, f.pos().getZ() + 0.5f) - minZ) * scale;
                 int vc = f.type() == com.minpaku.game.MarkerType.VENT_B ? 0xFF2F5BB0 : f.type() == com.minpaku.game.MarkerType.VENT_C ? 0xFF2E8A40 : 0xFFB02A24;
                 g.fill((int) vx - 5, (int) vz - 5, (int) vx + 5, (int) vz + 5, 0xFF1A1410);
                 g.fill((int) vx - 4, (int) vz - 4, (int) vx + 4, (int) vz + 4, vc);
@@ -249,8 +254,8 @@ public final class MapView {
                 anyUrgent |= urgent(f);
                 continue;
             }
-            float fx = ox + (f.pos().getX() + 0.5f - minX) * scale;
-            float fz = oz + (f.pos().getZ() + 0.5f - minZ) * scale;
+            float fx = ox + (U(f.pos().getX() + 0.5f, f.pos().getZ() + 0.5f) - minX) * scale;
+            float fz = oz + (V(f.pos().getX() + 0.5f, f.pos().getZ() + 0.5f) - minZ) * scale;
             if (urgent(f)) {
                 anyUrgent = true;
                 float r = 7f + pulse * 5f;
@@ -268,11 +273,11 @@ public final class MapView {
         // 自分のいる場所（会議中は会議の前にいた場所）
         Vec3 me = me();
         if (me != null && taskFloor((int) Math.floor(me.y), fl) == floor) {
-            float px = ox + (float) (me.x - minX) * scale;
-            float pz = oz + (float) (me.z - minZ) * scale;
+            float px = ox + (U(me.x, me.z) - minX) * scale;
+            float pz = oz + (V(me.x, me.z) - minZ) * scale;
             if (live && net.minecraft.client.Minecraft.getInstance().player != null) {
                 // 向いている方向の矢印（白いふちの赤い矢じり）
-                float yaw = net.minecraft.client.Minecraft.getInstance().player.getYRot();
+                float yaw = net.minecraft.client.Minecraft.getInstance().player.getYRot() - 90f * ClientGame.buildTurns;
                 arrow(g, px, pz, yaw, 9f, 0xFFFFFFFF);
                 arrow(g, px, pz, yaw, 7f, 0xFFC8372D);
             } else {
@@ -303,6 +308,26 @@ public final class MapView {
             String what = s.blackout() ? "停電中：配電盤へ！" : "ガス漏れ：元栓とボイラーへ！";
             Ui.sans(g, what, x + w - 12, overlay ? y + h - 16 : y + h - 30, Ui.alpha(0xFFE53935, 0.7f + 0.3f * pulse), 0.85f, 1);
         }
+    }
+
+    /** 地図の横（右が +）：建てた向き（時計回りに buildTurns × 90°）を戻して、玄関がいつも下に来るように */
+    private static float U(double x, double z) {
+        return switch (ClientGame.buildTurns & 3) {
+            case 1 -> (float) z;
+            case 2 -> (float) -x;
+            case 3 -> (float) -z;
+            default -> (float) x;
+        };
+    }
+
+    /** 地図の縦（下が +） */
+    private static float V(double x, double z) {
+        return switch (ClientGame.buildTurns & 3) {
+            case 1 -> (float) -x;
+            case 2 -> (float) -z;
+            case 3 -> (float) x;
+            default -> (float) z;
+        };
     }
 
     /** 矢印（矢じりの形）。yaw はマイクラの向き（0 = 南）。地図は北が上 */
