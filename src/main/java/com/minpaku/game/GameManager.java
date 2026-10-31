@@ -1957,15 +1957,6 @@ public final class GameManager {
         }
     }
 
-    /** 参加者の体（人間のプレイヤーかボット） */
-    @Nullable
-    net.minecraft.world.entity.Entity entityOf(PlayerState ps) {
-        if (ps.bot) {
-            return bots.get(ps.id);
-        }
-        return player(ps.id);
-    }
-
     void fixBlackout(@Nullable ServerPlayer by) {
         if (!blackout) {
             return;
