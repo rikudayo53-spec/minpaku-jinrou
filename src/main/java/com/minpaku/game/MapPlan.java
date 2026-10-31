@@ -47,6 +47,8 @@ public final class MapPlan {
     public int spawnZ;
     public Consumer<MapBuilder> furnish = b -> {
     };
+    /** 建物を部屋の並びから自動で作らず、これで全部建てる（null なら自動） */
+    public Consumer<MapBuilder> custom;
 
     public MapPlan(String id, String name, String players, int w, int d) {
         this.id = id;

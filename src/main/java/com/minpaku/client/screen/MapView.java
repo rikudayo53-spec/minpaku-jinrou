@@ -171,8 +171,20 @@ public final class MapView {
         g.fill(ax, ay, ax + aw, ay + ah, 0xFF3B3226);
         g.enableScissor(ax, ay, ax + aw, ay + ah);
         // 部屋：種類ごとに色を分け、太い壁で囲む。名前はいつも出す
+        // 庭（屋根のない所）を先に描き、建物をその上に描く
+        List<ClientGame.MapRoom> order = new ArrayList<>();
+        for (ClientGame.MapRoom r : ClientGame.rooms) {
+            if (r.y2() - r.y1() > 4) {
+                order.add(r);
+            }
+        }
+        for (ClientGame.MapRoom r : ClientGame.rooms) {
+            if (r.y2() - r.y1() <= 4) {
+                order.add(r);
+            }
+        }
         for (int pass = 0; pass < 2; pass++) {
-            for (ClientGame.MapRoom r : ClientGame.rooms) {
+            for (ClientGame.MapRoom r : order) {
                 boolean open = r.y2() - r.y1() > 4;
                 int f = floorOf(r.y1(), fl);
                 if (f != floor && !(open && floor > 0)) {

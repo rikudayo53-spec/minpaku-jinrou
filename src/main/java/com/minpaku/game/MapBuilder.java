@@ -107,6 +107,10 @@ public final class MapBuilder {
         set(x, y, z, ModBlocks.BLOCKS.get(type).defaultBlockState().setValue(MarkerBlock.FACING, facing));
     }
 
+    public boolean isWater(int x, int y, int z) {
+        return level.getBlockState(world(x, y, z)).is(Blocks.WATER);
+    }
+
     public boolean isAir(int x, int y, int z) {
         return level.getBlockState(world(x, y, z)).isAir();
     }
@@ -205,6 +209,16 @@ public final class MapBuilder {
         data.clearAll();
         clearPrevious(data);
         clearSite();
+        if (plan.custom != null) {
+            // 自由な形のマップ：設計図の関数が全部建てる
+            plan.custom.accept(this);
+            plan.furnish.accept(this);
+            fixShapes();
+            registerRooms();
+            setupWorld();
+            clearDrops(level);
+            return;
+        }
         floors();
         walls(0);
         if (plan.twoFloors()) {
